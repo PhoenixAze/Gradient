@@ -1,0 +1,783 @@
+/* ==========================================================================
+   1. DƏYİŞƏNLƏR VƏ TƏMƏL RESET
+   ========================================================================== */
+:root {
+  /* Rəng Palitrası: Slate & Korporativ Dərinlik */
+  --bg-body: #F8FAFC;         /* Açıq slate fon */
+  --bg-card: #FFFFFF;         /* Təmiz ağ kart fonu */
+  --bg-muted: #F1F5F9;        /* Bölmə ayrıcı açıq boz */
+  
+  --text-main: #0F172A;       /* Tünd Slate (Oxunaqlı əsas mətn) */
+  --text-muted: #475569;      /* İkinci dərəcəli mətn */
+  --text-sub: #94A3B8;        /* Köməkçi açıq mətn */
+
+  --border: #E2E8F0;          /* Zərif 1px sərhəd */
+  --border-focus: #CBD5E1;    /* Hover zamanı sərhəd */
+
+  /* Brend Vurğusu (Təmkinli Polad Mavisi və Dərin Göy) */
+  --primary: #0F172A;         /* Əsas düymə fonu */
+  --primary-hover: #1E293B;
+  --accent: #2563EB;          /* İnkişaf link və vurğu mavisi */
+  --accent-soft: #EFF6FF;
+
+  /* Status Rəngləri */
+  --success: #10B981;
+  --warning: #F59E0B;
+  --danger: #EF4444;
+
+  /* Şrift və Dərinlik (Təkmilləşdirilmiş Kölgələr) */
+  --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --radius: 8px;
+  --radius-lg: 16px;
+  --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.05), 0 2px 4px -2px rgba(15, 23, 42, 0.05);
+  --shadow-lg: 0 12px 24px -4px rgba(15, 23, 42, 0.08), 0 4px 12px -4px rgba(15, 23, 42, 0.04);
+  
+  --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font);
+  background-color: var(--bg-body);
+  color: var(--text-main);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ==========================================================================
+   2. YARDIMÇI VƏ ÜMUMİ DÜZÜLÜŞ (LAYOUT)
+   ========================================================================== */
+.container {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.section {
+  padding: 96px 0;
+}
+
+.bg-muted {
+  background-color: var(--bg-muted);
+}
+
+.text-center {
+  text-align: center;
+}
+
+.section-head {
+  max-width: 640px;
+  margin: 0 auto 56px auto;
+}
+
+.section-title {
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: -0.025em;
+  margin-bottom: 16px;
+}
+
+.section-subtitle {
+  font-size: 1.125rem;
+  color: var(--text-muted);
+}
+
+/* ==========================================================================
+   3. DÜYMƏLƏR VƏ ETİKETLƏR
+   ========================================================================== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  font-weight: 500;
+  padding: 10px 20px;
+  border-radius: var(--radius);
+  text-decoration: none;
+  transition: var(--transition);
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.btn-primary {
+  background-color: var(--primary);
+  color: #FFFFFF;
+  box-shadow: var(--shadow-sm);
+}
+.btn-primary:hover {
+  background-color: var(--primary-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-secondary {
+  background-color: #FFFFFF;
+  color: var(--text-main);
+  border-color: var(--border);
+  box-shadow: var(--shadow-sm);
+}
+.btn-secondary:hover {
+  background-color: var(--bg-body);
+  border-color: var(--border-focus);
+  transform: translateY(-1px);
+}
+
+.btn-ghost {
+  color: var(--text-muted);
+}
+.btn-ghost:hover {
+  color: var(--text-main);
+  background-color: var(--bg-muted);
+}
+
+.btn-lg {
+  padding: 14px 28px;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background-color: #FFFFFF;
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-sm);
+}
+
+.badge-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--accent);
+}
+
+/* ==========================================================================
+   4. NAVİQASİYA (NAVBAR)
+   ========================================================================== */
+.navbar {
+  position: sticky;
+  top: 0;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  z-index: 100;
+  padding: 16px 0;
+}
+
+.nav-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  transition: var(--transition);
+}
+.brand:hover {
+  opacity: 0.9;
+}
+
+.logo-icon {
+  display: flex;
+  align-items: center;
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.brand-name {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.brand-sub {
+  font-size: 0.7rem;
+  color: var(--text-sub);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.nav-links {
+  display: flex;
+  gap: 32px;
+}
+
+.nav-links a {
+  text-decoration: none;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  transition: var(--transition);
+}
+
+.nav-links a:hover {
+  color: var(--text-main);
+}
+
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ==========================================================================
+   5. HERO BÖLMƏSİ VƏ DRAGGABLE MARQUEE
+   ========================================================================== */
+.hero-section {
+  padding: 80px 0 100px 0;
+}
+
+.hero-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  align-items: center;
+}
+
+.hero-title {
+  font-size: 3.25rem;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+  color: var(--text-main);
+  margin-bottom: 24px;
+}
+
+.hero-desc {
+  font-size: 1.125rem;
+  color: var(--text-muted);
+  margin-bottom: 40px;
+  line-height: 1.7;
+}
+
+.hero-buttons {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 48px;
+}
+
+/* Marquee (Sürüşən Kartlar) Konfiqurasiyası */
+.hero-visual {
+  width: 100%;
+  overflow: hidden;
+  /* Kənarlarda zərif solma (fade) effekti */
+  mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+}
+
+.marquee-container {
+  width: 100%;
+  overflow-x: auto;
+  cursor: grab;
+  /* Scrollbar-ı gizlətmək üçün */
+  scrollbar-width: none; 
+  -ms-overflow-style: none;
+}
+
+.marquee-container::-webkit-scrollbar {
+  display: none;
+}
+
+.marquee-container.active {
+  cursor: grabbing;
+}
+
+.marquee-track {
+  display: flex;
+  gap: 24px;
+  padding: 20px 0;
+  width: max-content; /* Məzmun qədər genişlənir */
+}
+
+.marquee-track .analysis-card {
+  width: 320px;
+  flex-shrink: 0;
+  /* Sürüşdürmə zamanı mətnin seçilməsinin qarşısını almaq */
+  user-select: none; 
+  -webkit-user-drag: none;
+}
+
+/* ==========================================================================
+   6. ANALİTİKA KARTLARI (Ümumi Dizayn)
+   ========================================================================== */
+.analysis-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 32px;
+  box-shadow: var(--shadow-lg);
+  transition: var(--transition);
+}
+.analysis-card:hover {
+  box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.1), 0 8px 10px -6px rgba(15, 23, 42, 0.05);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 32px;
+}
+
+.card-tag {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  color: var(--text-sub);
+  display: block;
+  margin-bottom: 4px;
+}
+
+.card-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.score-badge {
+  background-color: var(--bg-body);
+  border: 1px solid var(--border);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--text-main);
+}
+
+.topic-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.bar-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.bar-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.bar-track {
+  width: 100%;
+  height: 8px;
+  background-color: var(--bg-muted);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 1s ease-in-out;
+}
+
+.bg-success { background-color: var(--success); }
+.bg-warning { background-color: var(--warning); }
+.bg-danger  { background-color: var(--danger); }
+
+.text-success { color: var(--success); }
+.text-warning { color: var(--warning); }
+.text-danger  { color: var(--danger); }
+
+.ai-diagnosis-box {
+  background-color: var(--accent-soft);
+  border: 1px solid rgba(37, 99, 235, 0.2);
+  border-left: 4px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+}
+
+.ai-box-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+
+.ai-box-text {
+  font-size: 0.875rem;
+  color: var(--text-main);
+  line-height: 1.6;
+}
+
+/* ==========================================================================
+   7. 3 ADDIM BÖLMƏSİ
+   ========================================================================== */
+.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+}
+
+.step-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 40px 32px;
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition);
+}
+.step-card:hover {
+  border-color: var(--border-focus);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.step-num {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--border-focus);
+  margin-bottom: 20px;
+}
+
+.step-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: var(--text-main);
+}
+
+.step-desc {
+  font-size: 1rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+/* ==========================================================================
+   8. AUDİTORİYA BÖLMƏSİ (Ziqzaq Layout)
+   ========================================================================== */
+.audience-block {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 64px;
+  align-items: center;
+  margin-bottom: 80px;
+}
+
+.audience-block:last-child {
+  margin-bottom: 0;
+}
+
+/* İkinci blokda şəkli sola, mətni sağa keçirmək üçün */
+.audience-block.reverse .audience-text {
+  order: 2;
+}
+.audience-block.reverse .audience-visual {
+  order: 1;
+}
+
+.audience-text {
+  max-width: 500px;
+}
+
+.card-pill {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 24px;
+}
+
+.card-heading {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 24px;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+}
+
+.check-list {
+  list-style: none;
+  margin-bottom: 40px;
+}
+
+.check-list li {
+  position: relative;
+  padding-left: 28px;
+  margin-bottom: 16px;
+  font-size: 1rem;
+  color: var(--text-muted);
+}
+
+.check-list li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  color: var(--success);
+  font-weight: 700;
+}
+
+/* Müəllim (Tutor) Kartı və Şagird Siyahısı */
+.tutor-card {
+  padding: 32px;
+}
+
+.student-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.student-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.student-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.student-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.student-status {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ==========================================================================
+   9. ÇAĞIRIŞ (CTA BANNER) VƏ FOOTER
+   ========================================================================== */
+.cta-banner {
+  background-color: var(--primary);
+  border-radius: var(--radius-lg);
+  padding: 80px 40px;
+  text-align: center;
+  color: #FFFFFF;
+  box-shadow: var(--shadow-lg);
+}
+
+.cta-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: 16px;
+}
+
+.cta-desc {
+  font-size: 1.125rem;
+  color: #94A3B8;
+  max-width: 600px;
+  margin: 0 auto 32px auto;
+}
+
+.cta-banner .btn-primary {
+  background-color: #FFFFFF;
+  color: var(--primary);
+}
+.cta-banner .btn-primary:hover {
+  background-color: var(--bg-body);
+  transform: translateY(-2px);
+}
+
+.footer {
+  border-top: 1px solid var(--border);
+  padding: 48px 0;
+  background-color: #FFFFFF;
+}
+
+.footer-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.footer-brand {
+  font-size: 1.25rem;
+  font-weight: 700;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.footer-copy {
+  font-size: 0.875rem;
+  color: var(--text-sub);
+}
+
+.footer-links {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.footer-links a {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: var(--transition);
+}
+.footer-links a:hover {
+  color: var(--text-main);
+}
+
+/* ==========================================================================
+   10. RESPONSİV UYĞUNLAŞMA (MOBİL VƏ PLANŞET)
+   ========================================================================== */
+@media (max-width: 992px) {
+  .hero-container, .audience-block {
+    grid-template-columns: 1fr;
+    gap: 48px;
+  }
+  
+  .hero-title {
+    font-size: 2.5rem;
+  }
+  
+  .grid-3 {
+    grid-template-columns: 1fr;
+  }
+  
+  .nav-links {
+    display: none; /* Mobildə gizlənir, gələcəkdə hamburger menu əlavə edilə bilər */
+  }
+  
+  .audience-block.reverse .audience-text,
+  .audience-block.reverse .audience-visual {
+    order: unset; /* Mobildə ardıcıllığı normala qaytarır */
+  }
+  
+  .audience-block {
+    text-align: center;
+  }
+  
+  .audience-text {
+    margin: 0 auto;
+  }
+  
+  .check-list li {
+    text-align: left;
+  }
+}
+
+@media (max-width: 768px) {
+  .hero-buttons {
+    flex-direction: column;
+  }
+  
+  .footer-container {
+    flex-direction: column;
+    gap: 24px;
+    text-align: center;
+  }
+}
+/* ==========================================================================
+   11. HÜQUQİ SƏNƏDLƏR (TERMS & PRIVACY)
+   ========================================================================== */
+.legal-document {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 48px 64px;
+  max-width: 860px;
+  margin: 0 auto;
+  box-shadow: var(--shadow-sm);
+}
+
+.legal-header {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 24px;
+  margin-bottom: 32px;
+  text-align: center;
+}
+
+.legal-title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--text-main);
+  letter-spacing: -0.02em;
+  margin-bottom: 8px;
+}
+
+.legal-date {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+}
+
+.legal-content h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 32px 0 16px 0;
+}
+
+.legal-content p {
+  font-size: 1rem;
+  color: var(--text-muted);
+  line-height: 1.7;
+  margin-bottom: 16px;
+}
+
+.legal-content ul {
+  margin-bottom: 24px;
+  padding-left: 24px;
+}
+
+.legal-content li {
+  font-size: 1rem;
+  color: var(--text-muted);
+  line-height: 1.7;
+  margin-bottom: 8px;
+}
+
+.legal-content strong {
+  color: var(--text-main);
+}
+
+@media (max-width: 768px) {
+  .legal-document {
+    padding: 32px 24px;
+  }
+  .legal-title {
+    font-size: 2rem;
+  }
+}
