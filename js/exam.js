@@ -1,7 +1,7 @@
 "use strict";
 
 // TƏHLÜKƏSİZLİK QEYDİ: Render.com-dakı backend linkini bura yaz.
-const API_BASE_URL = "https://SENIN-RENDER-LINKIN.onrender.com"; 
+const API_BASE_URL = "https://gradient-backend-fam5.onrender.com"; 
 
 document.addEventListener("DOMContentLoaded", async () => {
     // --- DOM ELEMENTLƏRİ ---
