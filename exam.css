@@ -1,0 +1,504 @@
+/* ==========================================================================
+   EXAM (DASHBOARD) SƏHİFƏSİ ÜÇÜN XÜSUSİ STİLLƏR
+   ========================================================================== */
+
+.dashboard-body {
+  background-color: var(--bg-body);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* --- HEADER --- */
+.dash-header {
+  background-color: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.dash-header-container {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 12px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.icon-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  padding: 8px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+}
+
+.icon-btn:hover {
+  background-color: var(--bg-muted);
+  color: var(--text-main);
+}
+
+.dash-brand .brand-name {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: -0.02em;
+}
+
+/* --- MAIN CONTENT --- */
+.dash-main {
+  flex: 1;
+  padding: 40px 0 80px 0;
+}
+
+.dash-container {
+  max-width: 800px; /* Dashboard məzmununu mərkəzdə və oxunaqlı saxlamaq üçün */
+}
+
+.dash-welcome {
+  margin-bottom: 32px;
+}
+
+.dash-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: -0.02em;
+  margin-bottom: 8px;
+}
+
+.dash-subtitle {
+  font-size: 1rem;
+  color: var(--text-muted);
+}
+
+/* --- SEGMENTED CONTROL (TABS) --- */
+.dash-tabs-container {
+  margin-bottom: 32px;
+}
+
+.dash-tabs {
+  display: inline-flex;
+  background-color: var(--bg-muted);
+  padding: 4px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
+.dash-tab {
+  position: relative;
+  cursor: pointer;
+}
+
+.dash-tab input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.tab-label {
+  display: block;
+  padding: 8px 24px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  border-radius: 6px;
+  transition: var(--transition);
+}
+
+.dash-tab input:checked ~ .tab-label {
+  background-color: var(--bg-card);
+  color: var(--text-main);
+  box-shadow: var(--shadow-sm);
+}
+
+/* --- EXAM SECTIONS & EMPTY STATE --- */
+.exam-section {
+  display: none;
+  animation: fadeIn 0.3s ease;
+}
+
+.exam-section.active {
+  display: block;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.empty-state {
+  background-color: var(--bg-card);
+  border: 1px dashed var(--border-focus);
+  border-radius: var(--radius-lg);
+  padding: 80px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.empty-icon {
+  font-size: 2rem;
+  color: var(--text-sub);
+  margin-bottom: 16px;
+  font-family: monospace; /* Emoticon-un düzgün görünməsi üçün */
+}
+
+.empty-text {
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+/* Mobil Uyğunlaşma */
+@media (max-width: 600px) {
+  .dash-tabs {
+    display: flex;
+    width: 100%;
+  }
+  .dash-tab {
+    flex: 1;
+    text-align: center;
+  }
+  .tab-label {
+    padding: 10px 12px;
+    font-size: 0.85rem;
+  }
+}
+/* ==========================================================================
+   YAN MENYULAR (DRAWERS) VƏ OVERLAY
+   ========================================================================== */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  z-index: 100;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.drawer {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  width: 300px;
+  max-width: 85vw;
+  background-color: var(--bg-card);
+  z-index: 101;
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.drawer-left {
+  left: 0;
+  transform: translateX(-100%);
+}
+
+.drawer-left.active {
+  transform: translateX(0);
+}
+
+.drawer-right {
+  right: 0;
+  transform: translateX(100%);
+}
+
+.drawer-right.active {
+  transform: translateX(0);
+}
+
+.drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.drawer-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+/* Profil Kartı (Sağ menyu daxilində) */
+.profile-card {
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border-bottom: 1px solid var(--border);
+  background-color: var(--bg-muted);
+}
+
+.profile-avatar {
+  width: 48px;
+  height: 48px;
+  background-color: var(--primary);
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.profile-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.profile-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-bottom: 4px;
+}
+
+.profile-balance {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.profile-balance span {
+  color: var(--success);
+  font-weight: 700;
+}
+
+/* Menyu Linkləri */
+.drawer-nav {
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+}
+
+.drawer-link {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius);
+  text-decoration: none;
+  text-align: left;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.drawer-link:hover {
+  background-color: var(--bg-muted);
+  color: var(--text-main);
+}
+
+.drawer-link.active {
+  background-color: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.drawer-divider {
+  height: 1px;
+  background-color: var(--border);
+  margin: 12px 0;
+}
+
+/* Əsas Məzmun Bölmələri (Views) */
+.main-view {
+  display: none;
+  animation: fadeIn 0.3s ease;
+}
+
+.main-view.active {
+  display: block;
+}
+
+.mb-4 {
+  margin-bottom: 24px;
+}
+/* ==========================================================================
+   SINAQ KARTLARI (EXAM LIST & CARDS)
+   ========================================================================== */
+.exam-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.exam-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px 24px;
+  transition: var(--transition);
+}
+
+.exam-card:hover {
+  border-color: var(--border-focus);
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-1px);
+}
+
+.exam-card-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.exam-icon {
+  background-color: var(--bg-muted);
+  color: var(--text-muted);
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.exam-details {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.exam-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+/* Pulsuz / Status etiketi */
+.exam-badge {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--success);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.badge-dot-success {
+  width: 6px;
+  height: 6px;
+  background-color: var(--success);
+  border-radius: 50%;
+  display: inline-block;
+}
+
+/* Fərqli rəngdə (Mavi) İşlə düyməsi */
+.btn-accent {
+  background-color: var(--accent);
+  color: #FFFFFF;
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-accent:hover {
+  background-color: #1D4ED8; /* Daha tünd mavi */
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+/* Mobil Uyğunlaşma (Ekran kiçildikdə kartın elementləri alt-alta keçir) */
+@media (max-width: 600px) {
+  .exam-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+    padding: 20px;
+  }
+  
+  .exam-details {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .exam-card-right {
+    width: 100%;
+  }
+
+  .exam-card-right .btn {
+    width: 100%;
+  }
+}
+/* ==========================================================================
+   SKELETON LOADERS (Yüklənmə animasiyası)
+   ========================================================================== */
+.skeleton {
+  background: #e2e8f0;
+  background: linear-gradient(110deg, #ececec 8%, #f5f5f5 18%, #ececec 33%);
+  border-radius: 5px;
+  background-size: 200% 100%;
+  animation: 1.5s shimmer linear infinite;
+}
+
+@keyframes shimmer {
+  to {
+    background-position-x: -200%;
+  }
+}
+
+.skeleton-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px 24px;
+  margin-bottom: 16px;
+}
+
+.skeleton-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+}
+
+.skeleton-text-title {
+  width: 200px;
+  height: 20px;
+  margin-bottom: 8px;
+}
+
+.skeleton-text-badge {
+  width: 80px;
+  height: 16px;
+}
+
+.skeleton-btn {
+  width: 80px;
+  height: 36px;
+  border-radius: 6px;
+}
