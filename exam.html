@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sınaqlar | Gradient Dashboard</title>
+  
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; script-src 'self';">
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/exam.css">
+  
+  <!-- JS faylı aktivləşdirildi -->
+  <script src="js/exam.js" defer></script>
+</head>
+<body class="dashboard-body">
+
+  <!-- QARALMA FONU (Boşluğa basanda bağlamaq üçün) -->
+  <div class="overlay" id="drawer-overlay"></div>
+
+  <!-- SOL MENYU (Hamburger) -->
+  <aside class="drawer drawer-left" id="nav-drawer">
+    <div class="drawer-header">
+      <span class="brand-name">Gradient</span>
+      <button class="icon-btn close-drawer" aria-label="Bağla">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <nav class="drawer-nav">
+      <button class="drawer-link active" data-target="view-exams">Sınaqlar</button>
+      <a href="analytics.html" class="drawer-link">Analitika</a>
+    </nav>
+  </aside>
+
+  <!-- SAĞ MENYU (Profil) -->
+  <aside class="drawer drawer-right" id="profile-drawer">
+    <div class="drawer-header">
+      <h2 class="drawer-title">Profil</h2>
+      <button class="icon-btn close-drawer" aria-label="Bağla">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    
+    <div class="profile-card">
+      <div class="profile-avatar">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+      </div>
+      <div class="profile-details">
+        <h3 class="profile-name">Yüklənir...</h3>
+        <div class="profile-balance">Balans: <span>0.00 ₼</span></div>
+      </div>
+    </div>
+
+    <nav class="drawer-nav">
+      <a href="analytics.html" class="drawer-link">Analitika</a>
+      <button class="drawer-link" data-target="view-tutor">Repetitor</button>
+      <button class="drawer-link" data-target="view-settings">Tənzimləmələr</button>
+      <button class="drawer-link" data-target="view-contact">Əlaqə</button>
+      <div class="drawer-divider"></div>
+      <button class="drawer-link text-danger" id="btn-logout">Çıxış et</button>
+    </nav>
+  </aside>
+
+  <!-- DASHBOARD HEADER -->
+  <header class="dash-header">
+    <div class="dash-header-container">
+      <button class="icon-btn" id="menu-toggle" aria-label="Menyunu aç">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+      </button>
+      <div class="dash-brand">
+        <span class="brand-name">Gradient</span>
+      </div>
+      <button class="icon-btn" id="profile-toggle" aria-label="Profil menyusu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ƏSAS MƏZMUN -->
+  <main class="dash-main">
+    <div class="container dash-container">
+      
+      <!-- BÖLMƏ 1: SINAQLAR (Əsas Ekran) -->
+      <div id="view-exams" class="main-view active">
+        <div class="dash-welcome">
+          <h1 class="dash-title">Xoş gəldin</h1>
+          <p class="dash-subtitle">İşləmək istədiyin sınaq növünü seç.</p>
+        </div>
+
+        <div class="dash-tabs-container">
+          <div class="dash-tabs">
+            <label class="dash-tab">
+              <input type="radio" name="exam_category" value="general" checked>
+              <span class="tab-label">Ümumi sınaqlar</span>
+            </label>
+            <label class="dash-tab">
+              <input type="radio" name="exam_category" value="tutor">
+              <span class="tab-label">Repetitor sınaqları</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="exam-content">
+          <!-- Ümumi Sınaqlar Bölməsi -->
+          <div id="general-exams" class="exam-section active">
+            
+            <!-- Sınaqlar Siyahısı (Backend-dən bura render olunacaq) -->
+            <div class="exam-list" id="exam-list-container">
+              <!-- JS vasitəsilə Skeleton Loader və Sınaq Kartları bura əlavə ediləcək -->
+            </div>
+
+          </div>
+          
+          <!-- Repetitor Sınaqları Bölməsi -->
+          <div id="tutor-exams" class="exam-section hidden">
+            <div class="empty-state">
+              <span class="empty-icon">(⁠+⁠_⁠+⁠)</span>
+              <p class="empty-text">bura boşdur</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BÖLMƏ 2: REPETİTOR -->
+      <div id="view-tutor" class="main-view hidden">
+        <h1 class="dash-title">Repetitor Məlumatları</h1>
+        <p class="dash-subtitle mb-4">Öz repetitorunuzla bağlı məlumatlar və əvvəlki sınaqlar.</p>
+        <div class="empty-state">
+          <span class="empty-icon">(⁠+⁠_⁠+⁠)</span>
+          <p class="empty-text">bura boşdur</p>
+        </div>
+      </div>
+
+      <!-- BÖLMƏ 3: TƏNZİMLƏMƏLƏR -->
+      <div id="view-settings" class="main-view hidden">
+        <h1 class="dash-title">Tənzimləmələr</h1>
+        <p class="dash-subtitle mb-4">Hesab və təhlükəsizlik ayarları.</p>
+        <div class="empty-state">
+          <span class="empty-icon">(⁠+⁠_⁠+⁠)</span>
+          <p class="empty-text">bura boşdur</p>
+        </div>
+      </div>
+
+      <!-- BÖLMƏ 4: ƏLAQƏ -->
+      <div id="view-contact" class="main-view hidden">
+        <h1 class="dash-title">Əlaqə</h1>
+        <p class="dash-subtitle mb-4">Texniki dəstək və suallarınız üçün bizə yazın.</p>
+        <div class="empty-state">
+          <span class="empty-icon">(⁠+⁠_⁠+⁠)</span>
+          <p class="empty-text">bura boşdur</p>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+</body>
+</html>

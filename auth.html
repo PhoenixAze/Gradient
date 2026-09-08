@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Giriş və Qeydiyyat | Gradient</title>
+  
+  <!-- TƏHLÜKƏSİZLİK: Strict Content Security Policy -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; script-src 'self';">
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Qlobal və Auth üçün xüsusi CSS -->
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/auth.css">
+  
+  <!-- Auth məntiqi üçün xüsusi JS -->
+  <script src="js/auth.js" defer></script>
+</head>
+<body class="auth-body">
+
+  <div class="auth-container">
+    <!-- Geri qayıtmaq üçün link -->
+    <a href="index.html" class="back-link" aria-label="Ana səhifəyə qayıt">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Ana Səhifə
+    </a>
+
+    <div class="auth-card">
+<div class="auth-header">
+  
+  <div class="auth-brand">
+    <div class="logo-icon">
+      <!-- SVG KODU BURANIN İÇİNDƏ OLMALIDIR -->
+      <svg viewBox="0 0 512 512" width="40" height="40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="512" height="512" rx="112" fill="#0F172A" />
+        <path d="M 155 365 L 225 275 C 242 255, 260 290, 280 275 L 360 150" fill="none" stroke="#3B82F6" stroke-width="32" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+    </div>
+    <span class="brand-text-large">Gradient</span>
+  </div>
+
+  <h1 class="auth-title">Xoş Gəlmisiniz</h1>
+  <p class="auth-subtitle">Davam etmək üçün hesabınıza daxil olun və ya yenisini yaradın.</p>
+  
+</div>
+
+      <!-- Tablar (Giriş / Qeydiyyat) -->
+      <div class="auth-tabs">
+        <button class="tab-btn active" data-target="login-section">Daxil ol</button>
+        <button class="tab-btn" data-target="register-section">Qeydiyyat</button>
+      </div>
+
+      <!-- Qlobal Xəta Mesajı Qutusu (JS ilə idarə olunur) -->
+      <div id="global-error" class="alert alert-danger hidden" role="alert"></div>
+
+      <!-- ==========================================
+           GİRİŞ (LOGIN) FORMASI
+           ========================================== -->
+      <div id="login-section" class="auth-section active">
+        <form id="login-form" novalidate>
+          <div class="form-group">
+            <label for="login-identifier">E-poçt və ya Mobil nömrə</label>
+            <input type="text" id="login-identifier" name="identifier" placeholder="nümunə@mail.com və ya 0501234567" required autocomplete="username">
+          </div>
+          
+          <div class="form-group">
+            <div class="label-row">
+              <label for="login-password">Şifrə</label>
+              <a href="#" class="forgot-password">Şifrəni unutmusan?</a>
+            </div>
+            <input type="password" id="login-password" name="password" placeholder="••••••••" required autocomplete="current-password">
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-full" id="login-submit">
+            <span class="btn-text">Daxil ol</span>
+            <span class="loader hidden"></span>
+          </button>
+        </form>
+      </div>
+
+      <!-- ==========================================
+           QEYDİYYAT (REGISTER) FORMASI
+           ========================================== -->
+      <div id="register-section" class="auth-section hidden">
+        
+        <!-- Rol Seçimi (Segmented Control) -->
+        <div class="role-selector">
+          <label class="role-option">
+            <input type="radio" name="user_role" value="student" checked>
+            <span class="role-label">Mən Şagirdəm</span>
+          </label>
+          <label class="role-option">
+            <input type="radio" name="user_role" value="tutor">
+            <span class="role-label">Mən Repetitoram</span>
+          </label>
+        </div>
+
+        <form id="register-form" novalidate>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label for="reg-name">Ad</label>
+              <input type="text" id="reg-name" name="first_name" placeholder="Adınız" required autocomplete="given-name">
+            </div>
+            <div class="form-group">
+              <label for="reg-surname">Soyad</label>
+              <input type="text" id="reg-surname" name="last_name" placeholder="Soyadınız" required autocomplete="family-name">
+            </div>
+          </div>
+
+          <!-- Dinamik Sahə: Şagird üçün Sinif -->
+          <div class="form-group dynamic-field" id="field-grade">
+            <label for="reg-grade">Sinif</label>
+            <select id="reg-grade" name="grade" required>
+              <option value="" disabled selected>Sinif seçin</option>
+              <option value="5-8">5-8-ci siniflər</option>
+              <option value="9">9-cu sinif</option>
+              <option value="10">10-cu sinif</option>
+              <option value="11">11-ci sinif</option>
+            </select>
+          </div>
+
+          <!-- Dinamik Sahə: Repetitor üçün Fənn (İlkin olaraq gizlidir) -->
+          <div class="form-group dynamic-field hidden" id="field-subject">
+            <label for="reg-subject">Tədris etdiyiniz fənn</label>
+            <select id="reg-subject" name="subject">
+              <option value="" disabled selected>Fənn seçin</option>
+              <option value="riyaziyyat">Riyaziyyat</option>
+              <option value="fizika">Fizika</option>
+              <option value="ingilis">İngilis dili</option>
+              <option value="tarix">Tarix</option>
+              <option value="diger">Digər</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="reg-identifier">E-poçt və ya Mobil nömrə</label>
+            <input type="text" id="reg-identifier" name="identifier" placeholder="nümunə@mail.com və ya 0501234567" required autocomplete="username">
+          </div>
+
+          <div class="form-group">
+            <label for="reg-password">Şifrə</label>
+            <input type="password" id="reg-password" name="password" placeholder="Ən azı 8 simvol" required autocomplete="new-password">
+          </div>
+
+          <div class="form-group">
+            <label for="reg-password-confirm">Şifrəni təsdiqlə</label>
+            <input type="password" id="reg-password-confirm" name="password_confirm" placeholder="Şifrəni yenidən daxil edin" required autocomplete="new-password">
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-full" id="register-submit">
+            <span class="btn-text">Hesab Yarat</span>
+            <span class="loader hidden"></span>
+          </button>
+          
+          <p class="terms-text">
+            Qeydiyyatdan keçməklə <a href="terms.html">İstifadə Şərtləri</a> və <a href="privacy.html">Məxfilik Siyasəti</a> ilə razılaşdığınızı təsdiq edirsiniz.
+          </p>
+        </form>
+      </div>
+
+    </div>
+  </div>
+
+</body>
+</html>
