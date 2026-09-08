@@ -1,7 +1,5 @@
 "use strict";
 
-// TƏHLÜKƏSİZLİK QEYDİ: Render.com-dakı backend linkini bura yaz. 
-// Sonunda slash (/) olmasın. Məsələn: "https://gradient-api.onrender.com"
 const API_BASE_URL = "https://gradient-backend-fam5.onrender.com"; 
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -14,6 +12,25 @@ document.addEventListener("DOMContentLoaded", () => {
     const gradeSelect = document.getElementById('reg-grade');
     const subjectSelect = document.getElementById('reg-subject');
     const globalError = document.getElementById('global-error');
+
+    // --- DÜZƏLİŞ: Funksiyaları ən yuxarı qaldırdıq ki, əvvəlcədən tanınsınlar ---
+    const showError = (message, isSuccess = false) => {
+        globalError.textContent = message; 
+        globalError.classList.remove('hidden', 'alert-danger', 'alert-success');
+        globalError.classList.add(isSuccess ? 'alert-success' : 'alert-danger');
+    };
+
+    const hideError = () => {
+        globalError.classList.add('hidden');
+        globalError.textContent = '';
+    };
+
+    const isValidIdentifier = (val) => {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const phoneRegex = /^(050|051|055|070|077|099)\d{7}$/;
+        return emailRegex.test(val) || phoneRegex.test(val);
+    };
+    // ---------------------------------------------------------------------------
 
     // 1. TAB DƏYİŞDİRMƏ MƏNTİQİ
     tabs.forEach(tab => {
@@ -62,24 +79,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    // 3. TƏHLÜKƏSİZLİK VƏ VALIDASİYA
-    const showError = (message, isSuccess = false) => {
-        globalError.textContent = message; // XSS müdafiəsi üçün textContent
-        globalError.classList.remove('hidden', 'alert-danger', 'alert-success');
-        globalError.classList.add(isSuccess ? 'alert-success' : 'alert-danger');
-    };
-
-    const hideError = () => {
-        globalError.classList.add('hidden');
-        globalError.textContent = '';
-    };
-
-    const isValidIdentifier = (val) => {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        const phoneRegex = /^(050|051|055|070|077|099)\d{7}$/;
-        return emailRegex.test(val) || phoneRegex.test(val);
-    };
-
     // 4. GİRİŞ (LOGIN) FORMASININ GÖNDƏRİLMƏSİ
     const loginForm = document.getElementById('login-form');
     if(loginForm) {
@@ -109,7 +108,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         'Content-Type': 'application/json',
                         'Accept': 'application/json'
                     },
-                    credentials: 'include', // ÇOX ÖNƏMLİ: HttpOnly cookie-ni qəbul etmək üçün
+                    credentials: 'include', 
                     body: JSON.stringify({ identifier, password })
                 });
 
@@ -119,7 +118,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     throw new Error(data.detail || "Giriş zamanı xəta baş verdi.");
                 }
                 
-                // Giriş uğurludur, rola görə yönləndir
                 if (data.role === 'student') {
                     window.location.href = 'exam.html';
                 } else if (data.role === 'tutor') {
@@ -208,18 +206,15 @@ document.addEventListener("DOMContentLoaded", () => {
                 const data = await response.json();
 
                 if (!response.ok) {
-                    // Backend-dən gələn Pydantic validasiya xətalarını və ya xüsusi xətaları tuturuq
                     const errorMsg = Array.isArray(data.detail) 
                         ? data.detail[0].msg 
                         : data.detail || "Qeydiyyat zamanı xəta baş verdi.";
                     throw new Error(errorMsg);
                 }
                 
-                // Qeydiyyat uğurludur
                 showError("Qeydiyyat uğurla tamamlandı! İndi giriş edə bilərsiniz.", true);
                 registerForm.reset();
                 
-                // 2 saniyə sonra avtomatik Giriş tabına keçiririk
                 setTimeout(() => {
                     const loginTab = document.querySelector('[data-target="login-section"]');
                     if(loginTab) loginTab.click();
