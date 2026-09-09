@@ -224,3 +224,7 @@
   animation: 1.5s shimmer linear infinite;
 }
 @keyframes shimmer { to { background-position-x: -200%; } }
+/* Modalın gizlədilməsi üçün vacib qayda */
+.overlay.hidden {
+  display: none !important;
+}
