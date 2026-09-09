@@ -1,3 +1,12 @@
+/* BUG DÜZƏLİŞİ: css/style.css-dəki ".hidden" qaydası ilə bu fayldakı ".overlay"
+   (və mümkün digər display-təyin edən) qaydaları bərabər spesifikliyə malikdir.
+   Bu fayl style.css-dən SONRA yükləndiyi üçün .overlay { display:flex } qalib gəlir
+   və modal "hidden" sinifi olsa belə həmişə görünür. !important ilə bu səhifədə
+   .hidden-in hər zaman üstün olmasını təmin edirik (style.css-ə toxunmadan). */
+.hidden {
+  display: none !important;
+}
+
 .exam-body {
   background-color: var(--bg-body);
   min-height: 100vh;
