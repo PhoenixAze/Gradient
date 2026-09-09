@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sınaq Zalı | Gradient</title>
+  
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://gradient-backend-fam5.onrender.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; script-src 'self';">
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/exam-hall.css">
+  
+  <script src="js/exam-hall.js" defer></script>
+</head>
+<body class="exam-body">
+
+  <!-- Üst Panel (Header) -->
+  <header class="exam-header">
+    <div class="exam-header-left">
+      <h1 id="exam-title" class="exam-title">Sınaq yüklənir...</h1>
+    </div>
+    <div class="exam-header-right">
+      <div class="timer-box">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+        <span id="timer-display">00:00</span>
+      </div>
+      <button id="btn-finish-exam" class="btn btn-danger">Sınağı Bitir</button>
+    </div>
+  </header>
+
+  <!-- Əsas Məzmun -->
+  <main class="exam-main">
+    
+    <!-- Sol Tərəf: Sual Paneli -->
+    <div class="question-container">
+      <!-- Skeleton Loader -->
+      <div id="question-skeleton" class="skeleton-box">
+        <div class="skeleton skeleton-text" style="width: 80%; height: 24px; margin-bottom: 20px;"></div>
+        <div class="skeleton skeleton-text" style="width: 100%; height: 48px; margin-bottom: 12px;"></div>
+        <div class="skeleton skeleton-text" style="width: 100%; height: 48px; margin-bottom: 12px;"></div>
+        <div class="skeleton skeleton-text" style="width: 100%; height: 48px; margin-bottom: 12px;"></div>
+      </div>
+
+      <!-- Real Sual Məzmunu -->
+      <div id="question-content" class="hidden">
+        <div class="question-header">
+          <span class="question-number" id="q-number">Sual 1</span>
+        </div>
+        <p class="question-text" id="q-text"></p>
+        
+        <div class="options-list" id="options-container">
+          <!-- JS ilə bura radio buttonlar gələcək -->
+        </div>
+      </div>
+
+      <!-- Naviqasiya Düymələri -->
+      <div class="question-nav">
+        <button id="btn-prev" class="btn btn-outline" disabled>Əvvəlki</button>
+        <button id="btn-next" class="btn btn-accent">Növbəti</button>
+      </div>
+    </div>
+
+    <!-- Sağ Tərəf: Suallar Palitrası -->
+    <aside class="palette-container">
+      <h3 class="palette-title">Suallar</h3>
+      <div class="palette-grid" id="palette-grid">
+        <!-- JS ilə bura sual nömrələri gələcək -->
+      </div>
+      <div class="palette-legend">
+        <div class="legend-item"><span class="legend-box answered"></span> Cavablandırılıb</div>
+        <div class="legend-item"><span class="legend-box current"></span> Hazırkı</div>
+        <div class="legend-item"><span class="legend-box unanswered"></span> Boş</div>
+      </div>
+    </aside>
+
+  </main>
+
+  <!-- Qlobal Xəta/Məlumat Modalı -->
+  <div id="exam-overlay" class="overlay hidden">
+    <div class="modal-card">
+      <h2 id="modal-title">Diqqət</h2>
+      <p id="modal-message">Məlumat yüklənir...</p>
+      <div class="modal-actions">
+        <button id="btn-modal-close" class="btn btn-outline hidden">Geri qayıt</button>
+        <button id="btn-modal-confirm" class="btn btn-accent hidden">Təsdiqlə</button>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
