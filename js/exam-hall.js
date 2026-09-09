@@ -3,7 +3,6 @@
 const API_BASE_URL = "https://gradient-backend-fam5.onrender.com"; 
 
 document.addEventListener("DOMContentLoaded", async () => {
-    // URL-dən sınaq ID-sini alırıq
     const urlParams = new URLSearchParams(window.location.search);
     const examId = urlParams.get('id');
 
@@ -13,7 +12,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
     }
 
-    // DOM Elementləri
+    // Yaddaş açarları (Hər sınaq üçün unikal)
+    const storageKeyAnswers = `exam_${examId}_answers`;
+    const storageKeyEndTime = `exam_${examId}_endTime`;
+
     const examTitleEl = document.getElementById('exam-title');
     const timerDisplay = document.getElementById('timer-display');
     const skeletonBox = document.getElementById('question-skeleton');
@@ -33,14 +35,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     const btnModalClose = document.getElementById('btn-modal-close');
     const btnModalConfirm = document.getElementById('btn-modal-confirm');
 
-    // State (Vəziyyət)
     let questions = [];
     let currentQuestionIndex = 0;
-    let userAnswers = {}; // Format: {"q_id": "A"}
+    let userAnswers = {}; 
     let timerInterval;
-    let timeLeft = 60 * 60; // 60 dəqiqə (Saniyə ilə)
 
-    // --- 1. AUTH GUARD VƏ MƏLUMATIN ÇƏKİLMƏSİ ---
     const fetchExamData = async () => {
         try {
             const response = await fetch(`${API_BASE_URL}/api/v1/exams/${examId}/start`, {
@@ -53,11 +52,23 @@ document.addEventListener("DOMContentLoaded", async () => {
                 return;
             }
 
-            if (!response.ok) throw new Error("Sınağı yükləmək mümkün olmadı.");
-
             const data = await response.json();
+
+            if (!response.ok) {
+                // Əgər backend "Siz artıq işləmisiniz" deyirsə, xəbərdarlıq edib geri atırıq
+                alert(data.detail || "Xəta baş verdi.");
+                window.location.href = "exam.html";
+                return;
+            }
+
             examTitleEl.textContent = data.title;
             questions = data.questions;
+
+            // Yaddaşdan əvvəlki cavabları bərpa et (Səhifə yenilənibsə)
+            const savedAnswers = localStorage.getItem(storageKeyAnswers);
+            if (savedAnswers) {
+                userAnswers = JSON.parse(savedAnswers);
+            }
 
             initPalette();
             renderQuestion(0);
@@ -71,17 +82,15 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     };
 
-    // --- 2. SUALLARIN RENDER EDİLMƏSİ (XSS MÜDAFİƏSİ) ---
     const renderQuestion = (index) => {
         currentQuestionIndex = index;
         const q = questions[index];
 
         qNumberEl.textContent = `Sual ${index + 1} / ${questions.length}`;
-        qTextEl.textContent = q.text; // innerHTML QƏTİ QADAĞANDIR!
+        qTextEl.textContent = q.text; 
 
-        optionsContainer.innerHTML = ''; // Köhnə variantları təmizlə
+        optionsContainer.innerHTML = ''; 
 
-        // Variantları yarat (A, B, C, D)
         for (const [key, value] of Object.entries(q.options)) {
             const label = document.createElement('label');
             label.className = 'option-label';
@@ -92,20 +101,18 @@ document.addEventListener("DOMContentLoaded", async () => {
             input.value = key;
             input.className = 'option-input';
 
-            // Əgər əvvəlcədən cavab veribsə, seçili et
             if (userAnswers[q.q_id] === key) {
                 input.checked = true;
                 label.classList.add('selected');
             }
 
-            // Seçim edildikdə
             input.addEventListener('change', () => {
-                // Bütün labellərdən selected sil
                 document.querySelectorAll('.option-label').forEach(l => l.classList.remove('selected'));
                 label.classList.add('selected');
                 
-                // Cavabı yadda saxla
                 userAnswers[q.q_id] = key;
+                // Hər cavab verəndə yaddaşa yazırıq
+                localStorage.setItem(storageKeyAnswers, JSON.stringify(userAnswers));
                 updatePalette();
             });
 
@@ -118,7 +125,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             optionsContainer.appendChild(label);
         }
 
-        // Düymələrin vəziyyəti
         btnPrev.disabled = index === 0;
         if (index === questions.length - 1) {
             btnNext.textContent = "Bitir";
@@ -131,7 +137,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         updatePalette();
     };
 
-    // --- 3. PALİTRA VƏ NAVİQASİYA ---
     const initPalette = () => {
         paletteGrid.innerHTML = '';
         questions.forEach((q, idx) => {
@@ -147,7 +152,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const btns = paletteGrid.children;
         for (let i = 0; i < btns.length; i++) {
             const qId = questions[i].q_id;
-            btns[i].className = 'palette-btn'; // Reset
+            btns[i].className = 'palette-btn'; 
             
             if (userAnswers[qId]) btns[i].classList.add('answered');
             if (i === currentQuestionIndex) btns[i].classList.add('current');
@@ -166,22 +171,29 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     });
 
-    // --- 4. TAYMER ---
     const startTimer = () => {
+        // Yaddaşda bitmə vaxtı varsa onu götür, yoxdursa indidən 60 dəqiqə sonranı təyin et
+        let endTime = localStorage.getItem(storageKeyEndTime);
+        if (!endTime) {
+            endTime = Date.now() + (60 * 60 * 1000); // 60 dəqiqə
+            localStorage.setItem(storageKeyEndTime, endTime);
+        }
+
         timerInterval = setInterval(() => {
+            const now = Date.now();
+            let timeLeft = Math.floor((endTime - now) / 1000);
+
             if (timeLeft <= 0) {
                 clearInterval(timerInterval);
-                submitExam(); // Vaxt bitəndə avtomatik göndər
+                submitExam(); 
                 return;
             }
-            timeLeft--;
             const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
             const s = (timeLeft % 60).toString().padStart(2, '0');
             timerDisplay.textContent = `${m}:${s}`;
         }, 1000);
     };
 
-    // --- 5. SINAĞI BİTİRMƏK VƏ GÖNDƏRMƏK ---
     const showModal = (title, message, showConfirm = false) => {
         modalTitle.textContent = title;
         modalMessage.textContent = message;
@@ -222,11 +234,14 @@ document.addEventListener("DOMContentLoaded", async () => {
                 body: JSON.stringify({ answers: userAnswers })
             });
 
-            if (!response.ok) throw new Error("Nəticəni göndərmək mümkün olmadı.");
-
             const result = await response.json();
+
+            if (!response.ok) throw new Error(result.detail || "Nəticəni göndərmək mümkün olmadı.");
             
-            // Uğurlu nəticə ekranı
+            // Sınaq bitdisə, yaddaşı təmizləyirik ki, bir daha bərpa olunmasın
+            localStorage.removeItem(storageKeyAnswers);
+            localStorage.removeItem(storageKeyEndTime);
+
             modalTitle.textContent = "Sınaq Bitdi!";
             modalMessage.textContent = `Nəticəniz: ${result.score} / ${result.total} düzgün cavab.`;
             
@@ -242,6 +257,5 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     };
 
-    // Başlat
     fetchExamData();
 });
