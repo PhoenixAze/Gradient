@@ -28,6 +28,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // --- State (Vəziyyət) ---
     let questions = [];
+    let examDurationMinutes = 60; // Default olaraq 60
     let currentQuestionIndex = 0;
     let userAnswers = {}; // Format: {"q_id": "A"}
     let timerInterval = null;
