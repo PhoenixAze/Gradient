@@ -14,12 +14,10 @@
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/exam.css">
   
-  <!-- JS faylı aktivləşdirildi -->
   <script src="js/exam.js" defer></script>
 </head>
 <body class="dashboard-body">
 
-  <!-- QARALMA FONU (Boşluğa basanda bağlamaq üçün) -->
   <div class="overlay" id="drawer-overlay"></div>
 
   <!-- SOL MENYU (Hamburger) -->
@@ -31,7 +29,8 @@
       </button>
     </div>
     <nav class="drawer-nav">
-      <button class="drawer-link active" data-target="view-exams">Sınaqlar</button>
+      <!-- Sınaqlar qısayolu silindi, Bitmiş sınaqlar əlavə edildi -->
+      <button class="drawer-link" data-target="view-completed-exams">Bitmiş sınaqlar</button>
       <a href="analytics.html" class="drawer-link">Analitika</a>
     </nav>
   </aside>
@@ -71,9 +70,10 @@
       <button class="icon-btn" id="menu-toggle" aria-label="Menyunu aç">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
       </button>
-      <div class="dash-brand">
+      <!-- Loqoya basanda əsas sınaqlar səhifəsinə qayıtmaq üçün -->
+      <a href="#" class="dash-brand" id="brand-logo">
         <span class="brand-name">Gradient</span>
-      </div>
+      </a>
       <button class="icon-btn" id="profile-toggle" aria-label="Profil menyusu">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
       </button>
@@ -82,7 +82,7 @@
 
   <!-- ƏSAS MƏZMUN -->
   <main class="dash-main">
-    <div class="container dash-container">
+    <div class="dash-container">
       
       <!-- BÖLMƏ 1: SINAQLAR (Əsas Ekran) -->
       <div id="view-exams" class="main-view active">
@@ -105,17 +105,12 @@
         </div>
 
         <div class="exam-content">
-          <!-- Ümumi Sınaqlar Bölməsi -->
           <div id="general-exams" class="exam-section active">
-            
-            <!-- Sınaqlar Siyahısı (Backend-dən bura render olunacaq) -->
             <div class="exam-list" id="exam-list-container">
-              <!-- JS vasitəsilə Skeleton Loader və Sınaq Kartları bura əlavə ediləcək -->
+              <!-- JS vasitəsilə Skeleton Loader və Aktiv Sınaq Kartları bura əlavə ediləcək -->
             </div>
-
           </div>
           
-          <!-- Repetitor Sınaqları Bölməsi -->
           <div id="tutor-exams" class="exam-section hidden">
             <div class="empty-state">
               <span class="empty-icon">(⁠+⁠_⁠+⁠)</span>
@@ -125,8 +120,26 @@
         </div>
       </div>
 
-      <!-- BÖLMƏ 2: REPETİTOR -->
+      <!-- BÖLMƏ 2: BİTMİŞ SINAQLAR -->
+      <div id="view-completed-exams" class="main-view hidden">
+        <button class="btn-back go-home-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          Geri qayıt
+        </button>
+        <h1 class="dash-title">Bitmiş Sınaqlar</h1>
+        <p class="dash-subtitle mb-4">Əvvəllər işlədiyiniz sınaqların siyahısı və analitikası.</p>
+        
+        <div class="exam-list" id="completed-exam-list-container">
+           <!-- JS vasitəsilə Bitmiş Sınaq Kartları bura əlavə ediləcək -->
+        </div>
+      </div>
+
+      <!-- BÖLMƏ 3: REPETİTOR -->
       <div id="view-tutor" class="main-view hidden">
+        <button class="btn-back go-home-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          Geri qayıt
+        </button>
         <h1 class="dash-title">Repetitor Məlumatları</h1>
         <p class="dash-subtitle mb-4">Öz repetitorunuzla bağlı məlumatlar və əvvəlki sınaqlar.</p>
         <div class="empty-state">
@@ -135,8 +148,12 @@
         </div>
       </div>
 
-      <!-- BÖLMƏ 3: TƏNZİMLƏMƏLƏR -->
+      <!-- BÖLMƏ 4: TƏNZİMLƏMƏLƏR -->
       <div id="view-settings" class="main-view hidden">
+        <button class="btn-back go-home-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          Geri qayıt
+        </button>
         <h1 class="dash-title">Tənzimləmələr</h1>
         <p class="dash-subtitle mb-4">Hesab və təhlükəsizlik ayarları.</p>
         <div class="empty-state">
@@ -145,8 +162,12 @@
         </div>
       </div>
 
-      <!-- BÖLMƏ 4: ƏLAQƏ -->
+      <!-- BÖLMƏ 5: ƏLAQƏ -->
       <div id="view-contact" class="main-view hidden">
+        <button class="btn-back go-home-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          Geri qayıt
+        </button>
         <h1 class="dash-title">Əlaqə</h1>
         <p class="dash-subtitle mb-4">Texniki dəstək və suallarınız üçün bizə yazın.</p>
         <div class="empty-state">
