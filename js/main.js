@@ -1,9 +1,45 @@
 "use strict";
 
+// ==========================================================================
+// QLOBAL API İDARƏEDİCİSİ (ZERO-TRUST & REFRESH TOKEN)
+// ==========================================================================
+const API_BASE_URL = "https://gradient-backend-fam5.onrender.com";
+
+async function fetchWithAuth(endpoint, options = {}) {
+    options.credentials = 'include'; // HttpOnly cookie-lər üçün məcburidir
+    
+    let response = await fetch(`${API_BASE_URL}${endpoint}`, options);
+
+    // Əgər Access Token bitibsə (401)
+    if (response.status === 401) {
+        try {
+            // Refresh Token ilə yeni Access Token al
+            const refreshResponse = await fetch(`${API_BASE_URL}/api/v1/auth/refresh`, {
+                method: 'POST',
+                credentials: 'include'
+            });
+
+            if (refreshResponse.ok) {
+                // Token yeniləndi, orijinal sorğunu təkrarla
+                response = await fetch(`${API_BASE_URL}${endpoint}`, options);
+            } else {
+                // Refresh token də bitib -> Çıxış et
+                window.location.href = "auth.html";
+                return null;
+            }
+        } catch (error) {
+            console.error("Token yenilənmə xətası:", error);
+            window.location.href = "auth.html";
+            return null;
+        }
+    }
+    return response;
+}
+
+// ==========================================================================
+// LANDING PAGE: DRAGGABLE & AUTO-SCROLLING MARQUEE MƏNTİQİ
+// ==========================================================================
 document.addEventListener("DOMContentLoaded", () => {
-    // ==========================================================================
-    // 1. DRAGGABLE & AUTO-SCROLLING MARQUEE MƏNTİQİ
-    // ==========================================================================
     const marquee = document.getElementById("hero-marquee");
     
     if (marquee) {
@@ -11,24 +47,20 @@ document.addEventListener("DOMContentLoaded", () => {
         let isDown = false;
         let startX;
         let scrollLeft;
-        let autoScrollSpeed = 0.8; // Sürüşmə sürəti (piksel/kadr)
+        let autoScrollSpeed = 0.8; 
         let animationId;
         let isHovered = false;
 
-        // Sonsuz dövr (infinite loop) yaratmaq üçün kartları kopyalayırıq
         const cards = Array.from(track.children);
         cards.forEach(card => {
             const clone = card.cloneNode(true);
-            clone.setAttribute('aria-hidden', 'true'); // Əlçatanlıq üçün kopyaları gizlədirik
+            clone.setAttribute('aria-hidden', 'true'); 
             track.appendChild(clone);
         });
 
-        // Avtomatik sürüşmə funksiyası
         const startAutoScroll = () => {
             if (!isDown && !isHovered) {
                 marquee.scrollLeft += autoScrollSpeed;
-                
-                // Əgər orijinal kartların sonuna çatdıqsa, başa qayıdırıq (Sonsuzluq effekti)
                 if (marquee.scrollLeft >= track.scrollWidth / 2) {
                     marquee.scrollLeft = 0;
                 }
@@ -36,13 +68,12 @@ document.addEventListener("DOMContentLoaded", () => {
             animationId = requestAnimationFrame(startAutoScroll);
         };
 
-        // Mouse Hadisələri (Kompüter üçün)
         marquee.addEventListener('mousedown', (e) => {
             isDown = true;
             marquee.classList.add('active');
             startX = e.pageX - marquee.offsetLeft;
             scrollLeft = marquee.scrollLeft;
-            cancelAnimationFrame(animationId); // Əllə tutduqda avto-sürüşməni dayandır
+            cancelAnimationFrame(animationId); 
         });
 
         marquee.addEventListener('mouseleave', () => {
@@ -53,7 +84,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         marquee.addEventListener('mouseenter', () => {
-            isHovered = true; // Mouse üzərində olanda dayansın ki, oxumaq olsun
+            isHovered = true; 
         });
 
         marquee.addEventListener('mouseup', () => {
@@ -66,11 +97,10 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!isDown) return;
             e.preventDefault();
             const x = e.pageX - marquee.offsetLeft;
-            const walk = (x - startX) * 1.5; // Sürüşdürmə həssaslığı
+            const walk = (x - startX) * 1.5; 
             marquee.scrollLeft = scrollLeft - walk;
         });
 
-        // Touch Hadisələri (Mobil və Planşet üçün)
         marquee.addEventListener('touchstart', (e) => {
             isDown = true;
             startX = e.touches[0].pageX - marquee.offsetLeft;
@@ -90,7 +120,6 @@ document.addEventListener("DOMContentLoaded", () => {
             marquee.scrollLeft = scrollLeft - walk;
         }, { passive: true });
 
-        // Səhifə yükləndikdə animasiyanı başlat
         startAutoScroll();
     }
 });
