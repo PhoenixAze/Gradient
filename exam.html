@@ -20,21 +20,6 @@
 
   <div class="overlay" id="drawer-overlay"></div>
 
-  <!-- SOL MENYU (Hamburger) -->
-  <aside class="drawer drawer-left" id="nav-drawer">
-    <div class="drawer-header">
-      <span class="brand-name">Gradient</span>
-      <button class="icon-btn close-drawer" aria-label="Bağla">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
-      </button>
-    </div>
-    <nav class="drawer-nav">
-      <!-- Sınaqlar qısayolu silindi, Bitmiş sınaqlar əlavə edildi -->
-      <button class="drawer-link" data-target="view-completed-exams">Bitmiş sınaqlar</button>
-      <a href="analytics.html" class="drawer-link">Analitika</a>
-    </nav>
-  </aside>
-
   <!-- SAĞ MENYU (Profil) -->
   <aside class="drawer drawer-right" id="profile-drawer">
     <div class="drawer-header">
@@ -55,6 +40,7 @@
     </div>
 
     <nav class="drawer-nav">
+      <button class="drawer-link" data-target="view-completed-exams">Bitmiş sınaqlar</button>
       <a href="analytics.html" class="drawer-link">Analitika</a>
       <button class="drawer-link" data-target="view-tutor">Repetitor</button>
       <button class="drawer-link" data-target="view-settings">Tənzimləmələr</button>
@@ -67,10 +53,7 @@
   <!-- DASHBOARD HEADER -->
   <header class="dash-header">
     <div class="dash-header-container">
-      <button class="icon-btn" id="menu-toggle" aria-label="Menyunu aç">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-      </button>
-      <!-- Loqoya basanda əsas sınaqlar səhifəsinə qayıtmaq üçün -->
+      <!-- Hamburger silindi, Loqo sola çəkildi -->
       <a href="#" class="dash-brand" id="brand-logo">
         <span class="brand-name">Gradient</span>
       </a>
@@ -105,17 +88,38 @@
         </div>
 
         <div class="exam-content">
+          <!-- Ümumi Sınaqlar -->
           <div id="general-exams" class="exam-section active">
+            
+            <!-- Axtarış və Filtr Paneli -->
+            <div class="exam-controls">
+              <div class="search-box">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <input type="text" id="search-exam" placeholder="Sınaq adına görə axtar...">
+              </div>
+              <div class="filter-box">
+                <select id="filter-subject">
+                  <option value="all">Bütün fənlər</option>
+                  <option value="Riyaziyyat">Riyaziyyat</option>
+                  <option value="Azərbaycan dili">Azərbaycan dili</option>
+                  <option value="İngilis dili">İngilis dili</option>
+                </select>
+                <select id="filter-price">
+                  <option value="all">Bütün qiymətlər</option>
+                  <option value="free">Pulsuz</option>
+                  <option value="paid">Pullu</option>
+                </select>
+              </div>
+            </div>
+
             <div class="exam-list" id="exam-list-container">
-              <!-- JS vasitəsilə Skeleton Loader və Aktiv Sınaq Kartları bura əlavə ediləcək -->
+              <!-- JS vasitəsilə Aktiv Sınaq Kartları bura əlavə ediləcək -->
             </div>
           </div>
           
+          <!-- Repetitor Sınaqları -->
           <div id="tutor-exams" class="exam-section hidden">
-            <div class="empty-state">
-              <span class="empty-icon">(⁠+⁠_⁠+⁠)</span>
-              <p class="empty-text">bura boşdur</p>
-            </div>
+            <!-- JS vasitəsilə Repetitor yoxlanışı edilib bura məzmun yazılacaq -->
           </div>
         </div>
       </div>
@@ -129,6 +133,13 @@
         <h1 class="dash-title">Bitmiş Sınaqlar</h1>
         <p class="dash-subtitle mb-4">Əvvəllər işlədiyiniz sınaqların siyahısı və analitikası.</p>
         
+        <!-- Rənglərin mənası (Legend) -->
+        <div class="progress-legend">
+          <span class="legend-item"><span class="dot correct"></span> Düzgün</span>
+          <span class="legend-item"><span class="dot incorrect"></span> Səhv</span>
+          <span class="legend-item"><span class="dot empty"></span> Boş</span>
+        </div>
+
         <div class="exam-list" id="completed-exam-list-container">
            <!-- JS vasitəsilə Bitmiş Sınaq Kartları bura əlavə ediləcək -->
         </div>
