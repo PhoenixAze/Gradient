@@ -45,6 +45,11 @@
   color: var(--text-main);
 }
 
+.dash-brand {
+  cursor: pointer;
+  text-decoration: none;
+}
+
 .dash-brand .brand-name {
   font-size: 1.25rem;
   font-weight: 700;
@@ -59,7 +64,9 @@
 }
 
 .dash-container {
-  max-width: 800px; /* Dashboard məzmununu mərkəzdə və oxunaqlı saxlamaq üçün */
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 24px;
 }
 
 .dash-welcome {
@@ -77,6 +84,26 @@
 .dash-subtitle {
   font-size: 1rem;
   color: var(--text-muted);
+}
+
+/* --- GERİ QAYIT DÜYMƏSİ --- */
+.btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  margin-bottom: 24px;
+  padding: 0;
+  transition: var(--transition);
+}
+
+.btn-back:hover {
+  color: var(--text-main);
 }
 
 /* --- SEGMENTED CONTROL (TABS) --- */
@@ -150,7 +177,7 @@
   font-size: 2rem;
   color: var(--text-sub);
   margin-bottom: 16px;
-  font-family: monospace; /* Emoticon-un düzgün görünməsi üçün */
+  font-family: monospace;
 }
 
 .empty-text {
@@ -159,21 +186,6 @@
   color: var(--text-muted);
 }
 
-/* Mobil Uyğunlaşma */
-@media (max-width: 600px) {
-  .dash-tabs {
-    display: flex;
-    width: 100%;
-  }
-  .dash-tab {
-    flex: 1;
-    text-align: center;
-  }
-  .tab-label {
-    padding: 10px 12px;
-    font-size: 0.85rem;
-  }
-}
 /* ==========================================================================
    YAN MENYULAR (DRAWERS) VƏ OVERLAY
    ========================================================================== */
@@ -243,7 +255,6 @@
   color: var(--text-main);
 }
 
-/* Profil Kartı (Sağ menyu daxilində) */
 .profile-card {
   padding: 24px;
   display: flex;
@@ -287,7 +298,6 @@
   font-weight: 700;
 }
 
-/* Menyu Linkləri */
 .drawer-nav {
   padding: 16px 12px;
   display: flex;
@@ -330,7 +340,6 @@
   margin: 12px 0;
 }
 
-/* Əsas Məzmun Bölmələri (Views) */
 .main-view {
   display: none;
   animation: fadeIn 0.3s ease;
@@ -343,6 +352,7 @@
 .mb-4 {
   margin-bottom: 24px;
 }
+
 /* ==========================================================================
    SINAQ KARTLARI (EXAM LIST & CARDS)
    ========================================================================== */
@@ -384,12 +394,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .exam-details {
   display: flex;
-  align-items: center;
-  gap: 16px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
 }
 
 .exam-title {
@@ -398,11 +410,24 @@
   color: var(--text-main);
 }
 
-/* Pulsuz / Status etiketi */
+/* Meta məlumatlar (Sual sayı, Vaxt) */
+.exam-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .exam-badge {
   font-size: 0.875rem;
   font-weight: 600;
-  color: var(--success);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -411,12 +436,11 @@
 .badge-dot-success {
   width: 6px;
   height: 6px;
-  background-color: var(--success);
   border-radius: 50%;
   display: inline-block;
 }
 
-/* Fərqli rəngdə (Mavi) İşlə düyməsi */
+/* Düymələr */
 .btn-accent {
   background-color: var(--accent);
   color: #FFFFFF;
@@ -424,12 +448,26 @@
 }
 
 .btn-accent:hover {
-  background-color: #1D4ED8; /* Daha tünd mavi */
+  background-color: #1D4ED8;
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
 }
 
-/* Mobil Uyğunlaşma (Ekran kiçildikdə kartın elementləri alt-alta keçir) */
+.btn-outline {
+  background-color: transparent;
+  border: 1px solid var(--border-focus);
+  color: var(--text-main);
+}
+
+.btn-outline:hover {
+  background-color: var(--bg-muted);
+}
+
+.card-actions {
+  display: flex;
+  gap: 12px;
+}
+
 @media (max-width: 600px) {
   .exam-card {
     flex-direction: column;
@@ -438,22 +476,33 @@
     padding: 20px;
   }
   
-  .exam-details {
+  .exam-card-right, .card-actions {
+    width: 100%;
     flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
   }
 
-  .exam-card-right {
+  .exam-card-right .btn, .card-actions .btn {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+  }
+  
+  .dash-tabs {
+    display: flex;
     width: 100%;
   }
-
-  .exam-card-right .btn {
-    width: 100%;
+  .dash-tab {
+    flex: 1;
+    text-align: center;
+  }
+  .tab-label {
+    padding: 10px 12px;
+    font-size: 0.85rem;
   }
 }
+
 /* ==========================================================================
-   SKELETON LOADERS (Yüklənmə animasiyası)
+   SKELETON LOADERS
    ========================================================================== */
 .skeleton {
   background: #e2e8f0;
@@ -464,9 +513,7 @@
 }
 
 @keyframes shimmer {
-  to {
-    background-position-x: -200%;
-  }
+  to { background-position-x: -200%; }
 }
 
 .skeleton-card {
@@ -492,9 +539,9 @@
   margin-bottom: 8px;
 }
 
-.skeleton-text-badge {
-  width: 80px;
-  height: 16px;
+.skeleton-text-meta {
+  width: 120px;
+  height: 14px;
 }
 
 .skeleton-btn {
