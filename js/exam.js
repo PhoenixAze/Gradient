@@ -5,11 +5,10 @@ const API_BASE_URL = "https://gradient-backend-fam5.onrender.com";
 document.addEventListener("DOMContentLoaded", async () => {
     // --- DOM ELEMENTLƏRİ ---
     const overlay = document.getElementById('drawer-overlay');
-    const navDrawer = document.getElementById('nav-drawer');
     const profileDrawer = document.getElementById('profile-drawer');
-    const menuToggleBtn = document.getElementById('menu-toggle');
     const profileToggleBtn = document.getElementById('profile-toggle');
     const closeBtns = document.querySelectorAll('.close-drawer');
+    
     const examCategoryRadios = document.querySelectorAll('input[name="exam_category"]');
     const generalExamsSection = document.getElementById('general-exams');
     const tutorExamsSection = document.getElementById('tutor-exams');
@@ -26,6 +25,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     const profileNameEl = document.querySelector('.profile-name');
     const profileBalanceEl = document.querySelector('.profile-balance span');
 
+    // Axtarış və Filtr elementləri
+    const searchInput = document.getElementById('search-exam');
+    const filterSubject = document.getElementById('filter-subject');
+    const filterPrice = document.getElementById('filter-price');
+
+    // Qlobal Dəyişənlər
+    let currentUser = null;
+    let allExams = [];
+
     // --- 1. AUTH GUARD ---
     const checkAuthAndLoadProfile = async () => {
         try {
@@ -36,17 +44,43 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             if (!response.ok) throw new Error("Sessiya etibarsızdır");
 
-            const user = await response.json();
-            profileNameEl.textContent = `${user.first_name} ${user.last_name}`;
-            profileBalanceEl.textContent = `${parseFloat(user.balance).toFixed(2)} ₼`;
-            return user;
+            currentUser = await response.json();
+            profileNameEl.textContent = `${currentUser.first_name} ${currentUser.last_name}`;
+            profileBalanceEl.textContent = `${parseFloat(currentUser.balance).toFixed(2)} ₼`;
+            
+            handleTutorSectionState();
         } catch (error) {
             console.error("Auth Error:", error);
             window.location.href = "auth.html";
         }
     };
 
-    // --- 2. SINAQLARI YÜKLƏMƏ VƏ RENDER ETMƏ ---
+    // --- 2. REPETİTOR BÖLMƏSİ MƏNTİQİ ---
+    const handleTutorSectionState = () => {
+        // QEYD: Backend-də tutor_id hələ yoxdur, ona görə yoxlayırıq.
+        if (currentUser && currentUser.tutor_id) {
+            tutorExamsSection.innerHTML = `
+                <div class="empty-state">
+                  <span class="empty-icon">(⁠+⁠_⁠+⁠)</span>
+                  <p class="empty-text">Aktiv sınaq yoxdur</p>
+                </div>
+            `;
+        } else {
+            tutorExamsSection.innerHTML = `
+                <div class="empty-state">
+                  <span class="empty-icon">(⁠+⁠_⁠+⁠)</span>
+                  <p class="empty-text">İlk öncə repetitor əlavə etməlisən</p>
+                  <button class="btn btn-outline mt-4" id="btn-add-tutor">Repetitor əlavə et →</button>
+                </div>
+            `;
+            // Dinamik yaradılan düyməyə event əlavə edirik
+            document.getElementById('btn-add-tutor').addEventListener('click', () => {
+                switchView('view-tutor');
+            });
+        }
+    };
+
+    // --- 3. SINAQLARI YÜKLƏMƏ VƏ RENDER ETMƏ ---
     const renderSkeleton = (container) => {
         container.innerHTML = ''; 
         for(let i=0; i<2; i++) {
@@ -74,12 +108,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         `;
     };
 
-    // Tək bir sınaq kartını yaradan funksiya (XSS Müdafiəli)
     const createExamCard = (exam, isCompleted) => {
         const card = document.createElement('div');
         card.className = 'exam-card';
 
-        // Sol tərəf
         const leftDiv = document.createElement('div');
         leftDiv.className = 'exam-card-left';
 
@@ -94,15 +126,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         title.className = 'exam-title';
         title.textContent = exam.title;
 
-        // Meta məlumatlar (Sual sayı və Vaxt)
         const metaDiv = document.createElement('div');
         metaDiv.className = 'exam-meta';
         
-        // QEYD: Backend-də duration_minutes hələ yoxdur deyə fallback olaraq 90 dəqiqə qoyuruq.
         const duration = exam.duration_minutes || 90; 
         const qCount = exam.question_count || 0;
 
-        metaDiv.innerHTML = `
+        let metaHTML = `
             <div class="meta-item">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
                 <span>${duration} dəq</span>
@@ -112,6 +142,43 @@ document.addEventListener("DOMContentLoaded", async () => {
                 <span>${qCount} sual</span>
             </div>
         `;
+
+        // Əgər sınaq bitibsə, faizi və progress bar-ı hesablayırıq
+        if (isCompleted) {
+            // QEYD: Backend hələ səhv və boş sayını qaytarmır. Müvəqqəti mock data istifadə edirik.
+            // Gələcəkdə: exam.correct_count, exam.incorrect_count, exam.empty_count olacaq.
+            const correct = exam.correct_count ?? Math.floor(qCount * 0.4); 
+            const incorrect = exam.incorrect_count ?? Math.floor(qCount * 0.4);
+            const empty = qCount - correct - incorrect;
+
+            const correctPct = qCount > 0 ? Math.round((correct / qCount) * 100) : 0;
+            const incorrectPct = qCount > 0 ? Math.round((incorrect / qCount) * 100) : 0;
+            const emptyPct = qCount > 0 ? Math.round((empty / qCount) * 100) : 0;
+
+            metaHTML += `
+                <div class="meta-item score-text">
+                    <span>${correctPct}% yaşıl</span>
+                </div>
+            `;
+
+            const progressBar = document.createElement('div');
+            progressBar.className = 'progress-wrapper';
+            progressBar.innerHTML = `
+                <div class="progress-bar">
+                    <div class="progress-segment correct" style="width: ${correctPct}%"></div>
+                    <div class="progress-segment incorrect" style="width: ${incorrectPct}%"></div>
+                    <div class="progress-segment empty" style="width: ${emptyPct}%"></div>
+                </div>
+            `;
+            detailsDiv.appendChild(title);
+            detailsDiv.appendChild(metaDiv);
+            detailsDiv.appendChild(progressBar);
+        } else {
+            detailsDiv.appendChild(title);
+            detailsDiv.appendChild(metaDiv);
+        }
+        
+        metaDiv.innerHTML = metaHTML;
 
         const badge = document.createElement('span');
         badge.className = 'exam-badge';
@@ -125,19 +192,15 @@ document.addEventListener("DOMContentLoaded", async () => {
         badge.appendChild(dot);
         badge.appendChild(document.createTextNode(isFree ? ' pulsuz' : ` ${exam.price} ₼`));
 
-        detailsDiv.appendChild(title);
-        detailsDiv.appendChild(metaDiv);
-        detailsDiv.appendChild(badge);
+        if(!isCompleted) detailsDiv.appendChild(badge);
         
         leftDiv.appendChild(iconDiv);
         leftDiv.appendChild(detailsDiv);
 
-        // Sağ tərəf (Düymələr)
         const rightDiv = document.createElement('div');
         rightDiv.className = 'exam-card-right';
 
         if (isCompleted) {
-            // Bitmiş sınaqlar üçün 2 düymə
             const actionsDiv = document.createElement('div');
             actionsDiv.className = 'card-actions';
 
@@ -155,7 +218,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             actionsDiv.appendChild(analyticsBtn);
             rightDiv.appendChild(actionsDiv);
         } else {
-            // Aktiv sınaqlar üçün 1 düymə
             const actionBtn = document.createElement('a');
             actionBtn.className = 'btn btn-accent';
             actionBtn.textContent = 'İşlə';
@@ -166,6 +228,36 @@ document.addEventListener("DOMContentLoaded", async () => {
         card.appendChild(leftDiv);
         card.appendChild(rightDiv);
         return card;
+    };
+
+    // Axtarış və Filtr məntiqi
+    const filterAndRenderExams = () => {
+        const searchTerm = searchInput.value.toLowerCase().trim();
+        const subjectVal = filterSubject.value;
+        const priceVal = filterPrice.value;
+
+        examListContainer.innerHTML = '';
+
+        const activeExams = allExams.filter(e => !e.is_completed);
+        
+        const filteredExams = activeExams.filter(exam => {
+            const matchSearch = exam.title.toLowerCase().includes(searchTerm);
+            const matchSubject = subjectVal === 'all' || exam.subject === subjectVal;
+            
+            let matchPrice = true;
+            if (priceVal === 'free') matchPrice = parseFloat(exam.price) === 0;
+            if (priceVal === 'paid') matchPrice = parseFloat(exam.price) > 0;
+
+            return matchSearch && matchSubject && matchPrice;
+        });
+
+        if (filteredExams.length === 0) {
+            renderEmptyState(examListContainer, "Axtarışa uyğun sınaq tapılmadı");
+        } else {
+            filteredExams.forEach(exam => {
+                examListContainer.appendChild(createExamCard(exam, false));
+            });
+        }
     };
 
     const loadExams = async () => {
@@ -180,26 +272,15 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             if (!response.ok) throw new Error("Sınaqları yükləmək mümkün olmadı");
 
-            const exams = await response.json();
+            allExams = await response.json();
             
-            examListContainer.innerHTML = ''; 
-            completedExamListContainer.innerHTML = '';
-
-            // QEYD: Backend hələ is_completed qaytarmır. 
-            // Gələcəkdə backend yeniləndikdə bu filter avtomatik işləyəcək.
-            const activeExams = exams.filter(e => !e.is_completed);
-            const completedExams = exams.filter(e => e.is_completed);
-
-            // Aktiv sınaqları render et
-            if (activeExams.length === 0) {
-                renderEmptyState(examListContainer, "Hələlik heç bir sınaq yoxdur");
-            } else {
-                activeExams.forEach(exam => {
-                    examListContainer.appendChild(createExamCard(exam, false));
-                });
-            }
+            // Aktiv sınaqları render et (Filtr funksiyası vasitəsilə)
+            filterAndRenderExams();
 
             // Bitmiş sınaqları render et
+            completedExamListContainer.innerHTML = '';
+            const completedExams = allExams.filter(e => e.is_completed);
+
             if (completedExams.length === 0) {
                 renderEmptyState(completedExamListContainer, "Hələ heç bir sınaq bitirməmisiniz");
             } else {
@@ -215,7 +296,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     };
 
-    // --- 3. MENYU VƏ UI MƏNTİQİ ---
+    // Event Listeners for Search & Filter
+    searchInput.addEventListener('input', filterAndRenderExams);
+    filterSubject.addEventListener('change', filterAndRenderExams);
+    filterPrice.addEventListener('change', filterAndRenderExams);
+
+    // --- 4. MENYU VƏ UI MƏNTİQİ ---
     const openDrawer = (drawerElement) => {
         overlay.classList.add('active');
         drawerElement.classList.add('active');
@@ -224,7 +310,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const closeAllDrawers = () => {
         overlay.classList.remove('active');
-        navDrawer.classList.remove('active');
         profileDrawer.classList.remove('active');
         document.body.style.overflow = ''; 
     };
@@ -242,12 +327,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         closeAllDrawers();
     };
 
-    if (menuToggleBtn) menuToggleBtn.addEventListener('click', () => openDrawer(navDrawer));
     if (profileToggleBtn) profileToggleBtn.addEventListener('click', () => openDrawer(profileDrawer));
     if (overlay) overlay.addEventListener('click', closeAllDrawers);
     closeBtns.forEach(btn => btn.addEventListener('click', closeAllDrawers));
 
-    // Ümumi / Repetitor tabları
     examCategoryRadios.forEach(radio => {
         radio.addEventListener('change', (e) => {
             if (e.target.value === 'general') {
@@ -264,7 +347,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     });
 
-    // Yan menyu linkləri
     viewLinks.forEach(link => {
         link.addEventListener('click', (e) => {
             const targetId = link.getAttribute('data-target');
@@ -277,7 +359,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     });
 
-    // Geri qayıt düymələri və Loqo (Əsas sınaqlar səhifəsinə qayıtmaq üçün)
     const goHome = (e) => {
         e.preventDefault();
         viewLinks.forEach(l => l.classList.remove('active'));
@@ -287,7 +368,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     goHomeBtns.forEach(btn => btn.addEventListener('click', goHome));
     if (brandLogo) brandLogo.addEventListener('click', goHome);
 
-    // --- 4. ÇIXIŞ (LOGOUT) ---
+    // --- 5. ÇIXIŞ (LOGOUT) ---
     if (logoutBtn) {
         logoutBtn.addEventListener('click', async () => {
             try {
