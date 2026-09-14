@@ -2,8 +2,55 @@
    EXAM (DASHBOARD) SƏHİFƏSİ ÜÇÜN XÜSUSİ STİLLƏR
    ========================================================================== */
 
-.dashboard-body {
+/* CSS Dəyişənləri (Gündüz/Gecə rejimi dəstəyi) */
+:root {
+  --bg-body: #f8fafc;
+  --bg-card: #ffffff;
+  --bg-muted: #f1f5f9;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --text-sub: #94a3b8;
+  --border: #e2e8f0;
+  --border-focus: #cbd5e1;
+  --primary: #0f172a;
+  --accent: #2563eb;
+  --accent-soft: #eff6ff;
+  --success: #10b981;
+  --danger: #ef4444;
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  --radius: 8px;
+  --radius-lg: 12px;
+  --transition: all 0.2s ease;
+}
+
+[data-theme="dark"] {
+  --bg-body: #0f172a;
+  --bg-card: #1e293b;
+  --bg-muted: #334155;
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --text-sub: #64748b;
+  --border: #334155;
+  --border-focus: #475569;
+  --primary: #f8fafc;
+  --accent: #3b82f6;
+  --accent-soft: #1e3a8a;
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+}
+
+body {
   background-color: var(--bg-body);
+  color: var(--text-main);
+  font-family: 'Inter', sans-serif;
+  margin: 0;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.dashboard-body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -16,6 +63,7 @@
   position: sticky;
   top: 0;
   z-index: 50;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .dash-header-container {
@@ -134,8 +182,8 @@
 
 .search-box input:focus {
   outline: none;
-  border-color: var(--border-focus);
-  box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.05);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
 .search-box svg {
@@ -168,7 +216,7 @@
 
 .filter-box select:focus {
   outline: none;
-  border-color: var(--border-focus);
+  border-color: var(--accent);
 }
 
 /* --- EXAM SECTIONS & EMPTY STATE --- */
@@ -211,9 +259,9 @@
   color: var(--text-muted);
 }
 
-.mt-4 {
-  margin-top: 16px;
-}
+.mt-2 { margin-top: 8px; }
+.mt-4 { margin-top: 16px; }
+.mb-4 { margin-bottom: 24px; }
 
 /* ==========================================================================
    YAN MENYULAR (DRAWERS) VƏ OVERLAY
@@ -224,7 +272,7 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(15, 23, 42, 0.4);
+  background-color: rgba(15, 23, 42, 0.6);
   backdrop-filter: blur(2px);
   -webkit-backdrop-filter: blur(2px);
   z-index: 100;
@@ -278,7 +326,7 @@
 .profile-card {
   padding: 24px;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 16px;
   border-bottom: 1px solid var(--border);
   background-color: var(--bg-muted);
@@ -288,11 +336,12 @@
   width: 48px;
   height: 48px;
   background-color: var(--primary);
-  color: #fff;
+  color: var(--bg-card);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .profile-details {
@@ -306,13 +355,7 @@
   font-weight: 600;
   color: var(--text-main);
   margin-bottom: 4px;
-}
-
-.profile-balance-wrapper {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  margin-top: 0;
 }
 
 .profile-balance {
@@ -327,20 +370,22 @@
 }
 
 .btn-topup {
-  background-color: var(--bg-card);
-  border: 1px solid var(--border-focus);
-  color: var(--text-main);
-  font-size: 0.75rem;
+  background-color: transparent;
+  border: 1px solid var(--success);
+  color: var(--success);
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.8rem;
   font-weight: 600;
-  padding: 4px 10px;
-  border-radius: 4px;
   cursor: pointer;
   transition: var(--transition);
+  text-align: center;
+  width: fit-content;
 }
 
 .btn-topup:hover {
-  background-color: var(--bg-muted);
-  border-color: var(--text-muted);
+  background-color: var(--success);
+  color: #fff;
 }
 
 .drawer-nav {
@@ -385,6 +430,10 @@
   margin: 12px 0;
 }
 
+.text-danger {
+  color: var(--danger) !important;
+}
+
 .main-view {
   display: none;
   animation: fadeIn 0.3s ease;
@@ -392,10 +441,6 @@
 
 .main-view.active {
   display: block;
-}
-
-.mb-4 {
-  margin-bottom: 24px;
 }
 
 /* ==========================================================================
@@ -457,6 +502,7 @@
   font-size: 1.05rem;
   font-weight: 600;
   color: var(--text-main);
+  margin: 0;
 }
 
 .exam-meta {
@@ -474,12 +520,16 @@
   gap: 4px;
 }
 
-.score-text {
-  color: var(--success);
-  font-weight: 700;
-  background-color: rgba(34, 197, 94, 0.1);
-  padding: 2px 8px;
-  border-radius: 4px;
+.score-badge {
+  background-color: var(--accent-soft);
+  color: var(--accent);
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .exam-badge {
@@ -498,23 +548,32 @@
 }
 
 /* Düymələr */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 20px;
+  border-radius: var(--radius);
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  transition: var(--transition);
+  border: none;
+}
+
+.btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
 .btn-accent {
   background-color: var(--accent);
   color: #FFFFFF;
   box-shadow: var(--shadow-sm);
-  border: none;
-  padding: 10px 20px;
-  border-radius: var(--radius);
-  font-weight: 500;
-  cursor: pointer;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: var(--transition);
 }
 
-.btn-accent:hover {
+.btn-accent:hover:not(:disabled) {
   background-color: #1D4ED8;
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
@@ -524,24 +583,123 @@
   background-color: transparent;
   border: 1px solid var(--border-focus);
   color: var(--text-main);
-  padding: 10px 20px;
-  border-radius: var(--radius);
-  font-weight: 500;
-  cursor: pointer;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: var(--transition);
 }
 
-.btn-outline:hover {
+.btn-outline:hover:not(:disabled) {
   background-color: var(--bg-muted);
 }
 
 .card-actions {
   display: flex;
   gap: 12px;
+}
+
+/* ==========================================================================
+   TƏNZİMLƏMƏLƏR VƏ ƏLAQƏ KARTLARI
+   ========================================================================== */
+.settings-card, .contact-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.settings-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.settings-item-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-main);
+  margin: 0 0 4px 0;
+}
+
+.settings-item-desc {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* Toggle Switch */
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--border-focus);
+  transition: .3s;
+  border-radius: 24px;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .3s;
+  border-radius: 50%;
+}
+
+input:checked + .toggle-slider {
+  background-color: var(--accent);
+}
+
+input:checked + .toggle-slider:before {
+  transform: translateX(20px);
+}
+
+.contact-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.contact-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.contact-item svg {
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.contact-label {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.contact-value {
+  font-size: 1rem;
+  color: var(--text-main);
 }
 
 @media (max-width: 600px) {
@@ -564,8 +722,10 @@
     width: 100%;
     flex-direction: column;
   }
-  .exam-card-right .btn-accent, .exam-card-right .btn-outline {
+  .exam-card-right .btn, .card-actions .btn {
     width: 100%;
+    text-align: center;
+    justify-content: center;
   }
 }
 
@@ -573,8 +733,8 @@
    SKELETON LOADERS
    ========================================================================== */
 .skeleton {
-  background: #e2e8f0;
-  background: linear-gradient(110deg, #ececec 8%, #f5f5f5 18%, #ececec 33%);
+  background: var(--border);
+  background: linear-gradient(110deg, var(--border) 8%, var(--border-focus) 18%, var(--border) 33%);
   border-radius: 5px;
   background-size: 200% 100%;
   animation: 1.5s shimmer linear infinite;
