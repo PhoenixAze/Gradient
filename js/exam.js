@@ -9,10 +9,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     const profileToggleBtn = document.getElementById('profile-toggle');
     const closeBtns = document.querySelectorAll('.close-drawer');
     
-    const examCategoryRadios = document.querySelectorAll('input[name="exam_category"]');
-    const generalExamsSection = document.getElementById('general-exams');
-    const tutorExamsSection = document.getElementById('tutor-exams');
-    
     const viewLinks = document.querySelectorAll('.drawer-link[data-target]');
     const mainViews = document.querySelectorAll('.main-view');
     const goHomeBtns = document.querySelectorAll('.go-home-btn');
@@ -21,9 +17,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     const examListContainer = document.getElementById('exam-list-container');
     const completedExamListContainer = document.getElementById('completed-exam-list-container');
     const logoutBtn = document.getElementById('btn-logout');
+    const topupBtn = document.getElementById('btn-topup');
 
     const profileNameEl = document.querySelector('.profile-name');
-    const profileBalanceEl = document.querySelector('.profile-balance span');
+    const profileBalanceEl = document.getElementById('user-balance');
 
     // Axtarış və Filtr elementləri
     const searchInput = document.getElementById('search-exam');
@@ -48,37 +45,39 @@ document.addEventListener("DOMContentLoaded", async () => {
             profileNameEl.textContent = `${currentUser.first_name} ${currentUser.last_name}`;
             profileBalanceEl.textContent = `${parseFloat(currentUser.balance).toFixed(2)} ₼`;
             
-            handleTutorSectionState();
         } catch (error) {
             console.error("Auth Error:", error);
             window.location.href = "auth.html";
         }
     };
 
-    // --- 2. REPETİTOR BÖLMƏSİ MƏNTİQİ ---
-    const handleTutorSectionState = () => {
-        // QEYD: Backend-də tutor_id hələ yoxdur, ona görə yoxlayırıq.
-        if (currentUser && currentUser.tutor_id) {
-            tutorExamsSection.innerHTML = `
-                <div class="empty-state">
-                  <span class="empty-icon">(⁠+⁠_⁠+⁠)</span>
-                  <p class="empty-text">Aktiv sınaq yoxdur</p>
-                </div>
-            `;
-        } else {
-            tutorExamsSection.innerHTML = `
-                <div class="empty-state">
-                  <span class="empty-icon">(⁠+⁠_⁠+⁠)</span>
-                  <p class="empty-text">İlk öncə repetitor əlavə etməlisən</p>
-                  <button class="btn btn-outline mt-4" id="btn-add-tutor">Repetitor əlavə et →</button>
-                </div>
-            `;
-            // Dinamik yaradılan düyməyə event əlavə edirik
-            document.getElementById('btn-add-tutor').addEventListener('click', () => {
-                switchView('view-tutor');
-            });
-        }
-    };
+    // --- 2. BALANS ARTIRMA (ZERO-TRUST) ---
+    if (topupBtn) {
+        topupBtn.addEventListener('click', async () => {
+            topupBtn.textContent = "...";
+            topupBtn.disabled = true;
+            try {
+                // Təhlükəsizlik: Nömrə frontend-də hardcode edilmir, backend-dən URL olaraq alınır.
+                const res = await fetch(`${API_BASE_URL}/api/v1/users/topup-link`, {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+                
+                if (res.ok) {
+                    const data = await res.json();
+                    window.open(data.url, '_blank');
+                } else {
+                    alert("Əlaqə məlumatı alına bilmədi. Zəhmət olmasa daha sonra cəhd edin.");
+                }
+            } catch (e) {
+                console.error(e);
+                alert("Sistem xətası baş verdi.");
+            } finally {
+                topupBtn.textContent = "Artır";
+                topupBtn.disabled = false;
+            }
+        });
+    }
 
     // --- 3. SINAQLARI YÜKLƏMƏ VƏ RENDER ETMƏ ---
     const renderSkeleton = (container) => {
@@ -143,36 +142,16 @@ document.addEventListener("DOMContentLoaded", async () => {
             </div>
         `;
 
-        // Əgər sınaq bitibsə, faizi və progress bar-ı hesablayırıq
+        // Əgər sınaq bitibsə, yalnız düzgün cavab sayını göstəririk
         if (isCompleted) {
-            // QEYD: Backend hələ səhv və boş sayını qaytarmır. Müvəqqəti mock data istifadə edirik.
-            // Gələcəkdə: exam.correct_count, exam.incorrect_count, exam.empty_count olacaq.
-            const correct = exam.correct_count ?? Math.floor(qCount * 0.4); 
-            const incorrect = exam.incorrect_count ?? Math.floor(qCount * 0.4);
-            const empty = qCount - correct - incorrect;
-
-            const correctPct = qCount > 0 ? Math.round((correct / qCount) * 100) : 0;
-            const incorrectPct = qCount > 0 ? Math.round((incorrect / qCount) * 100) : 0;
-            const emptyPct = qCount > 0 ? Math.round((empty / qCount) * 100) : 0;
-
+            const correct = exam.correct_count !== undefined ? exam.correct_count : "?";
             metaHTML += `
                 <div class="meta-item score-text">
-                    <span>${correctPct}% yaşıl</span>
-                </div>
-            `;
-
-            const progressBar = document.createElement('div');
-            progressBar.className = 'progress-wrapper';
-            progressBar.innerHTML = `
-                <div class="progress-bar">
-                    <div class="progress-segment correct" style="width: ${correctPct}%"></div>
-                    <div class="progress-segment incorrect" style="width: ${incorrectPct}%"></div>
-                    <div class="progress-segment empty" style="width: ${emptyPct}%"></div>
+                    <span>${correct} / ${qCount} düzgün</span>
                 </div>
             `;
             detailsDiv.appendChild(title);
             detailsDiv.appendChild(metaDiv);
-            detailsDiv.appendChild(progressBar);
         } else {
             detailsDiv.appendChild(title);
             detailsDiv.appendChild(metaDiv);
@@ -205,23 +184,61 @@ document.addEventListener("DOMContentLoaded", async () => {
             actionsDiv.className = 'card-actions';
 
             const retakeBtn = document.createElement('a');
-            retakeBtn.className = 'btn btn-outline';
+            retakeBtn.className = 'btn-outline';
             retakeBtn.textContent = 'Yenidən işlə';
             retakeBtn.href = `exam-hall.html?id=${exam.id}`;
 
             const analyticsBtn = document.createElement('a');
-            analyticsBtn.className = 'btn btn-accent';
+            analyticsBtn.className = 'btn-accent';
             analyticsBtn.textContent = 'Analitika →';
-            analyticsBtn.href = `analitika.html?id=${exam.id}`;
+            analyticsBtn.href = `analytics.html?id=${exam.id}`;
 
             actionsDiv.appendChild(retakeBtn);
             actionsDiv.appendChild(analyticsBtn);
             rightDiv.appendChild(actionsDiv);
         } else {
-            const actionBtn = document.createElement('a');
-            actionBtn.className = 'btn btn-accent';
+            const actionBtn = document.createElement('button');
+            actionBtn.className = 'btn-accent';
             actionBtn.textContent = 'İşlə';
-            actionBtn.href = `exam-hall.html?id=${exam.id}`;
+            
+            // Satın alma və yoxlama məntiqi
+            actionBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                
+                if (!isFree) {
+                    if (parseFloat(currentUser.balance) < parseFloat(exam.price)) {
+                        alert("Balansınız kifayət etmir. Zəhmət olmasa balansınızı artırın.");
+                        return;
+                    }
+                    
+                    actionBtn.textContent = "Gözləyin...";
+                    actionBtn.disabled = true;
+                    
+                    try {
+                        const res = await fetch(`${API_BASE_URL}/api/v1/exams/${exam.id}/purchase`, {
+                            method: 'POST',
+                            credentials: 'include'
+                        });
+                        
+                        if (!res.ok) {
+                            const err = await res.json();
+                            alert(err.detail || "Satın alma zamanı xəta baş verdi.");
+                            actionBtn.textContent = "İşlə";
+                            actionBtn.disabled = false;
+                            return;
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        alert("Sistem xətası baş verdi.");
+                        actionBtn.textContent = "İşlə";
+                        actionBtn.disabled = false;
+                        return;
+                    }
+                }
+                
+                window.location.href = `exam-hall.html?id=${exam.id}`;
+            });
+            
             rightDiv.appendChild(actionBtn);
         }
 
@@ -260,6 +277,19 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     };
 
+    const populateSubjectFilter = () => {
+        // Bütün sınaqlardan unikal fənləri çıxarırıq
+        const subjects = [...new Set(allExams.map(e => e.subject).filter(Boolean))];
+        
+        filterSubject.innerHTML = '<option value="all">Bütün fənlər</option>';
+        subjects.forEach(sub => {
+            const opt = document.createElement('option');
+            opt.value = sub;
+            opt.textContent = sub;
+            filterSubject.appendChild(opt);
+        });
+    };
+
     const loadExams = async () => {
         renderSkeleton(examListContainer);
         renderSkeleton(completedExamListContainer);
@@ -274,7 +304,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             allExams = await response.json();
             
-            // Aktiv sınaqları render et (Filtr funksiyası vasitəsilə)
+            // Fənn filtrini dinamik doldur
+            populateSubjectFilter();
+
+            // Aktiv sınaqları render et
             filterAndRenderExams();
 
             // Bitmiş sınaqları render et
@@ -330,22 +363,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (profileToggleBtn) profileToggleBtn.addEventListener('click', () => openDrawer(profileDrawer));
     if (overlay) overlay.addEventListener('click', closeAllDrawers);
     closeBtns.forEach(btn => btn.addEventListener('click', closeAllDrawers));
-
-    examCategoryRadios.forEach(radio => {
-        radio.addEventListener('change', (e) => {
-            if (e.target.value === 'general') {
-                generalExamsSection.classList.remove('hidden');
-                generalExamsSection.classList.add('active');
-                tutorExamsSection.classList.remove('active');
-                tutorExamsSection.classList.add('hidden');
-            } else {
-                tutorExamsSection.classList.remove('hidden');
-                tutorExamsSection.classList.add('active');
-                generalExamsSection.classList.remove('active');
-                generalExamsSection.classList.add('hidden');
-            }
-        });
-    });
 
     viewLinks.forEach(link => {
         link.addEventListener('click', (e) => {
