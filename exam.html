@@ -35,14 +35,16 @@
       </div>
       <div class="profile-details">
         <h3 class="profile-name">Yüklənir...</h3>
-        <div class="profile-balance">Balans: <span>0.00 ₼</span></div>
+        <div class="profile-balance-wrapper">
+          <div class="profile-balance">Balans: <span id="user-balance">0.00 ₼</span></div>
+          <button class="btn-topup" id="btn-topup">Artır</button>
+        </div>
       </div>
     </div>
 
     <nav class="drawer-nav">
       <button class="drawer-link" data-target="view-completed-exams">Bitmiş sınaqlar</button>
       <a href="analytics.html" class="drawer-link">Analitika</a>
-      <button class="drawer-link" data-target="view-tutor">Repetitor</button>
       <button class="drawer-link" data-target="view-settings">Tənzimləmələr</button>
       <button class="drawer-link" data-target="view-contact">Əlaqə</button>
       <div class="drawer-divider"></div>
@@ -53,7 +55,6 @@
   <!-- DASHBOARD HEADER -->
   <header class="dash-header">
     <div class="dash-header-container">
-      <!-- Hamburger silindi, Loqo sola çəkildi -->
       <a href="#" class="dash-brand" id="brand-logo">
         <span class="brand-name">Gradient</span>
       </a>
@@ -71,24 +72,10 @@
       <div id="view-exams" class="main-view active">
         <div class="dash-welcome">
           <h1 class="dash-title">Xoş gəldin</h1>
-          <p class="dash-subtitle">İşləmək istədiyin sınaq növünü seç.</p>
-        </div>
-
-        <div class="dash-tabs-container">
-          <div class="dash-tabs">
-            <label class="dash-tab">
-              <input type="radio" name="exam_category" value="general" checked>
-              <span class="tab-label">Ümumi sınaqlar</span>
-            </label>
-            <label class="dash-tab">
-              <input type="radio" name="exam_category" value="tutor">
-              <span class="tab-label">Repetitor sınaqları</span>
-            </label>
-          </div>
+          <p class="dash-subtitle">İşləmək istədiyin sınağı seç və başla.</p>
         </div>
 
         <div class="exam-content">
-          <!-- Ümumi Sınaqlar -->
           <div id="general-exams" class="exam-section active">
             
             <!-- Axtarış və Filtr Paneli -->
@@ -100,9 +87,7 @@
               <div class="filter-box">
                 <select id="filter-subject">
                   <option value="all">Bütün fənlər</option>
-                  <option value="Riyaziyyat">Riyaziyyat</option>
-                  <option value="Azərbaycan dili">Azərbaycan dili</option>
-                  <option value="İngilis dili">İngilis dili</option>
+                  <!-- JS vasitəsilə dinamik doldurulacaq -->
                 </select>
                 <select id="filter-price">
                   <option value="all">Bütün qiymətlər</option>
@@ -116,11 +101,6 @@
               <!-- JS vasitəsilə Aktiv Sınaq Kartları bura əlavə ediləcək -->
             </div>
           </div>
-          
-          <!-- Repetitor Sınaqları -->
-          <div id="tutor-exams" class="exam-section hidden">
-            <!-- JS vasitəsilə Repetitor yoxlanışı edilib bura məzmun yazılacaq -->
-          </div>
         </div>
       </div>
 
@@ -131,35 +111,14 @@
           Geri qayıt
         </button>
         <h1 class="dash-title">Bitmiş Sınaqlar</h1>
-        <p class="dash-subtitle mb-4">Əvvəllər işlədiyiniz sınaqların siyahısı və analitikası.</p>
+        <p class="dash-subtitle mb-4">Əvvəllər işlədiyiniz sınaqların siyahısı və nəticələri.</p>
         
-        <!-- Rənglərin mənası (Legend) -->
-        <div class="progress-legend">
-          <span class="legend-item"><span class="dot correct"></span> Düzgün</span>
-          <span class="legend-item"><span class="dot incorrect"></span> Səhv</span>
-          <span class="legend-item"><span class="dot empty"></span> Boş</span>
-        </div>
-
         <div class="exam-list" id="completed-exam-list-container">
            <!-- JS vasitəsilə Bitmiş Sınaq Kartları bura əlavə ediləcək -->
         </div>
       </div>
 
-      <!-- BÖLMƏ 3: REPETİTOR -->
-      <div id="view-tutor" class="main-view hidden">
-        <button class="btn-back go-home-btn">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-          Geri qayıt
-        </button>
-        <h1 class="dash-title">Repetitor Məlumatları</h1>
-        <p class="dash-subtitle mb-4">Öz repetitorunuzla bağlı məlumatlar və əvvəlki sınaqlar.</p>
-        <div class="empty-state">
-          <span class="empty-icon">(⁠+⁠_⁠+⁠)</span>
-          <p class="empty-text">bura boşdur</p>
-        </div>
-      </div>
-
-      <!-- BÖLMƏ 4: TƏNZİMLƏMƏLƏR -->
+      <!-- BÖLMƏ 3: TƏNZİMLƏMƏLƏR -->
       <div id="view-settings" class="main-view hidden">
         <button class="btn-back go-home-btn">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
@@ -173,7 +132,7 @@
         </div>
       </div>
 
-      <!-- BÖLMƏ 5: ƏLAQƏ -->
+      <!-- BÖLMƏ 4: ƏLAQƏ -->
       <div id="view-contact" class="main-view hidden">
         <button class="btn-back go-home-btn">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
