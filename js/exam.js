@@ -17,21 +17,44 @@ document.addEventListener("DOMContentLoaded", async () => {
     const examListContainer = document.getElementById('exam-list-container');
     const completedExamListContainer = document.getElementById('completed-exam-list-container');
     const logoutBtn = document.getElementById('btn-logout');
-    const topupBtn = document.getElementById('btn-topup');
 
     const profileNameEl = document.querySelector('.profile-name');
-    const profileBalanceEl = document.getElementById('user-balance');
+    const profileBalanceEl = document.querySelector('.profile-balance span');
+    const btnTopup = document.getElementById('btn-topup');
 
     // Axtarış və Filtr elementləri
     const searchInput = document.getElementById('search-exam');
     const filterSubject = document.getElementById('filter-subject');
     const filterPrice = document.getElementById('filter-price');
 
+    // Tənzimləmələr və Əlaqə
+    const themeToggleCheckbox = document.getElementById('theme-toggle-checkbox');
+    const contactEmailEl = document.getElementById('contact-email');
+    const contactPhoneEl = document.getElementById('contact-phone');
+
     // Qlobal Dəyişənlər
     let currentUser = null;
     let allExams = [];
+    let contactSettings = null;
 
-    // --- 1. AUTH GUARD ---
+    // --- 1. THEME (GECƏ/GÜNDÜZ REJİMİ) ---
+    const initTheme = () => {
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        if (savedTheme === 'dark') {
+            themeToggleCheckbox.checked = true;
+        }
+    };
+
+    themeToggleCheckbox.addEventListener('change', (e) => {
+        const newTheme = e.target.checked ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+    });
+
+    initTheme();
+
+    // --- 2. AUTH GUARD VƏ PROFİL ---
     const checkAuthAndLoadProfile = async () => {
         try {
             const response = await fetch(`${API_BASE_URL}/api/v1/users/me`, {
@@ -44,42 +67,43 @@ document.addEventListener("DOMContentLoaded", async () => {
             currentUser = await response.json();
             profileNameEl.textContent = `${currentUser.first_name} ${currentUser.last_name}`;
             profileBalanceEl.textContent = `${parseFloat(currentUser.balance).toFixed(2)} ₼`;
-            
         } catch (error) {
             console.error("Auth Error:", error);
             window.location.href = "auth.html";
         }
     };
 
-    // --- 2. BALANS ARTIRMA (ZERO-TRUST) ---
-    if (topupBtn) {
-        topupBtn.addEventListener('click', async () => {
-            topupBtn.textContent = "...";
-            topupBtn.disabled = true;
-            try {
-                // Təhlükəsizlik: Nömrə frontend-də hardcode edilmir, backend-dən URL olaraq alınır.
-                const res = await fetch(`${API_BASE_URL}/api/v1/users/topup-link`, {
-                    method: 'GET',
-                    credentials: 'include'
-                });
-                
-                if (res.ok) {
-                    const data = await res.json();
-                    window.open(data.url, '_blank');
-                } else {
-                    alert("Əlaqə məlumatı alına bilmədi. Zəhmət olmasa daha sonra cəhd edin.");
-                }
-            } catch (e) {
-                console.error(e);
-                alert("Sistem xətası baş verdi.");
-            } finally {
-                topupBtn.textContent = "Artır";
-                topupBtn.disabled = false;
+    // --- 3. SETTINGS VƏ ƏLAQƏ MƏLUMATLARININ YÜKLƏNMƏSİ ---
+    const loadContactSettings = async () => {
+        try {
+            // QEYD: Bu endpoint backend-də yaradılacaq. Hələlik mock data istifadə etmirik, 
+            // sadəcə fetch edirik. Əgər 404 verərsə, catch blokunda default dəyərlər göstəriləcək.
+            const response = await fetch(`${API_BASE_URL}/api/v1/settings/contact`);
+            if (response.ok) {
+                contactSettings = await response.json();
+            } else {
+                throw new Error("Settings not found");
+            }
+        } catch (error) {
+            // Backend hazır olana qədər fallback (Təhlükəsizlik: bu sadəcə UI üçündür)
+            contactSettings = {
+                whatsapp_url: "https://wa.me/994505975697",
+                email: "support@gradient.az",
+                phone: "+994 50 597 56 97"
+            };
+        }
+
+        contactEmailEl.textContent = contactSettings.email;
+        contactPhoneEl.textContent = contactSettings.phone;
+
+        btnTopup.addEventListener('click', () => {
+            if (contactSettings && contactSettings.whatsapp_url) {
+                window.open(contactSettings.whatsapp_url, '_blank');
             }
         });
-    }
+    };
 
-    // --- 3. SINAQLARI YÜKLƏMƏ VƏ RENDER ETMƏ ---
+    // --- 4. SINAQLARI YÜKLƏMƏ VƏ RENDER ETMƏ ---
     const renderSkeleton = (container) => {
         container.innerHTML = ''; 
         for(let i=0; i<2; i++) {
@@ -105,6 +129,45 @@ document.addEventListener("DOMContentLoaded", async () => {
               <p class="empty-text">${message}</p>
             </div>
         `;
+    };
+
+    // Satın alma axını (Purchase Flow)
+    const handleExamPurchaseAndStart = async (exam, btnElement) => {
+        const originalText = btnElement.textContent;
+        btnElement.textContent = "Gözləyin...";
+        btnElement.disabled = true;
+
+        try {
+            // Əgər sınaq pulludursa, backend-də purchase endpoint-inə müraciət edirik
+            if (parseFloat(exam.price) > 0) {
+                const res = await fetch(`${API_BASE_URL}/api/v1/exams/${exam.id}/purchase`, {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+
+                if (res.status === 402 || res.status === 400) {
+                    alert("Balansınız kifayət etmir. Zəhmət olmasa balansı artırın.");
+                    btnElement.textContent = originalText;
+                    btnElement.disabled = false;
+                    return;
+                }
+                
+                if (!res.ok && res.status !== 200) {
+                    alert("Sınağı almaq mümkün olmadı. Yenidən cəhd edin.");
+                    btnElement.textContent = originalText;
+                    btnElement.disabled = false;
+                    return;
+                }
+            }
+            
+            // Uğurludursa və ya pulsuzdursa, sınaq zalına yönləndir
+            window.location.href = `exam-hall.html?id=${exam.id}`;
+        } catch (error) {
+            console.error(error);
+            alert("Sistem xətası baş verdi.");
+            btnElement.textContent = originalText;
+            btnElement.disabled = false;
+        }
     };
 
     const createExamCard = (exam, isCompleted) => {
@@ -142,22 +205,19 @@ document.addEventListener("DOMContentLoaded", async () => {
             </div>
         `;
 
-        // Əgər sınaq bitibsə, yalnız düzgün cavab sayını göstəririk
+        // Əgər sınaq bitibsə, təmiz statistika göstəririk (Progress bar silindi)
         if (isCompleted) {
-            const correct = exam.correct_count !== undefined ? exam.correct_count : "?";
+            const correct = exam.correct_count !== undefined ? exam.correct_count : 0;
             metaHTML += `
-                <div class="meta-item score-text">
-                    <span>${correct} / ${qCount} düzgün</span>
+                <div class="meta-item">
+                    <span class="score-badge">Nəticə: ${correct} / ${qCount} düzgün</span>
                 </div>
             `;
-            detailsDiv.appendChild(title);
-            detailsDiv.appendChild(metaDiv);
-        } else {
-            detailsDiv.appendChild(title);
-            detailsDiv.appendChild(metaDiv);
         }
         
         metaDiv.innerHTML = metaHTML;
+        detailsDiv.appendChild(title);
+        detailsDiv.appendChild(metaDiv);
 
         const badge = document.createElement('span');
         badge.className = 'exam-badge';
@@ -183,13 +243,13 @@ document.addEventListener("DOMContentLoaded", async () => {
             const actionsDiv = document.createElement('div');
             actionsDiv.className = 'card-actions';
 
-            const retakeBtn = document.createElement('a');
-            retakeBtn.className = 'btn-outline';
+            const retakeBtn = document.createElement('button');
+            retakeBtn.className = 'btn btn-outline';
             retakeBtn.textContent = 'Yenidən işlə';
-            retakeBtn.href = `exam-hall.html?id=${exam.id}`;
+            retakeBtn.addEventListener('click', () => handleExamPurchaseAndStart(exam, retakeBtn));
 
             const analyticsBtn = document.createElement('a');
-            analyticsBtn.className = 'btn-accent';
+            analyticsBtn.className = 'btn btn-accent';
             analyticsBtn.textContent = 'Analitika →';
             analyticsBtn.href = `analytics.html?id=${exam.id}`;
 
@@ -198,47 +258,9 @@ document.addEventListener("DOMContentLoaded", async () => {
             rightDiv.appendChild(actionsDiv);
         } else {
             const actionBtn = document.createElement('button');
-            actionBtn.className = 'btn-accent';
+            actionBtn.className = 'btn btn-accent';
             actionBtn.textContent = 'İşlə';
-            
-            // Satın alma və yoxlama məntiqi
-            actionBtn.addEventListener('click', async (e) => {
-                e.preventDefault();
-                
-                if (!isFree) {
-                    if (parseFloat(currentUser.balance) < parseFloat(exam.price)) {
-                        alert("Balansınız kifayət etmir. Zəhmət olmasa balansınızı artırın.");
-                        return;
-                    }
-                    
-                    actionBtn.textContent = "Gözləyin...";
-                    actionBtn.disabled = true;
-                    
-                    try {
-                        const res = await fetch(`${API_BASE_URL}/api/v1/exams/${exam.id}/purchase`, {
-                            method: 'POST',
-                            credentials: 'include'
-                        });
-                        
-                        if (!res.ok) {
-                            const err = await res.json();
-                            alert(err.detail || "Satın alma zamanı xəta baş verdi.");
-                            actionBtn.textContent = "İşlə";
-                            actionBtn.disabled = false;
-                            return;
-                        }
-                    } catch (err) {
-                        console.error(err);
-                        alert("Sistem xətası baş verdi.");
-                        actionBtn.textContent = "İşlə";
-                        actionBtn.disabled = false;
-                        return;
-                    }
-                }
-                
-                window.location.href = `exam-hall.html?id=${exam.id}`;
-            });
-            
+            actionBtn.addEventListener('click', () => handleExamPurchaseAndStart(exam, actionBtn));
             rightDiv.appendChild(actionBtn);
         }
 
@@ -277,16 +299,16 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     };
 
-    const populateSubjectFilter = () => {
-        // Bütün sınaqlardan unikal fənləri çıxarırıq
-        const subjects = [...new Set(allExams.map(e => e.subject).filter(Boolean))];
+    // Fənn filtrini dinamik doldurmaq
+    const populateSubjectFilter = (exams) => {
+        const uniqueSubjects = [...new Set(exams.map(e => e.subject).filter(Boolean))];
         
         filterSubject.innerHTML = '<option value="all">Bütün fənlər</option>';
-        subjects.forEach(sub => {
-            const opt = document.createElement('option');
-            opt.value = sub;
-            opt.textContent = sub;
-            filterSubject.appendChild(opt);
+        uniqueSubjects.forEach(subject => {
+            const option = document.createElement('option');
+            option.value = subject;
+            option.textContent = subject;
+            filterSubject.appendChild(option);
         });
     };
 
@@ -305,7 +327,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             allExams = await response.json();
             
             // Fənn filtrini dinamik doldur
-            populateSubjectFilter();
+            populateSubjectFilter(allExams);
 
             // Aktiv sınaqları render et
             filterAndRenderExams();
@@ -334,7 +356,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     filterSubject.addEventListener('change', filterAndRenderExams);
     filterPrice.addEventListener('change', filterAndRenderExams);
 
-    // --- 4. MENYU VƏ UI MƏNTİQİ ---
+    // --- 5. MENYU VƏ UI MƏNTİQİ ---
     const openDrawer = (drawerElement) => {
         overlay.classList.add('active');
         drawerElement.classList.add('active');
@@ -385,7 +407,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     goHomeBtns.forEach(btn => btn.addEventListener('click', goHome));
     if (brandLogo) brandLogo.addEventListener('click', goHome);
 
-    // --- 5. ÇIXIŞ (LOGOUT) ---
+    // --- 6. ÇIXIŞ (LOGOUT) ---
     if (logoutBtn) {
         logoutBtn.addEventListener('click', async () => {
             try {
@@ -400,5 +422,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // --- İNİSİALİZASİYA ---
     await checkAuthAndLoadProfile();
+    await loadContactSettings();
     loadExams();
 });
