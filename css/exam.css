@@ -107,7 +107,7 @@
   color: var(--text-main);
 }
 
-/* --- AXTARIŞ VƏ FİLTR (YENİ) --- */
+/* --- AXTARIŞ VƏ FİLTR --- */
 .exam-controls {
   display: flex;
   gap: 16px;
@@ -169,46 +169,6 @@
 .filter-box select:focus {
   outline: none;
   border-color: var(--border-focus);
-}
-
-/* --- SEGMENTED CONTROL (TABS) --- */
-.dash-tabs-container {
-  margin-bottom: 24px;
-}
-
-.dash-tabs {
-  display: inline-flex;
-  background-color: var(--bg-muted);
-  padding: 4px;
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-}
-
-.dash-tab {
-  position: relative;
-  cursor: pointer;
-}
-
-.dash-tab input {
-  position: absolute;
-  opacity: 0;
-  cursor: pointer;
-}
-
-.tab-label {
-  display: block;
-  padding: 8px 24px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  border-radius: 6px;
-  transition: var(--transition);
-}
-
-.dash-tab input:checked ~ .tab-label {
-  background-color: var(--bg-card);
-  color: var(--text-main);
-  box-shadow: var(--shadow-sm);
 }
 
 /* --- EXAM SECTIONS & EMPTY STATE --- */
@@ -338,6 +298,7 @@
 .profile-details {
   display: flex;
   flex-direction: column;
+  width: 100%;
 }
 
 .profile-name {
@@ -345,6 +306,13 @@
   font-weight: 600;
   color: var(--text-main);
   margin-bottom: 4px;
+}
+
+.profile-balance-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .profile-balance {
@@ -356,6 +324,23 @@
 .profile-balance span {
   color: var(--success);
   font-weight: 700;
+}
+
+.btn-topup {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-focus);
+  color: var(--text-main);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-topup:hover {
+  background-color: var(--bg-muted);
+  border-color: var(--text-muted);
 }
 
 .drawer-nav {
@@ -414,7 +399,7 @@
 }
 
 /* ==========================================================================
-   SINAQ KARTLARI VƏ PROGRESS BAR
+   SINAQ KARTLARI
    ========================================================================== */
 .exam-list {
   display: flex;
@@ -492,6 +477,9 @@
 .score-text {
   color: var(--success);
   font-weight: 700;
+  background-color: rgba(34, 197, 94, 0.1);
+  padding: 2px 8px;
+  border-radius: 4px;
 }
 
 .exam-badge {
@@ -509,64 +497,21 @@
   display: inline-block;
 }
 
-/* Progress Bar (Nəticə Çubuğu) */
-.progress-wrapper {
-  width: 100%;
-  margin-top: 8px;
-  max-width: 350px;
-}
-
-.progress-bar {
-  display: flex;
-  height: 6px;
-  border-radius: 3px;
-  overflow: hidden;
-  background-color: var(--bg-muted);
-}
-
-.progress-segment {
-  height: 100%;
-}
-
-.progress-segment.correct { background-color: var(--success); }
-.progress-segment.incorrect { background-color: #ef4444; /* Qırmızı */ }
-.progress-segment.empty { background-color: var(--border-focus); /* Boz */ }
-
-/* Legend (Rənglərin mənası) */
-.progress-legend {
-  display: flex;
-  gap: 16px;
-  margin-bottom: 16px;
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  background-color: var(--bg-card);
-  padding: 12px 16px;
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  width: fit-content;
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.legend-item .dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-}
-
-.dot.correct { background-color: var(--success); }
-.dot.incorrect { background-color: #ef4444; }
-.dot.empty { background-color: var(--border-focus); }
-
 /* Düymələr */
 .btn-accent {
   background-color: var(--accent);
   color: #FFFFFF;
   box-shadow: var(--shadow-sm);
+  border: none;
+  padding: 10px 20px;
+  border-radius: var(--radius);
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
 }
 
 .btn-accent:hover {
@@ -579,6 +524,15 @@
   background-color: transparent;
   border: 1px solid var(--border-focus);
   color: var(--text-main);
+  padding: 10px 20px;
+  border-radius: var(--radius);
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
 }
 
 .btn-outline:hover {
@@ -610,10 +564,8 @@
     width: 100%;
     flex-direction: column;
   }
-  .exam-card-right .btn, .card-actions .btn {
+  .exam-card-right .btn-accent, .exam-card-right .btn-outline {
     width: 100%;
-    text-align: center;
-    justify-content: center;
   }
 }
 
