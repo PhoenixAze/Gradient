@@ -62,22 +62,35 @@ document.addEventListener("DOMContentLoaded", async () => {
                 credentials: 'include'
             });
 
-            if (!response.ok) throw new Error("Sessiya etibarsızdır");
+            // Təhlükəsizlik: Yalnız 401 Unauthorized olduqda yönləndiririk
+            if (response.status === 401) {
+                window.location.href = "auth.html";
+                return;
+            }
+
+            // 500, 502, 503 kimi server oyanış xətalarında yönləndirmə etmirik, gözləmə vəziyyətində saxlayırıq
+            if (!response.ok) {
+                if (profileNameEl) profileNameEl.textContent = "Serverlə əlaqə qurulur...";
+                return;
+            }
 
             currentUser = await response.json();
-            profileNameEl.textContent = `${currentUser.first_name} ${currentUser.last_name}`;
-            profileBalanceEl.textContent = `${parseFloat(currentUser.balance).toFixed(2)} ₼`;
+            if (profileNameEl) {
+                profileNameEl.textContent = `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim() || 'İstifadəçi';
+            }
+            if (profileBalanceEl) {
+                profileBalanceEl.textContent = `${parseFloat(currentUser.balance || 0).toFixed(2)} ₼`;
+            }
         } catch (error) {
-            console.error("Auth Error:", error);
-            window.location.href = "auth.html";
+            // Şəbəkə xətalarında və ya server yuxuda olarkən yönləndirmə etmirik
+            console.error("Auth Guard Network Error:", error);
+            if (profileNameEl) profileNameEl.textContent = "Server yuxudan oyanır, gözləyin...";
         }
     };
 
     // --- 3. SETTINGS VƏ ƏLAQƏ MƏLUMATLARININ YÜKLƏNMƏSİ ---
     const loadContactSettings = async () => {
         try {
-            // QEYD: Bu endpoint backend-də yaradılacaq. Hələlik mock data istifadə etmirik, 
-            // sadəcə fetch edirik. Əgər 404 verərsə, catch blokunda default dəyərlər göstəriləcək.
             const response = await fetch(`${API_BASE_URL}/api/v1/settings/contact`);
             if (response.ok) {
                 contactSettings = await response.json();
@@ -85,7 +98,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 throw new Error("Settings not found");
             }
         } catch (error) {
-            // Backend hazır olana qədər fallback (Təhlükəsizlik: bu sadəcə UI üçündür)
+            console.warn("Contact settings fallback aktivləşdirildi:", error);
             contactSettings = {
                 whatsapp_url: "https://wa.me/994505975697",
                 email: "support@gradient.az",
@@ -93,15 +106,23 @@ document.addEventListener("DOMContentLoaded", async () => {
             };
         }
 
-        contactEmailEl.textContent = contactSettings.email;
-        contactPhoneEl.textContent = contactSettings.phone;
+        if (contactEmailEl && contactSettings.email) {
+            contactEmailEl.textContent = contactSettings.email;
+        }
+        if (contactPhoneEl && contactSettings.phone) {
+            contactPhoneEl.textContent = contactSettings.phone;
+        }
+    };
 
+    if (btnTopup) {
         btnTopup.addEventListener('click', () => {
             if (contactSettings && contactSettings.whatsapp_url) {
-                window.open(contactSettings.whatsapp_url, '_blank');
+                window.open(contactSettings.whatsapp_url, '_blank', 'noopener,noreferrer');
+            } else {
+                alert("Əlaqə məlumatı yüklənməyib.");
             }
         });
-    };
+    }
 
     // --- 4. SINAQLARI YÜKLƏMƏ VƏ RENDER ETMƏ ---
     const renderSkeleton = (container) => {
@@ -145,26 +166,33 @@ document.addEventListener("DOMContentLoaded", async () => {
                     credentials: 'include'
                 });
 
-                if (res.status === 402 || res.status === 400) {
+                if (res.status === 402) {
                     alert("Balansınız kifayət etmir. Zəhmət olmasa balansı artırın.");
                     btnElement.textContent = originalText;
                     btnElement.disabled = false;
                     return;
                 }
                 
-                if (!res.ok && res.status !== 200) {
-                    alert("Sınağı almaq mümkün olmadı. Yenidən cəhd edin.");
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({}));
+                    alert(errData.detail || "Sınağı almaq mümkün olmadı. Yenidən cəhd edin.");
                     btnElement.textContent = originalText;
                     btnElement.disabled = false;
                     return;
                 }
+
+                // Balansı interfeysdə dərhal yeniləyirik
+                const data = await res.json().catch(() => ({}));
+                if (data.new_balance !== undefined && profileBalanceEl) {
+                    profileBalanceEl.textContent = `${parseFloat(data.new_balance).toFixed(2)} ₼`;
+                }
             }
             
             // Uğurludursa və ya pulsuzdursa, sınaq zalına yönləndir
-            window.location.href = `exam-hall.html?id=${exam.id}`;
+            window.location.href = `exam-hall.html?id=${encodeURIComponent(exam.id)}`;
         } catch (error) {
-            console.error(error);
-            alert("Sistem xətası baş verdi.");
+            console.error("Satın alma xətası:", error);
+            alert("Sistem xətası baş verdi. Yenidən cəhd edin.");
             btnElement.textContent = originalText;
             btnElement.disabled = false;
         }
@@ -194,44 +222,55 @@ document.addEventListener("DOMContentLoaded", async () => {
         const duration = exam.duration_minutes || 90; 
         const qCount = exam.question_count || 0;
 
-        let metaHTML = `
-            <div class="meta-item">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                <span>${duration} dəq</span>
-            </div>
-            <div class="meta-item">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
-                <span>${qCount} sual</span>
-            </div>
-        `;
+        // Müddət
+        const durItem = document.createElement('div');
+        durItem.className = 'meta-item';
+        durItem.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>`;
+        const durText = document.createElement('span');
+        durText.textContent = `${duration} dəq`;
+        durItem.appendChild(durText);
+        metaDiv.appendChild(durItem);
 
-        // Əgər sınaq bitibsə, təmiz statistika göstəririk (Progress bar silindi)
+        // Sual sayı
+        const qItem = document.createElement('div');
+        qItem.className = 'meta-item';
+        qItem.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>`;
+        const qText = document.createElement('span');
+        qText.textContent = `${qCount} sual`;
+        qItem.appendChild(qText);
+        metaDiv.appendChild(qItem);
+
+        // Əgər sınaq bitibsə: "Düzgün / Ümumi Sual" (məs: 15/30 düzgün) formatında sadə mətn
         if (isCompleted) {
             const correct = exam.correct_count !== undefined ? exam.correct_count : 0;
-            metaHTML += `
-                <div class="meta-item">
-                    <span class="score-badge">Nəticə: ${correct} / ${qCount} düzgün</span>
-                </div>
-            `;
+            const scoreItem = document.createElement('div');
+            scoreItem.className = 'meta-item';
+
+            const scoreBadge = document.createElement('span');
+            scoreBadge.className = 'score-badge';
+            scoreBadge.textContent = `${correct}/${qCount} düzgün`;
+            
+            scoreItem.appendChild(scoreBadge);
+            metaDiv.appendChild(scoreItem);
         }
         
-        metaDiv.innerHTML = metaHTML;
         detailsDiv.appendChild(title);
         detailsDiv.appendChild(metaDiv);
 
-        const badge = document.createElement('span');
-        badge.className = 'exam-badge';
-        const isFree = parseFloat(exam.price) === 0;
-        badge.style.color = isFree ? 'var(--success)' : 'var(--text-main)';
-        
-        const dot = document.createElement('span');
-        dot.className = 'badge-dot-success';
-        dot.style.backgroundColor = isFree ? 'var(--success)' : 'var(--accent)';
-        
-        badge.appendChild(dot);
-        badge.appendChild(document.createTextNode(isFree ? ' pulsuz' : ` ${exam.price} ₼`));
-
-        if(!isCompleted) detailsDiv.appendChild(badge);
+        if (!isCompleted) {
+            const badge = document.createElement('span');
+            badge.className = 'exam-badge';
+            const isFree = parseFloat(exam.price) === 0;
+            badge.style.color = isFree ? 'var(--success)' : 'var(--text-main)';
+            
+            const dot = document.createElement('span');
+            dot.className = 'badge-dot-success';
+            dot.style.backgroundColor = isFree ? 'var(--success)' : 'var(--accent)';
+            
+            badge.appendChild(dot);
+            badge.appendChild(document.createTextNode(isFree ? ' pulsuz' : ` ${exam.price} ₼`));
+            detailsDiv.appendChild(badge);
+        }
         
         leftDiv.appendChild(iconDiv);
         leftDiv.appendChild(detailsDiv);
@@ -251,7 +290,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             const analyticsBtn = document.createElement('a');
             analyticsBtn.className = 'btn btn-accent';
             analyticsBtn.textContent = 'Analitika →';
-            analyticsBtn.href = `analytics.html?id=${exam.id}`;
+            analyticsBtn.href = `analytics.html?id=${encodeURIComponent(exam.id)}`;
 
             actionsDiv.appendChild(retakeBtn);
             actionsDiv.appendChild(analyticsBtn);
@@ -303,7 +342,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     const populateSubjectFilter = (exams) => {
         const uniqueSubjects = [...new Set(exams.map(e => e.subject).filter(Boolean))];
         
-        filterSubject.innerHTML = '<option value="all">Bütün fənlər</option>';
+        filterSubject.replaceChildren();
+        const allOption = document.createElement('option');
+        allOption.value = 'all';
+        allOption.textContent = 'Bütün fənlər';
+        filterSubject.appendChild(allOption);
+
         uniqueSubjects.forEach(subject => {
             const option = document.createElement('option');
             option.value = subject;
