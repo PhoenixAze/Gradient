@@ -5,10 +5,16 @@
 // ==========================================================================
 const API_BASE_URL = "https://gradient-backend-fam5.onrender.com";
 
-async function fetchWithAuth(endpoint, options = {}) {
+async function fetchWithAuth(endpoint, options = {}, redirectOnFailure = true) {
     options.credentials = 'include'; // HttpOnly cookie-lər üçün məcburidir
     
-    let response = await fetch(`${API_BASE_URL}${endpoint}`, options);
+    let response;
+    try {
+        response = await fetch(`${API_BASE_URL}${endpoint}`, options);
+    } catch (err) {
+        console.error("Şəbəkə xətası:", err);
+        return null;
+    }
 
     // Əgər Access Token bitibsə (401)
     if (response.status === 401) {
@@ -20,16 +26,21 @@ async function fetchWithAuth(endpoint, options = {}) {
             });
 
             if (refreshResponse.ok) {
+                const refreshData = await refreshResponse.json();
                 // Token yeniləndi, orijinal sorğunu təkrarla
                 response = await fetch(`${API_BASE_URL}${endpoint}`, options);
             } else {
-                // Refresh token də bitib -> Çıxış et
-                window.location.href = "auth.html";
+                // Refresh token də bitib -> Lazım gələrsə Çıxış et
+                if (redirectOnFailure) {
+                    window.location.href = "auth.html";
+                }
                 return null;
             }
         } catch (error) {
             console.error("Token yenilənmə xətası:", error);
-            window.location.href = "auth.html";
+            if (redirectOnFailure) {
+                window.location.href = "auth.html";
+            }
             return null;
         }
     }
@@ -37,9 +48,64 @@ async function fetchWithAuth(endpoint, options = {}) {
 }
 
 // ==========================================================================
-// LANDING PAGE: DRAGGABLE & AUTO-SCROLLING MARQUEE MƏNTİQİ
+// LANDING PAGE: DRAGGABLE & AUTO-SCROLLING MARQUEE MƏNTİQİ VƏ SESSİYA YOXLANILMASI
 // ==========================================================================
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+    // 1. Aktiv Sessiyanı Yoxla və Navbar-ı Dinamik Dəyişdir
+    const checkLandingPageAuth = async () => {
+        const navActions = document.querySelector(".nav-actions");
+        const heroButtons = document.querySelector(".hero-buttons");
+
+        try {
+            // redirectOnFailure = false veririk ki, daxil olmayıbsa auth.html-ə yönləndirməsin, sadəcə qonaq kimi qalsın
+            const response = await fetchWithAuth("/api/v1/users/me", { method: "GET" }, false);
+            
+            if (response && response.ok) {
+                const user = await response.json();
+                const isStudent = user.role === "student";
+                const dashboardUrl = isStudent ? "exam.html" : "tutor-dashboard.html";
+                const dashboardName = isStudent ? "Sınaqlar Zalı" : "Repetitor Paneli";
+
+                // Navbar Yeniləməsi
+                if (navActions) {
+                    navActions.innerHTML = `
+                        <span class="welcome-user-text" style="font-weight: 500; color: var(--text-muted); margin-right: 12px;">Xoş gəldin, ${user.first_name}</span>
+                        <a href="${dashboardUrl}" class="btn btn-primary">${dashboardName}</a>
+                        <button id="btn-landing-logout" class="btn btn-ghost">Çıxış</button>
+                    `;
+
+                    // Çıxış düyməsinin funksionallığı
+                    const logoutBtn = document.getElementById("btn-landing-logout");
+                    if (logoutBtn) {
+                        logoutBtn.addEventListener("click", async () => {
+                            try {
+                                await fetch(`${API_BASE_URL}/api/v1/auth/logout`, {
+                                    method: 'POST',
+                                    credentials: 'include'
+                                });
+                            } catch (err) {
+                                console.error(err);
+                            }
+                            window.location.reload();
+                        });
+                    }
+                }
+
+                // Hero düymələrinin yenilənməsi
+                if (heroButtons) {
+                    heroButtons.innerHTML = `
+                        <a href="${dashboardUrl}" class="btn btn-primary btn-lg">${dashboardName} keçid et &rarr;</a>
+                    `;
+                }
+            }
+        } catch (error) {
+            console.warn("Landing page auth check skipped/failed:", error);
+        }
+    };
+
+    // Sessiyanı yoxlayırıq
+    await checkLandingPageAuth();
+
     const marquee = document.getElementById("hero-marquee");
     
     if (marquee) {

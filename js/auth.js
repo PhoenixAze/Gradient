@@ -13,6 +13,46 @@ document.addEventListener("DOMContentLoaded", () => {
     const subjectSelect = document.getElementById('reg-subject');
     const globalError = document.getElementById('global-error');
 
+    // --- SESSİYA YOXLANILMASI: Əgər istifadəçi artıq daxil olubsa dərhal yönləndir ---
+    const checkActiveSession = async () => {
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/v1/users/me`, {
+                method: "GET",
+                credentials: "include"
+            });
+
+            if (res.ok) {
+                const user = await res.json();
+                if (user.role === 'student') {
+                    window.location.href = 'exam.html';
+                } else if (user.role === 'tutor') {
+                    window.location.href = 'tutor-dashboard.html';
+                }
+                return;
+            }
+
+            if (res.status === 401) {
+                const refreshRes = await fetch(`${API_BASE_URL}/api/v1/auth/refresh`, {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+
+                if (refreshRes.ok) {
+                    const refreshData = await refreshRes.json();
+                    if (refreshData.role === 'student') {
+                        window.location.href = 'exam.html';
+                    } else if (refreshData.role === 'tutor') {
+                        window.location.href = 'tutor-dashboard.html';
+                    }
+                }
+            }
+        } catch (error) {
+            console.warn("Sessiya yoxlama xətası:", error);
+        }
+    };
+
+    checkActiveSession();
+
     // --- DÜZƏLİŞ: Funksiyaları ən yuxarı qaldırdıq ki, əvvəlcədən tanınsınlar ---
     const showError = (message, isSuccess = false) => {
         globalError.textContent = message; 

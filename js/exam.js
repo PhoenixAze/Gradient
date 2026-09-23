@@ -3,6 +3,44 @@
 const API_BASE_URL = "https://gradient-backend-fam5.onrender.com"; 
 
 document.addEventListener("DOMContentLoaded", async () => {
+    // --- QLOBAL API İDARƏEDİCİSİ (ZERO-TRUST & REFRESH TOKEN) ---
+    async function fetchWithAuth(endpoint, options = {}) {
+        options.credentials = 'include'; // HttpOnly cookie-lər üçün məcburidir
+        
+        let response;
+        try {
+            response = await fetch(`${API_BASE_URL}${endpoint}`, options);
+        } catch (err) {
+            console.error("Şəbəkə xətası:", err);
+            return null;
+        }
+
+        // Əgər Access Token bitibsə (401)
+        if (response.status === 401) {
+            try {
+                // Refresh Token ilə yeni Access Token al
+                const refreshResponse = await fetch(`${API_BASE_URL}/api/v1/auth/refresh`, {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+
+                if (refreshResponse.ok) {
+                    // Token yeniləndi, orijinal sorğunu təkrarla
+                    response = await fetch(`${API_BASE_URL}${endpoint}`, options);
+                } else {
+                    // Refresh token də bitib -> Çıxış et
+                    window.location.href = "auth.html";
+                    return null;
+                }
+            } catch (error) {
+                console.error("Token yenilənmə xətası:", error);
+                window.location.href = "auth.html";
+                return null;
+            }
+        }
+        return response;
+    }
+
     // --- DOM ELEMENTLƏRİ ---
     const overlay = document.getElementById('drawer-overlay');
     const profileDrawer = document.getElementById('profile-drawer');
@@ -57,16 +95,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     // --- 2. AUTH GUARD VƏ PROFİL ---
     const checkAuthAndLoadProfile = async () => {
         try {
-            const response = await fetch(`${API_BASE_URL}/api/v1/users/me`, {
-                method: 'GET',
-                credentials: 'include'
-            });
+            const response = await fetchWithAuth("/api/v1/users/me", { method: 'GET' });
 
-            // Təhlükəsizlik: Yalnız 401 Unauthorized olduqda yönləndiririk
-            if (response.status === 401) {
-                window.location.href = "auth.html";
-                return;
-            }
+            if (!response) return;
 
             // 500, 502, 503 kimi server oyanış xətalarında yönləndirmə etmirik, gözləmə vəziyyətində saxlayırıq
             if (!response.ok) {
@@ -161,10 +192,15 @@ document.addEventListener("DOMContentLoaded", async () => {
         try {
             // Əgər sınaq pulludursa, backend-də purchase endpoint-inə müraciət edirik
             if (parseFloat(exam.price) > 0) {
-                const res = await fetch(`${API_BASE_URL}/api/v1/exams/${exam.id}/purchase`, {
-                    method: 'POST',
-                    credentials: 'include'
+                const res = await fetchWithAuth(`/api/v1/exams/${exam.id}/purchase`, {
+                    method: 'POST'
                 });
+
+                if (!res) {
+                    btnElement.textContent = originalText;
+                    btnElement.disabled = false;
+                    return;
+                }
 
                 if (res.status === 402) {
                     alert("Balansınız kifayət etmir. Zəhmət olmasa balansı artırın.");
@@ -361,12 +397,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         renderSkeleton(completedExamListContainer);
         
         try {
-            const response = await fetch(`${API_BASE_URL}/api/v1/exams/`, {
-                method: 'GET',
-                credentials: 'include'
+            const response = await fetchWithAuth("/api/v1/exams/", {
+                method: 'GET'
             });
 
-            if (!response.ok) throw new Error("Sınaqları yükləmək mümkün olmadı");
+            if (!response || !response.ok) throw new Error("Sınaqları yükləmək mümkün olmadı");
 
             allExams = await response.json();
             
