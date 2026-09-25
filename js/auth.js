@@ -1,6 +1,8 @@
 "use strict";
 
-const API_BASE_URL = "https://gradient-backend-fam5.onrender.com"; 
+const API_BASE_URL = (typeof window !== "undefined" && window.location.hostname === "phoenixaze.github.io")
+  ? "https://gradient-backend-fam5.onrender.com"
+  : ""; 
 
 document.addEventListener("DOMContentLoaded", () => {
     // DOM Elementləri
@@ -8,8 +10,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const sections = document.querySelectorAll('.auth-section');
     const roleInputs = document.querySelectorAll('input[name="user_role"]');
     const fieldGrade = document.getElementById('field-grade');
+    const fieldTutorCode = document.getElementById('field-tutor-code');
     const fieldSubject = document.getElementById('field-subject');
     const gradeSelect = document.getElementById('reg-grade');
+    const tutorCodeInput = document.getElementById('reg-tutor-code');
     const subjectSelect = document.getElementById('reg-subject');
     const globalError = document.getElementById('global-error');
 
@@ -94,9 +98,16 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('mode') === 'register') {
+    if (urlParams.get('mode') === 'register' || urlParams.get('mode') === 'code') {
         const regTab = document.querySelector('[data-target="register-section"]');
-        if(regTab) regTab.click();
+        if (regTab) regTab.click();
+
+        if (urlParams.get('mode') === 'code' && tutorCodeInput) {
+            setTimeout(() => {
+                tutorCodeInput.focus();
+                showError("Müəlliminizin kodunu və məlumatlarınızı daxil edərək qeydiyyatdan keçin.", true);
+            }, 300);
+        }
     }
 
     // 2. ROL DƏYİŞDİRMƏ MƏNTİQİ
@@ -106,6 +117,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (role === 'student') {
                 fieldGrade.classList.remove('hidden');
                 gradeSelect.setAttribute('required', 'true');
+                if (fieldTutorCode) fieldTutorCode.classList.remove('hidden');
                 
                 fieldSubject.classList.add('hidden');
                 subjectSelect.removeAttribute('required');
@@ -115,6 +127,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 
                 fieldGrade.classList.add('hidden');
                 gradeSelect.removeAttribute('required');
+                if (fieldTutorCode) fieldTutorCode.classList.add('hidden');
             }
         });
     });
@@ -224,6 +237,7 @@ document.addEventListener("DOMContentLoaded", () => {
             submitBtn.disabled = true;
 
             try {
+                const tutorCode = (role === 'student' && tutorCodeInput) ? tutorCodeInput.value.trim() : null;
                 const payload = {
                     role,
                     first_name: firstName,
@@ -231,7 +245,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     identifier,
                     password,
                     grade: role === 'student' ? specificData : null,
-                    subject: role === 'tutor' ? specificData : null
+                    subject: role === 'tutor' ? specificData : null,
+                    tutor_code: tutorCode || null
                 };
 
                 const response = await fetch(`${API_BASE_URL}/api/v1/auth/register`, {

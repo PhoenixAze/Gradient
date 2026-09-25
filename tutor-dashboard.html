@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="az" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Repetitor Paneli | Gradient</title>
+  <meta name="description" content="Tədris qrupunuzun və şagirdlərinizin real sınaq nəticələrinin idarəetmə paneli.">
+
+  <!-- TƏHLÜKƏSİZLİK: Strict Content Security Policy -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://gradient-backend-fam5.onrender.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; script-src 'self';">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/tutor.css">
+
+  <script src="js/tutor-dashboard.js" defer></script>
+</head>
+<body class="tutor-layout">
+
+  <!-- REPETİTOR HEADER (Şagird görünüşü düyməsi çıxarılıb) -->
+  <header class="tutor-header">
+    <div class="tutor-header-container">
+      <div class="tutor-brand-area">
+        <a href="index.html" class="brand" aria-label="Ana Səhifə">
+          <div class="logo-icon">
+            <svg viewBox="0 0 512 512" width="32" height="32" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="512" height="512" rx="112" fill="#0F172A" />
+              <path d="M 155 365 L 225 275 C 242 255, 260 290, 280 275 L 360 150" fill="none" stroke="#3B82F6" stroke-width="32" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </div>
+          <div class="brand-text">
+            <span class="brand-name">Gradient</span>
+            <span class="brand-sub">Repetitor Paneli</span>
+          </div>
+        </a>
+      </div>
+
+      <div class="tutor-user-info">
+        <div class="tutor-profile-pill">
+          <span id="tutor-name">Yüklənir...</span>
+          <span style="color: var(--text-sub);">&bull;</span>
+          <span id="tutor-subject" style="color: var(--accent);">Fənn</span>
+        </div>
+        <button id="btn-tutor-logout" class="btn btn-ghost btn-sm">Çıxış</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ƏSAS MƏZMUN -->
+  <main class="tutor-main">
+    
+    <!-- YUXARI QARŞILAMA VƏ ŞAGİRD ƏLAVƏ ETMƏ -->
+    <div class="tutor-hero-card">
+      <div class="tutor-welcome-text">
+        <h1 id="welcome-heading">Tədris Qrupu İdarəetməsi</h1>
+        <p>Şagirdlərinizin real sınaq nəticələri, zəif mövzuları və inkişaf dinamikası.</p>
+      </div>
+
+      <div class="tutor-actions-group">
+        <div class="invite-code-box" title="Şagirdləriniz qeydiyyatdan keçərkən bu kodu daxil edə bilərlər">
+          <span style="color: var(--text-muted);">Repetitor Kodu:</span>
+          <span class="invite-code-val" id="invite-code-display">...</span>
+          <button id="btn-copy-code" class="btn btn-ghost btn-sm" style="padding: 2px 8px;">Kopyala</button>
+        </div>
+        <button id="btn-open-add-student" class="btn btn-primary btn-sm">+ Şagird Əlavə Et</button>
+      </div>
+    </div>
+
+    <!-- SKELETON LOADER -->
+    <div id="tutor-skeleton">
+      <div class="tutor-metrics-grid">
+        <div class="metric-card"><div class="skeleton-line" style="width: 50%;"></div><div class="skeleton-line" style="height: 36px; width: 40%;"></div></div>
+        <div class="metric-card"><div class="skeleton-line" style="width: 50%;"></div><div class="skeleton-line" style="height: 36px; width: 40%;"></div></div>
+        <div class="metric-card"><div class="skeleton-line" style="width: 50%;"></div><div class="skeleton-line" style="height: 36px; width: 40%;"></div></div>
+      </div>
+      <div class="tutor-section"><div class="skeleton-line" style="width: 25%;"></div><div class="skeleton-box"></div></div>
+    </div>
+
+    <!-- ƏSAS PANEL MƏZMUNU -->
+    <div id="tutor-content" class="hidden">
+      
+      <!-- 1. Qrup Metrikaları -->
+      <div class="tutor-metrics-grid">
+        <div class="metric-card">
+          <div class="metric-label">Qrupdakı Şagirdlər</div>
+          <div class="metric-value" id="stat-total-students">0</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">İşlənmiş Sınaq Sayı</div>
+          <div class="metric-value" id="stat-total-exams">0</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Qrupun Orta Göstəricisi</div>
+          <div class="metric-value" id="stat-group-avg">0%</div>
+        </div>
+      </div>
+
+      <!-- 2. Şagirdlərin Siyahısı -->
+      <div class="tutor-section">
+        <div class="tutor-section-header">
+          <h2 class="tutor-section-title">Şagirdlərin Nəticələri və İzlənməsi</h2>
+        </div>
+
+        <div id="students-empty-state" class="empty-box hidden">
+          <h3 class="empty-box-title">Qrupunuzda hələ heç bir şagird qeydiyyatda deyil</h3>
+          <p class="empty-box-desc">
+            Yuxarıdakı "Şagird Əlavə Et" düyməsi ilə şagirdlərinizi E-poçt və ya mobil nömrə vasitəsilə qrupunuza daxil edə bilərsiniz.
+          </p>
+        </div>
+
+        <div class="table-responsive" id="students-table-wrap">
+          <table class="tutor-table">
+            <thead>
+              <tr>
+                <th>Ad, Soyad</th>
+                <th>Əlaqə</th>
+                <th>Sinif</th>
+                <th>İşlənmiş Sınaqlar</th>
+                <th>Dəqiqlik</th>
+                <th>Son Nəticə</th>
+                <th>Vəziyyət</th>
+                <th>Əməliyyat</th>
+              </tr>
+            </thead>
+            <tbody id="students-table-body">
+              <!-- Dinamik doldurulacaq -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 3. Son İmtahan Fəallığı -->
+      <div class="tutor-section">
+        <div class="tutor-section-header">
+          <h2 class="tutor-section-title">Son Sınaq Fəallığı (Canlı Nəticələr)</h2>
+        </div>
+
+        <div id="submissions-empty" class="empty-box hidden">
+          <p class="empty-box-desc">Şagirdləriniz sınaq işlədikcə real nəticələr burada əks olunacaq.</p>
+        </div>
+
+        <div class="table-responsive" id="submissions-table-wrap">
+          <table class="tutor-table">
+            <thead>
+              <tr>
+                <th>Şagird</th>
+                <th>Sınaq Adı</th>
+                <th>Fənn</th>
+                <th>Nəticə</th>
+                <th>Dəqiqlik</th>
+                <th>Tarix</th>
+              </tr>
+            </thead>
+            <tbody id="submissions-table-body">
+              <!-- Dinamik doldurulacaq -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ŞAGİRD ƏLAVƏ ETMƏ MODALI -->
+  <div class="tutor-modal-overlay" id="add-student-modal">
+    <div class="tutor-modal-card">
+      <div class="tutor-modal-header">
+        <h3 class="tutor-modal-title">Qrupa Şagird Əlavə Et</h3>
+        <button class="icon-btn" id="btn-close-modal" aria-label="Bağla">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div id="modal-feedback" class="auth-alert hidden" style="margin-bottom: 16px;"></div>
+
+      <form id="add-student-form">
+        <div class="input-group" style="margin-bottom: 20px;">
+          <label for="student-identifier-input" class="input-label">Şagirdin E-poçtu və ya Mobil nömrəsi</label>
+          <input 
+            type="text" 
+            id="student-identifier-input" 
+            class="input-field" 
+            placeholder="məs: 0501234567 və ya sagird@gmail.com" 
+            required 
+            autocomplete="off"
+          >
+          <span style="font-size: 0.8rem; color: var(--text-sub); margin-top: 4px; display: block;">
+            Şagird artıq Gradient sistemində qeydiyyatdan keçmiş olmalıdır.
+          </span>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+          <button type="button" class="btn btn-outline btn-sm" id="btn-cancel-modal">İmtina</button>
+          <button type="submit" class="btn btn-primary btn-sm" id="btn-submit-add-student">
+            <span class="btn-text">Əlavə et</span>
+            <span class="loader hidden"></span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</body>
+</html>

@@ -1,0 +1,259 @@
+/* ==========================================================================
+   REPETİTOR İDARƏETMƏ PANELİ ÜÇÜN CSS
+   ========================================================================== */
+
+.tutor-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.tutor-header {
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  padding: 16px 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.tutor-header-container {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tutor-brand-area {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tutor-user-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.tutor-profile-pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-muted);
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  border: 1px solid var(--border);
+}
+
+.tutor-main {
+  flex: 1;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 32px 20px 80px;
+  width: 100%;
+}
+
+/* Üst Qarşılama və Hərəkət Bloku */
+.tutor-hero-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  margin-bottom: 32px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.tutor-welcome-text h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 6px;
+}
+
+.tutor-welcome-text p {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+}
+
+.tutor-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.invite-code-box {
+  display: flex;
+  align-items: center;
+  background: var(--bg-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  gap: 8px;
+  font-size: 0.85rem;
+}
+
+.invite-code-val {
+  font-family: monospace;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+/* Qrup Metrikaları */
+.tutor-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-bottom: 32px;
+}
+
+@media (max-width: 768px) {
+  .tutor-metrics-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.metric-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+}
+
+.metric-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.metric-value {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+/* Şagirdlər Cədvəli */
+.tutor-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  margin-bottom: 32px;
+  box-shadow: var(--shadow-sm);
+}
+
+.tutor-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.tutor-section-title {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.tutor-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.tutor-table th {
+  padding: 12px 16px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-sub);
+  border-bottom: 1px solid var(--border);
+}
+
+.tutor-table td {
+  padding: 14px 16px;
+  font-size: 0.9rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-main);
+  vertical-align: middle;
+}
+
+.tutor-table tr:hover td {
+  background-color: var(--bg-muted);
+}
+
+.student-tag {
+  display: inline-block;
+  padding: 3px 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 4px;
+}
+
+.student-tag.good { background-color: #ECFDF5; color: #047857; }
+.student-tag.mid { background-color: #FFFBEB; color: #B45309; }
+.student-tag.bad { background-color: #FEF2F2; color: #B91C1C; }
+.student-tag.none { background-color: var(--bg-muted); color: var(--text-muted); }
+
+/* Modal Stili */
+.tutor-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.tutor-modal-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.tutor-modal-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  width: 100%;
+  max-width: 440px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-lg);
+}
+
+.tutor-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.tutor-modal-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--text-main);
+}

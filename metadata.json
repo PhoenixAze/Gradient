@@ -1,0 +1,8 @@
+{
+  "name": "Gradient — DİM İmtahanlarına Hədəfli Hazırlıq",
+  "description": "Sınaq işlə, zəif nöqtələrini kəşf et, nəticəni ən qısa yolla artır. DİM standartı ilə analitik təhsil platforması.",
+  "permissions": [],
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

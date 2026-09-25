@@ -3,7 +3,9 @@
 // ==========================================================================
 // QLOBAL API İDARƏEDİCİSİ (ZERO-TRUST & REFRESH TOKEN)
 // ==========================================================================
-const API_BASE_URL = "https://gradient-backend-fam5.onrender.com";
+const API_BASE_URL = (typeof window !== "undefined" && window.location.hostname === "phoenixaze.github.io")
+  ? "https://gradient-backend-fam5.onrender.com"
+  : "";
 
 async function fetchWithAuth(endpoint, options = {}, redirectOnFailure = true) {
     options.credentials = 'include'; // HttpOnly cookie-lər üçün məcburidir

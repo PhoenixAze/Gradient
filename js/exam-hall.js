@@ -1,6 +1,8 @@
 "use strict";
 
-const API_BASE_URL = "https://gradient-backend-fam5.onrender.com";
+const API_BASE_URL = (typeof window !== "undefined" && window.location.hostname === "phoenixaze.github.io")
+  ? "https://gradient-backend-fam5.onrender.com"
+  : "";
 
 document.addEventListener("DOMContentLoaded", async () => {
 

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="az" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mövzu Diaqnostikası və Fərdi Analitika | Gradient</title>
+  <meta name="description" content="Real sınaq nəticələriniz əsasında fərdi analitika və zəif mövzuların təhlili.">
+
+  <!-- TƏHLÜKƏSİZLİK: Strict Content Security Policy -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://gradient-backend-fam5.onrender.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; script-src 'self';">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/analytics.css">
+
+  <script src="js/analytics.js" defer></script>
+</head>
+<body>
+
+  <!-- DASHBOARD NAVİQASİYASI -->
+  <header class="navbar" style="border-bottom: 1px solid var(--border); background: var(--bg-card);">
+    <div class="container nav-container" style="display: flex; justify-content: space-between; align-items: center;">
+      <a href="exam.html" class="brand" aria-label="Sınaqlar">
+        <div class="logo-icon">
+          <svg viewBox="0 0 512 512" width="32" height="32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="512" height="512" rx="112" fill="#0F172A" />
+            <path d="M 155 365 L 225 275 C 242 255, 260 290, 280 275 L 360 150" fill="none" stroke="#3B82F6" stroke-width="32" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </div>
+        <div class="brand-text">
+          <span class="brand-name">Gradient</span>
+          <span class="brand-sub">Analitika</span>
+        </div>
+      </a>
+
+      <div class="nav-actions">
+        <a href="exam.html" class="btn btn-outline">&larr; Sınaqlar Zalı</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="analytics-container">
+    <div class="analytics-header-section">
+      <h1 class="analytics-title">Mövzu Diaqnostikası və Fərdi Trayektoriya</h1>
+      <p class="analytics-subtitle">Real imtahan cavablarınıza əsaslanan dəqiq nəticələr və inkişaf tövsiyələri.</p>
+    </div>
+
+    <!-- SKELETON LOADER VƏZİYYƏTİ -->
+    <div id="analytics-skeleton">
+      <div class="stats-grid">
+        <div class="stat-box"><div class="skeleton-line" style="width: 40%;"></div><div class="skeleton-line" style="height: 36px; width: 60%;"></div></div>
+        <div class="stat-box"><div class="skeleton-line" style="width: 40%;"></div><div class="skeleton-line" style="height: 36px; width: 60%;"></div></div>
+        <div class="stat-box"><div class="skeleton-line" style="width: 40%;"></div><div class="skeleton-line" style="height: 36px; width: 60%;"></div></div>
+      </div>
+      <div class="section-card"><div class="skeleton-line" style="width: 30%;"></div><div class="skeleton-box"></div></div>
+    </div>
+
+    <!-- BOŞ VƏZİYYƏT (Hələ heç bir sınaq işlənilməyib) -->
+    <div id="analytics-empty" class="empty-box hidden">
+      <h2 class="empty-box-title">Hələ heç bir sınaq nəticəniz qeydə alınmayıb</h2>
+      <p class="empty-box-desc">
+        Süni intellekt analitikasını və mövzular üzrə zəif nöqtələrinizi görmək üçün ilk sınağınızı işləməlisiniz.
+      </p>
+      <a href="exam.html" class="btn btn-primary">İlk Sınağa Başla &rarr;</a>
+    </div>
+
+    <!-- REAL MƏLUMATLAR PANELİ -->
+    <div id="analytics-content" class="hidden">
+      
+      <!-- Metrika Kartları -->
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="stat-box-label">Ümumi Dəqiqlik</div>
+          <div class="stat-box-value" id="val-accuracy">0%</div>
+          <div class="stat-box-desc">Bütün suallar üzrə düzgün cavab nisbəti</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-box-label">Tamamlanmış Sınaqlar</div>
+          <div class="stat-box-value" id="val-total-exams">0</div>
+          <div class="stat-box-desc">Sistemdə bitirilmiş sınaq sayı</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-box-label">Cavablandırılan Suallar</div>
+          <div class="stat-box-value" id="val-questions">0 / 0</div>
+          <div class="stat-box-desc" id="val-questions-desc">Düzgün / Ümumi sual sayı</div>
+        </div>
+      </div>
+
+      <!-- AI Qradient Diaqnozu -->
+      <div class="diagnosis-panel" id="diagnosis-panel">
+        <div class="diagnosis-header">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+          <h2 class="diagnosis-title">Gradient Diaqnozu</h2>
+        </div>
+        <p class="diagnosis-text" id="diagnosis-text">Nəticələr təhlil edilir...</p>
+      </div>
+
+      <!-- Fənlər Üzrə Dəqiqlik -->
+      <div class="section-card">
+        <h2 class="section-card-title">Fənlər Üzrə Real Göstəricilər</h2>
+        <div id="subject-list-container">
+          <!-- Dinamik olaraq JS ilə doldurulacaq -->
+        </div>
+      </div>
+
+      <!-- Sınaq Tarixçəsi -->
+      <div class="section-card">
+        <h2 class="section-card-title">Son Sınaq Nəticələri</h2>
+        <div style="overflow-x: auto;">
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>Sınaq Adı</th>
+                <th>Fənn</th>
+                <th>Bal (Düzgün / Ümumi)</th>
+                <th>Dəqiqlik</th>
+                <th>Tarix</th>
+              </tr>
+            </thead>
+            <tbody id="history-table-body">
+              <!-- Dinamik olaraq JS ilə doldurulacaq -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+</body>
+</html>

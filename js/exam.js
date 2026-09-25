@@ -1,6 +1,36 @@
 "use strict";
 
-const API_BASE_URL = "https://gradient-backend-fam5.onrender.com"; 
+const API_BASE_URL = (typeof window !== "undefined" && window.location.hostname === "phoenixaze.github.io")
+  ? "https://gradient-backend-fam5.onrender.com"
+  : ""; 
+
+function showNotification(message) {
+    let toast = document.getElementById('gradient-toast');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'gradient-toast';
+        toast.style.position = 'fixed';
+        toast.style.bottom = '24px';
+        toast.style.right = '24px';
+        toast.style.zIndex = '9999';
+        toast.style.backgroundColor = 'var(--surface)';
+        toast.style.color = 'var(--text-main)';
+        toast.style.border = '1px solid var(--border)';
+        toast.style.borderRadius = '10px';
+        toast.style.padding = '12px 20px';
+        toast.style.boxShadow = '0 8px 24px rgba(0,0,0,0.18)';
+        toast.style.fontWeight = '500';
+        toast.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+        document.body.appendChild(toast);
+    }
+    toast.textContent = message;
+    toast.style.opacity = '1';
+    toast.style.transform = 'translateY(0)';
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(10px)';
+    }, 4000);
+} 
 
 document.addEventListener("DOMContentLoaded", async () => {
     // --- QLOBAL API İDARƏEDİCİSİ (ZERO-TRUST & REFRESH TOKEN) ---
@@ -150,7 +180,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             if (contactSettings && contactSettings.whatsapp_url) {
                 window.open(contactSettings.whatsapp_url, '_blank', 'noopener,noreferrer');
             } else {
-                alert("Əlaqə məlumatı yüklənməyib.");
+                showNotification("Əlaqə məlumatı yüklənməyib.");
             }
         });
     }
@@ -203,7 +233,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 }
 
                 if (res.status === 402) {
-                    alert("Balansınız kifayət etmir. Zəhmət olmasa balansı artırın.");
+                    showNotification("Balansınız kifayət etmir. Zəhmət olmasa balansı artırın.");
                     btnElement.textContent = originalText;
                     btnElement.disabled = false;
                     return;
@@ -211,7 +241,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 
                 if (!res.ok) {
                     const errData = await res.json().catch(() => ({}));
-                    alert(errData.detail || "Sınağı almaq mümkün olmadı. Yenidən cəhd edin.");
+                    showNotification(errData.detail || "Sınağı almaq mümkün olmadı. Yenidən cəhd edin.");
                     btnElement.textContent = originalText;
                     btnElement.disabled = false;
                     return;
@@ -228,7 +258,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             window.location.href = `exam-hall.html?id=${encodeURIComponent(exam.id)}`;
         } catch (error) {
             console.error("Satın alma xətası:", error);
-            alert("Sistem xətası baş verdi. Yenidən cəhd edin.");
+            showNotification("Sistem xətası baş verdi. Yenidən cəhd edin.");
             btnElement.textContent = originalText;
             btnElement.disabled = false;
         }
