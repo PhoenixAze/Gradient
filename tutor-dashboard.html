@@ -82,87 +82,316 @@
     <!-- ƏSAS PANEL MƏZMUNU -->
     <div id="tutor-content" class="hidden">
       
-      <!-- 1. Qrup Metrikaları -->
+      <!-- 1. Qrup Metrikaları (Ətraflı 5 Kart) -->
       <div class="tutor-metrics-grid">
         <div class="metric-card">
           <div class="metric-label">Qrupdakı Şagirdlər</div>
           <div class="metric-value" id="stat-total-students">0</div>
+          <div class="metric-sub" id="stat-students-sub">0 aktiv sınaq işləyən</div>
         </div>
         <div class="metric-card">
           <div class="metric-label">İşlənmiş Sınaq Sayı</div>
           <div class="metric-value" id="stat-total-exams">0</div>
+          <div class="metric-sub">Təhvil verilmiş sınaqlar</div>
         </div>
         <div class="metric-card">
           <div class="metric-label">Qrupun Orta Göstəricisi</div>
           <div class="metric-value" id="stat-group-avg">0%</div>
+          <div class="metric-sub">Ümumi dəqiqlik faizi</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Ən Yüksək Nəticə</div>
+          <div class="metric-value metric-value-sm" id="stat-top-student">-</div>
+          <div class="metric-sub">Qrupun lider şagirdi</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Dəstəyə Ehtiyacı Olan</div>
+          <div class="metric-value metric-value-sm" id="stat-lowest-student">-</div>
+          <div class="metric-sub">Fərdi diqqət tələb edən</div>
         </div>
       </div>
 
-      <!-- 2. Şagirdlərin Siyahısı -->
-      <div class="tutor-section">
-        <div class="tutor-section-header">
-          <h2 class="tutor-section-title">Şagirdlərin Nəticələri və İzlənməsi</h2>
-        </div>
-
-        <div id="students-empty-state" class="empty-box hidden">
-          <h3 class="empty-box-title">Qrupunuzda hələ heç bir şagird qeydiyyatda deyil</h3>
-          <p class="empty-box-desc">
-            Yuxarıdakı "Şagird Əlavə Et" düyməsi ilə şagirdlərinizi E-poçt və ya mobil nömrə vasitəsilə qrupunuza daxil edə bilərsiniz.
-          </p>
-        </div>
-
-        <div class="table-responsive" id="students-table-wrap">
-          <table class="tutor-table">
-            <thead>
-              <tr>
-                <th>Ad, Soyad</th>
-                <th>Əlaqə</th>
-                <th>Sinif</th>
-                <th>İşlənmiş Sınaqlar</th>
-                <th>Dəqiqlik</th>
-                <th>Son Nəticə</th>
-                <th>Vəziyyət</th>
-                <th>Əməliyyat</th>
-              </tr>
-            </thead>
-            <tbody id="students-table-body">
-              <!-- Dinamik doldurulacaq -->
-            </tbody>
-          </table>
+      <!-- 2. Naviqasiya Tabları -->
+      <div class="tutor-tabs-container">
+        <div class="tutor-tabs">
+          <button class="tutor-tab-btn active" data-tab="students" id="tab-btn-students">
+            <span>Şagirdlərim</span>
+            <span class="tab-badge" id="tab-students-count">0</span>
+          </button>
+          <button class="tutor-tab-btn" data-tab="exams" id="tab-btn-exams">
+            <span>Sınaqlar və Nəticələr</span>
+            <span class="tab-badge" id="tab-submissions-count">0</span>
+          </button>
+          <button class="tutor-tab-btn tutor-tab-ai" data-tab="ai" id="tab-btn-ai">
+            <span>Tutor AI Köməkçi</span>
+            <span class="ai-pill-tag">Gemini AI</span>
+          </button>
         </div>
       </div>
 
-      <!-- 3. Son İmtahan Fəallığı -->
-      <div class="tutor-section">
-        <div class="tutor-section-header">
-          <h2 class="tutor-section-title">Son Sınaq Fəallığı (Canlı Nəticələr)</h2>
+      <!-- TAB 1: ŞAGİRDLƏR SİYAHISI -->
+      <div class="tutor-tab-pane active" id="pane-students">
+        <div class="tutor-section">
+          <div class="tutor-section-header">
+            <div>
+              <h2 class="tutor-section-title">Şagirdlərin Siyahısı və Fərdi İzlənməsi</h2>
+              <p class="tutor-section-sub">Şagirdin üzərinə və ya "Analizə bax" düyməsinə klikləyərək onun bütün sınaq tarixçəsini nəzərdən keçirin.</p>
+            </div>
+            <div class="tutor-filter-group">
+              <input 
+                type="text" 
+                id="student-search-input" 
+                class="input-field input-sm" 
+                placeholder="Ad, soyad və ya nömrə ilə axtar..." 
+                autocomplete="off"
+              >
+              <select id="student-status-filter" class="input-field input-sm" style="width: auto;">
+                <option value="all">Bütün vəziyyətlər</option>
+                <option value="Yaxşı">Yaxşı (≥80%)</option>
+                <option value="Orta">Orta (50-79%)</option>
+                <option value="Zəif">Zəif (&lt;50%)</option>
+                <option value="Sınaq işləməyib">Sınaq işləməyənlər</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="students-empty-state" class="empty-box hidden">
+            <h3 class="empty-box-title">Qrupunuzda hələ heç bir şagird qeydiyyatda deyil</h3>
+            <p class="empty-box-desc">
+              Yuxarıdakı "Şagird Əlavə Et" düyməsi ilə şagirdlərinizi E-poçt və ya mobil nömrə vasitəsilə qrupunuza daxil edə bilərsiniz.
+            </p>
+          </div>
+
+          <div class="table-responsive" id="students-table-wrap">
+            <table class="tutor-table">
+              <thead>
+                <tr>
+                  <th>Ad, Soyad</th>
+                  <th>Əlaqə</th>
+                  <th>Sinif</th>
+                  <th>İşlənmiş Sınaqlar</th>
+                  <th>Dəqiqlik</th>
+                  <th>Son Nəticə</th>
+                  <th>Vəziyyət</th>
+                  <th>Əməliyyatlar</th>
+                </tr>
+              </thead>
+              <tbody id="students-table-body">
+                <!-- Dinamik doldurulacaq -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: SINAQLAR VƏ İMTİHAN NƏTİCƏLƏRİ -->
+      <div class="tutor-tab-pane hidden" id="pane-exams">
+        <!-- Sınaq Xülasələri -->
+        <div class="tutor-section">
+          <div class="tutor-section-header">
+            <div>
+              <h2 class="tutor-section-title">Sınaqlar Üzrə Qrup Göstəriciləri</h2>
+              <p class="tutor-section-sub">Şagirdlərinizin iştirak etdiyi sınaqlar və onların toplu müvəffəqiyyəti.</p>
+            </div>
+          </div>
+
+          <div id="exams-summary-empty" class="empty-box hidden">
+            <p class="empty-box-desc">Şagirdlər sınaq işlədikcə sınaq statistikası burada görünəcək.</p>
+          </div>
+
+          <div class="table-responsive" id="exams-summary-table-wrap">
+            <table class="tutor-table">
+              <thead>
+                <tr>
+                  <th>Sınaq Adı</th>
+                  <th>Fənn</th>
+                  <th>Sual Sayı</th>
+                  <th>İştirakçı Sayı</th>
+                  <th>Orta Bal</th>
+                  <th>Ən Yüksək Bal</th>
+                  <th>Ən Aşağı Bal</th>
+                </tr>
+              </thead>
+              <tbody id="exams-summary-table-body">
+                <!-- Dinamik doldurulacaq -->
+              </tbody>
+            </table>
+          </div>
         </div>
 
-        <div id="submissions-empty" class="empty-box hidden">
-          <p class="empty-box-desc">Şagirdləriniz sınaq işlədikcə real nəticələr burada əks olunacaq.</p>
-        </div>
+        <!-- Canlı Nəticələr (Son təqdimatlar) -->
+        <div class="tutor-section">
+          <div class="tutor-section-header">
+            <div>
+              <h2 class="tutor-section-title">Son Sınaq Fəallığı (Canlı Təqdimatlar)</h2>
+              <p class="tutor-section-sub">Şagirdlərin sınaqları bitirmə ardıcıllığı və ani balları.</p>
+            </div>
+          </div>
 
-        <div class="table-responsive" id="submissions-table-wrap">
-          <table class="tutor-table">
-            <thead>
-              <tr>
-                <th>Şagird</th>
-                <th>Sınaq Adı</th>
-                <th>Fənn</th>
-                <th>Nəticə</th>
-                <th>Dəqiqlik</th>
-                <th>Tarix</th>
-              </tr>
-            </thead>
-            <tbody id="submissions-table-body">
-              <!-- Dinamik doldurulacaq -->
-            </tbody>
-          </table>
+          <div id="submissions-empty" class="empty-box hidden">
+            <p class="empty-box-desc">Şagirdləriniz sınaq işlədikcə real nəticələr burada əks olunacaq.</p>
+          </div>
+
+          <div class="table-responsive" id="submissions-table-wrap">
+            <table class="tutor-table">
+              <thead>
+                <tr>
+                  <th>Şagird</th>
+                  <th>Sınaq Adı</th>
+                  <th>Fənn</th>
+                  <th>Düzgün / Ümumi</th>
+                  <th>Səhv / Boş</th>
+                  <th>Dəqiqlik</th>
+                  <th>Tarix</th>
+                </tr>
+              </thead>
+              <tbody id="submissions-table-body">
+                <!-- Dinamik doldurulacaq -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: TUTOR AI KÖMƏKÇİ (GEMINI AI) -->
+      <div class="tutor-tab-pane hidden" id="pane-ai">
+        <div class="tutor-ai-wrapper">
+          
+          <!-- AI Məlumat Başlığı -->
+          <div class="tutor-ai-header-card">
+            <div class="tutor-ai-header-content">
+              <div class="ai-header-badge">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                </svg>
+                <span>Tutor AI Köməkçi &bull; Gemini Powered</span>
+              </div>
+              <h2 class="tutor-ai-title">Qrupunuz və Şagirdləriniz Üzrə Ağıllı Analitika</h2>
+              <p class="tutor-ai-desc">
+                Süni intellekt köməkçiniz şagirdlərinizin bütün sınaq nəticələrini təhlil edir. Kimin ən az bal topladığını, 
+                ən çox səhv edilən sualları, fərdi çatışmazlıqları və ya tətbiq haqqında istədiyiniz sualı soruşun.
+              </p>
+            </div>
+            <button id="btn-clear-ai-chat" class="btn btn-outline btn-sm" title="Söhbəti təmizlə">Söhbəti təmizlə</button>
+          </div>
+
+          <!-- Sürətli Sual Çipləri (Quick Prompt Chips) -->
+          <div class="tutor-ai-chips-area">
+            <span class="chips-label">Tövsiyə olunan suallar:</span>
+            <div class="chips-grid">
+              <button class="ai-chip-btn" data-query="Ən son sınaqda ən az bal toplayan kim oldu?">
+                📊 Ən son sınaqda ən az bal toplayan kim oldu?
+              </button>
+              <button class="ai-chip-btn" data-query="Son sınaqda ən çox hansı suallarda və mövzularda səhv edilib?">
+                🔍 Ən çox səhv edilən suallar və mövzular
+              </button>
+              <button class="ai-chip-btn" data-query="Qrupda hansı şagirdlərin nəticəsi zəifdir və fərdi dəstəyə ehtiyacı var?">
+                ⚠️ Zəif nəticə göstərən şagirdlər
+              </button>
+              <button class="ai-chip-btn" data-query="Gradient platformasında repetitor sınaqları və cavab kağızı necə işləyir?">
+                💡 Sınaq və cavab kağızı sistemi necə işləyir?
+              </button>
+            </div>
+          </div>
+
+          <!-- AI Dialoq Pəncərəsi -->
+          <div class="tutor-ai-chat-box">
+            <div id="ai-chat-messages" class="ai-chat-messages-container">
+              <!-- İlkin qarşılama mesajı -->
+              <div class="ai-message ai-message-assistant">
+                <div class="ai-message-avatar">AI</div>
+                <div class="ai-message-bubble">
+                  <div class="ai-message-author">Tutor AI Köməkçi</div>
+                  <div class="ai-message-text">
+                    Salam, hörmətli müəllim! Mən qrupunuzun sınaq nəticələrini və tədris göstəricilərini təhlil etmək üçün buradayam. 
+                    Şagirdlərinizin balları, ən son sınağın nəticələri və ya platformanın iş prinsipləri barədə istənilən sualınızı verə bilərsiniz.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- AI Sual Göndərmə Forması -->
+            <form id="ai-chat-form" class="ai-chat-form">
+              <div class="ai-input-wrap">
+                <input 
+                  type="text" 
+                  id="ai-query-input" 
+                  class="ai-input-field" 
+                  placeholder="Məsələn: Ən son sınaqda ən az bal toplayan kim oldu? və ya zəif şagirdlər kimlərdir?" 
+                  required 
+                  autocomplete="off"
+                >
+                <button type="submit" id="btn-submit-ai" class="btn btn-primary btn-sm ai-send-btn">
+                  <span class="btn-text">Göndər</span>
+                  <span class="loader hidden"></span>
+                </button>
+              </div>
+            </form>
+          </div>
+
         </div>
       </div>
 
     </div>
   </main>
+
+  <!-- ŞAGİRD DETALLI ANALİTİKA MODALI -->
+  <div class="tutor-modal-overlay" id="student-detail-modal">
+    <div class="tutor-modal-card tutor-modal-lg">
+      <div class="tutor-modal-header">
+        <div>
+          <h3 class="tutor-modal-title" id="detail-student-name">Şagird Analitikası</h3>
+          <p class="tutor-modal-sub" id="detail-student-meta">Yüklənir...</p>
+        </div>
+        <button class="icon-btn" id="btn-close-detail-modal" aria-label="Bağla">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="student-detail-stats-grid">
+        <div class="mini-stat-card">
+          <span class="mini-stat-label">İşlənmiş Sınaqlar</span>
+          <span class="mini-stat-val" id="detail-student-exams">0</span>
+        </div>
+        <div class="mini-stat-card">
+          <span class="mini-stat-label">Ümumi Dəqiqlik</span>
+          <span class="mini-stat-val" id="detail-student-acc">0%</span>
+        </div>
+        <div class="mini-stat-card">
+          <span class="mini-stat-label">Toplanan Ballar</span>
+          <span class="mini-stat-val" id="detail-student-score">0 / 0</span>
+        </div>
+      </div>
+
+      <div class="student-history-wrap">
+        <h4 style="font-size: 0.95rem; font-weight: 600; margin-bottom: 12px; color: var(--text-main);">Bütün Sınaq Tarixçəsi</h4>
+        <div class="table-responsive">
+          <table class="tutor-table">
+            <thead>
+              <tr>
+                <th>Sınaq Adı</th>
+                <th>Fənn</th>
+                <th>Bal</th>
+                <th>Səhv / Boş</th>
+                <th>Dəqiqlik</th>
+                <th>Tarix</th>
+              </tr>
+            </thead>
+            <tbody id="detail-student-history-body">
+              <!-- Dinamik doldurulacaq -->
+            </tbody>
+          </table>
+        </div>
+        <div id="detail-student-empty" class="empty-box hidden" style="padding: 24px;">
+          <p class="empty-box-desc">Bu şagird hələ heç bir sınaq tamamlamayıb.</p>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; margin-top: 20px;">
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-close-detail-modal-btn">Bağla</button>
+      </div>
+    </div>
+  </div>
 
   <!-- ŞAGİRD ƏLAVƏ ETMƏ MODALI -->
   <div class="tutor-modal-overlay" id="add-student-modal">
