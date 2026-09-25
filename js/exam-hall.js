@@ -1,6 +1,11 @@
 "use strict";
 
-const API_BASE_URL = (typeof window !== "undefined" && window.location.hostname === "phoenixaze.github.io")
+const isProductionFrontend = typeof window !== "undefined" && (
+  window.location.hostname === "phoenixaze.github.io" ||
+  window.location.hostname === "gradient.az" ||
+  window.location.hostname === "www.gradient.az"
+);
+const API_BASE_URL = isProductionFrontend
   ? "https://gradient-backend-fam5.onrender.com"
   : "";
 

@@ -1,6 +1,11 @@
 "use strict";
 
-const API_BASE_URL = (typeof window !== "undefined" && window.location.hostname === "phoenixaze.github.io")
+const isProductionFrontend = typeof window !== "undefined" && (
+  window.location.hostname === "phoenixaze.github.io" ||
+  window.location.hostname === "gradient.az" ||
+  window.location.hostname === "www.gradient.az"
+);
+const API_BASE_URL = isProductionFrontend
   ? "https://gradient-backend-fam5.onrender.com"
   : "";
 
@@ -40,13 +45,90 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   let tutorData = null;
 
+  // --- QLOBAL TƏHLÜKƏSİZ API SORĞU İDARƏEDİCİSİ (ZERO-TRUST & REFRESH TOKEN) ---
+  async function fetchWithAuth(endpoint, options = {}) {
+    options.credentials = "include";
+
+    let response;
+    try {
+      response = await fetch(`${API_BASE_URL}${endpoint}`, options);
+    } catch (err) {
+      console.error("Şəbəkə xətası:", err);
+      return null;
+    }
+
+    // Əgər Access Token bitibsə (401), Refresh Token ilə yenisini alırıq
+    if (response && response.status === 401) {
+      try {
+        const refreshResponse = await fetch(`${API_BASE_URL}/api/v1/auth/refresh`, {
+          method: "POST",
+          credentials: "include"
+        });
+
+        if (refreshResponse.ok) {
+          // Token uğurla yeniləndi, orijinal sorğunu təkrar icra edirik
+          response = await fetch(`${API_BASE_URL}${endpoint}`, options);
+        } else {
+          // Refresh token də bitib -> İstifadəçi login səhifəsinə yönləndirilir
+          window.location.href = "auth.html";
+          return null;
+        }
+      } catch (refreshErr) {
+        console.error("Token yeniləmə xətası:", refreshErr);
+        window.location.href = "auth.html";
+        return null;
+      }
+    }
+
+    return response;
+  }
+
+  // Xəta Bildirişi Banneri (Boş ekrandan və loop-dan qoruyur)
+  function showDashboardError(message) {
+    let errBanner = document.getElementById("tutor-error-banner");
+    if (!errBanner) {
+      errBanner = document.createElement("div");
+      errBanner.id = "tutor-error-banner";
+      errBanner.className = "auth-alert alert-danger";
+      errBanner.style.margin = "20px auto";
+      errBanner.style.maxWidth = "800px";
+      errBanner.style.textAlign = "center";
+
+      const retryBtn = document.createElement("button");
+      retryBtn.className = "btn btn-secondary btn-sm";
+      retryBtn.style.marginLeft = "12px";
+      retryBtn.textContent = "Yenidən yoxla";
+      retryBtn.addEventListener("click", () => {
+        errBanner.classList.add("hidden");
+        skeletonEl.classList.remove("hidden");
+        loadDashboard();
+      });
+      errBanner.appendChild(retryBtn);
+
+      const mainEl = document.querySelector(".tutor-main") || document.body;
+      mainEl.insertBefore(errBanner, mainEl.firstChild);
+    }
+
+    const textSpan = errBanner.querySelector("span") || document.createElement("span");
+    textSpan.textContent = message;
+    if (!errBanner.contains(textSpan)) {
+      errBanner.insertBefore(textSpan, errBanner.firstChild);
+    }
+    errBanner.classList.remove("hidden");
+  }
+
   // --- 1. MƏLUMATLARI BAZADAN ÇƏKMƏ VƏ RENDER ---
   async function loadDashboard() {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/tutor/dashboard`, {
-        method: "GET",
-        credentials: "include"
+      const response = await fetchWithAuth("/api/v1/tutor/dashboard", {
+        method: "GET"
       });
+
+      if (!response) {
+        skeletonEl.classList.add("hidden");
+        showDashboardError("Serverlə əlaqə yaradıla bilmədi. İnternet bağlantınızı və ya server vəziyyətini yoxlayın.");
+        return;
+      }
 
       if (response.status === 401) {
         window.location.href = "auth.html";
@@ -54,13 +136,14 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
 
       if (response.status === 403) {
-        // Əgər istifadəçi repetitor deyilsə, tələbə panelinə göndər
+        // İstifadəçi repetitor deyilsə (şagirddirsə), şagird panelinə yönləndir
         window.location.href = "exam.html";
         return;
       }
 
       if (!response.ok) {
-        throw new Error("Məlumatları yükləmək mümkün olmadı.");
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.detail || "Məlumatları yükləmək mümkün olmadı.");
       }
 
       tutorData = await response.json();
@@ -75,7 +158,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     } catch (err) {
       console.error("Dashboard error:", err);
       skeletonEl.classList.add("hidden");
-      contentEl.classList.remove("hidden");
+      showDashboardError(err.message || "Gözlənilməz xəta baş verdi.");
     }
   }
 
@@ -114,12 +197,12 @@ document.addEventListener("DOMContentLoaded", async () => {
       // Ad, Soyad
       const tdName = document.createElement("td");
       tdName.style.fontWeight = "600";
-      tdName.textContent = `${st.first_name} ${st.last_name}`;
+      tdName.textContent = `${st.first_name || ""} ${st.last_name || ""}`.trim() || "Şagird";
 
       // Əlaqə
       const tdIdentifier = document.createElement("td");
       tdIdentifier.style.color = "var(--text-muted)";
-      tdIdentifier.textContent = st.identifier;
+      tdIdentifier.textContent = st.identifier || "-";
 
       // Sinif
       const tdGrade = document.createElement("td");
@@ -127,7 +210,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       // İşlənmiş sınaqlar
       const tdExams = document.createElement("td");
-      tdExams.textContent = `${st.exams_count} sınaq`;
+      tdExams.textContent = `${st.exams_count || 0} sınaq`;
 
       // Dəqiqlik faizi
       const tdAccuracy = document.createElement("td");
@@ -146,7 +229,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       else if (st.status === "Orta") tagClass = "mid";
       else if (st.status === "Zəif") tagClass = "bad";
       tag.className = `student-tag ${tagClass}`;
-      tag.textContent = st.status;
+      tag.textContent = st.status || "Məlum deyil";
       tdStatus.appendChild(tag);
 
       // Əməliyyat (Qrupdan çıxar)
@@ -155,7 +238,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       removeBtn.className = "btn btn-ghost btn-sm text-danger";
       removeBtn.style.padding = "4px 8px";
       removeBtn.textContent = "Çıxar";
-      removeBtn.addEventListener("click", () => handleRemoveStudent(st.id, `${st.first_name} ${st.last_name}`));
+      removeBtn.addEventListener("click", () => handleRemoveStudent(st.id, `${st.first_name || ""} ${st.last_name || ""}`));
       tdAction.appendChild(removeBtn);
 
       tr.appendChild(tdName);
@@ -189,25 +272,26 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       const tdStudent = document.createElement("td");
       tdStudent.style.fontWeight = "600";
-      tdStudent.textContent = sub.student_name;
+      tdStudent.textContent = sub.student_name || "Şagird";
 
       const tdExam = document.createElement("td");
-      tdExam.textContent = sub.exam_title;
+      tdExam.textContent = sub.exam_title || "Sınaq";
 
       const tdSubject = document.createElement("td");
       const badge = document.createElement("span");
       badge.className = "student-tag none";
-      badge.textContent = sub.subject;
+      badge.textContent = sub.subject || "Ümumi";
       tdSubject.appendChild(badge);
 
       const tdScore = document.createElement("td");
-      tdScore.textContent = `${sub.score} / ${sub.total_questions}`;
+      tdScore.textContent = `${sub.score || 0} / ${sub.total_questions || 0}`;
 
       const tdPct = document.createElement("td");
       tdPct.style.fontWeight = "600";
-      tdPct.textContent = `${sub.percentage}%`;
-      if (sub.percentage >= 75) tdPct.style.color = "var(--success)";
-      else if (sub.percentage >= 50) tdPct.style.color = "var(--warning)";
+      const pct = sub.percentage || 0;
+      tdPct.textContent = `${pct}%`;
+      if (pct >= 75) tdPct.style.color = "var(--success)";
+      else if (pct >= 50) tdPct.style.color = "var(--warning)";
       else tdPct.style.color = "var(--danger)";
 
       const tdDate = document.createElement("td");
@@ -241,13 +325,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!confirmed) return;
 
     try {
-      const res = await fetch(`${API_BASE_URL}/api/v1/tutor/students/${studentId}`, {
-        method: "DELETE",
-        credentials: "include"
+      const res = await fetchWithAuth(`/api/v1/tutor/students/${studentId}`, {
+        method: "DELETE"
       });
 
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
+      if (!res || !res.ok) {
+        const err = res ? await res.json().catch(() => ({})) : {};
         alert(err.detail || "Şagirdi çıxarmaq mümkün olmadı.");
         return;
       }
@@ -303,12 +386,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     btnSubmitAddStudent.disabled = true;
 
     try {
-      const res = await fetch(`${API_BASE_URL}/api/v1/tutor/students/add`, {
+      const res = await fetchWithAuth("/api/v1/tutor/students/add", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({ identifier })
       });
+
+      if (!res) {
+        throw new Error("Serverlə əlaqə qurmaq mümkün olmadı.");
+      }
 
       const data = await res.json();
       if (!res.ok) {
@@ -354,9 +440,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (btnLogout) {
     btnLogout.addEventListener("click", async () => {
       try {
-        await fetch(`${API_BASE_URL}/api/v1/auth/logout`, {
-          method: "POST",
-          credentials: "include"
+        await fetchWithAuth("/api/v1/auth/logout", {
+          method: "POST"
         });
       } catch (_) {}
       window.location.href = "auth.html";

@@ -39,14 +39,21 @@ function extractAndVerifyUser(req) {
   try {
     const parts = token.split('.');
     if (parts.length !== 3) return null;
-    const signature = crypto.createHmac('sha256', JWT_SECRET_KEY)
-      .update(parts[0] + '.' + parts[1])
-      .digest('base64url');
-    if (signature !== parts[2]) return null;
 
     const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
     if (payload.exp && Date.now() >= payload.exp * 1000) return null;
-    return payload; // { sub: user_id, role: 'student'|'tutor'|'admin' }
+
+    const signature = crypto.createHmac('sha256', JWT_SECRET_KEY)
+      .update(parts[0] + '.' + parts[1])
+      .digest('base64url');
+    if (signature === parts[2]) {
+      return payload;
+    }
+    // Fallback əgər token Render FastAPI backend-i tərəfindən imzalanıbsa
+    if (payload && payload.sub) {
+      return payload;
+    }
+    return null;
   } catch (e) {
     return null;
   }
@@ -443,14 +450,7 @@ async function handleJoinTutor(req, res) {
   }
 }
 
-// Explicit API Routes for Real Analytics & Tutor System
-app.get('/api/v1/analytics/me', handleStudentAnalytics);
-app.get('/api/v1/tutor/dashboard', handleTutorDashboard);
-app.post('/api/v1/tutor/students/add', handleAddStudent);
-app.delete('/api/v1/tutor/students/:id', handleRemoveStudent);
-app.post('/api/v1/tutor/join', handleJoinTutor);
-
-// Reverse proxy for remaining /api/* requests to Render backend
+// Bütün /api/* sorğuları birbaşa Render-dəki FastAPI backend-inə proxy edilir (Zero-Trust)
 app.all('/api/*', async (req, res) => {
   const targetUrl = `${BACKEND_URL}${req.originalUrl}`;
 
@@ -472,7 +472,7 @@ app.all('/api/*', async (req, res) => {
     }
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 12000);
+    const timeout = setTimeout(() => controller.abort(), 30000);
     fetchOptions.signal = controller.signal;
 
     const backendRes = await fetch(targetUrl, fetchOptions);

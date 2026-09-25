@@ -1,6 +1,11 @@
 "use strict";
 
-const API_BASE_URL = (typeof window !== "undefined" && window.location.hostname === "phoenixaze.github.io")
+const isProductionFrontend = typeof window !== "undefined" && (
+  window.location.hostname === "phoenixaze.github.io" ||
+  window.location.hostname === "gradient.az" ||
+  window.location.hostname === "www.gradient.az"
+);
+const API_BASE_URL = isProductionFrontend
   ? "https://gradient-backend-fam5.onrender.com"
   : "";
 
@@ -16,13 +21,51 @@ document.addEventListener("DOMContentLoaded", async () => {
   const subjectListContainer = document.getElementById("subject-list-container");
   const historyTableBody = document.getElementById("history-table-body");
 
+  // Qlobal Təhlükəsiz API Sorğu İdarəedicisi
+  async function fetchWithAuth(endpoint, options = {}) {
+    options.credentials = "include";
+
+    let response;
+    try {
+      response = await fetch(`${API_BASE_URL}${endpoint}`, options);
+    } catch (err) {
+      console.error("Şəbəkə xətası:", err);
+      return null;
+    }
+
+    if (response && response.status === 401) {
+      try {
+        const refreshRes = await fetch(`${API_BASE_URL}/api/v1/auth/refresh`, {
+          method: "POST",
+          credentials: "include"
+        });
+
+        if (refreshRes.ok) {
+          response = await fetch(`${API_BASE_URL}${endpoint}`, options);
+        } else {
+          window.location.href = "auth.html";
+          return null;
+        }
+      } catch (e) {
+        window.location.href = "auth.html";
+        return null;
+      }
+    }
+
+    return response;
+  }
+
   // Sessiya və Analitika Məlumatının Çəkilməsi
   async function loadAnalytics() {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/analytics/me`, {
-        method: "GET",
-        credentials: "include"
+      const response = await fetchWithAuth("/api/v1/analytics/me", {
+        method: "GET"
       });
+
+      if (!response) {
+        skeletonEl.classList.add("hidden");
+        return;
+      }
 
       if (response.status === 401) {
         window.location.href = "auth.html";
