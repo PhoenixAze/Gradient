@@ -1,0 +1,18 @@
+# Backend repository & artifacts
+backend_repo/
+backend_update.patch
+*.patch
+
+# Dependencies
+node_modules/
+bun.lock
+
+# Environment & secrets
+.env
+.env.local
+.env.*.local
+
+# System & logs
+.DS_Store
+Thumbs.db
+*.log
