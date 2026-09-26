@@ -25,8 +25,13 @@ document.addEventListener("DOMContentLoaded", () => {
     // --- SESSİYA YOXLANILMASI: Əgər istifadəçi artıq daxil olubsa dərhal yönləndir ---
     const checkActiveSession = async () => {
         try {
+            const token = sessionStorage.getItem("gradient_access_token") || localStorage.getItem("gradient_access_token");
+            const headers = {};
+            if (token) headers["Authorization"] = `Bearer ${token}`;
+
             const res = await fetch(`${API_BASE_URL}/api/v1/users/me`, {
                 method: "GET",
+                headers,
                 credentials: "include"
             });
 
@@ -41,13 +46,29 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             if (res.status === 401) {
+                const rfToken = localStorage.getItem("gradient_refresh_token") || sessionStorage.getItem("gradient_refresh_token");
+                const rfHeaders = {};
+                if (rfToken) {
+                    rfHeaders["x-refresh-token"] = rfToken;
+                    rfHeaders["Authorization"] = `Bearer ${rfToken}`;
+                }
+
                 const refreshRes = await fetch(`${API_BASE_URL}/api/v1/auth/refresh`, {
                     method: 'POST',
+                    headers: rfHeaders,
                     credentials: 'include'
                 });
 
                 if (refreshRes.ok) {
                     const refreshData = await refreshRes.json();
+                    if (refreshData.access_token) {
+                        sessionStorage.setItem("gradient_access_token", refreshData.access_token);
+                        localStorage.setItem("gradient_access_token", refreshData.access_token);
+                    }
+                    if (refreshData.refresh_token) {
+                        localStorage.setItem("gradient_refresh_token", refreshData.refresh_token);
+                        sessionStorage.setItem("gradient_refresh_token", refreshData.refresh_token);
+                    }
                     if (refreshData.role === 'student') {
                         window.location.href = 'exam.html';
                     } else if (refreshData.role === 'tutor') {
@@ -174,6 +195,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 if (!response.ok) {
                     throw new Error(data.detail || "Giriş zamanı xəta baş verdi.");
+                }
+
+                if (data.access_token) {
+                    sessionStorage.setItem("gradient_access_token", data.access_token);
+                    localStorage.setItem("gradient_access_token", data.access_token);
+                }
+                if (data.refresh_token) {
+                    localStorage.setItem("gradient_refresh_token", data.refresh_token);
+                    sessionStorage.setItem("gradient_refresh_token", data.refresh_token);
                 }
                 
                 if (data.role === 'student') {

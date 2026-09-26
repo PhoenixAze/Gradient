@@ -115,7 +115,7 @@ app.all('/api/*', async (req, res) => {
     }
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 35000);
+    const timeout = setTimeout(() => controller.abort(), 65000);
     fetchOptions.signal = controller.signal;
 
     const backendRes = await fetch(targetUrl, fetchOptions);
@@ -230,10 +230,20 @@ app.all('/api/*', async (req, res) => {
       const lowerKey = key.toLowerCase();
       if (lowerKey === 'content-encoding' || lowerKey === 'content-length') return;
       if (lowerKey === 'set-cookie') {
-        const modifiedCookie = value
-          .replace(/Domain=[^;]+;?/gi, '')
-          .replace(/SameSite=Lax/gi, 'SameSite=None')
-          .replace(/SameSite=Strict/gi, 'SameSite=None');
+        const isHttps = req.secure || req.headers['x-forwarded-proto'] === 'https';
+        let modifiedCookie = value.replace(/Domain=[^;]+;?/gi, '');
+        if (!isHttps) {
+          modifiedCookie = modifiedCookie
+            .replace(/SameSite=None/gi, 'SameSite=Lax')
+            .replace(/Secure;?/gi, '');
+        } else {
+          modifiedCookie = modifiedCookie
+            .replace(/SameSite=Lax/gi, 'SameSite=None')
+            .replace(/SameSite=Strict/gi, 'SameSite=None');
+          if (!modifiedCookie.toLowerCase().includes('secure')) {
+            modifiedCookie += '; Secure';
+          }
+        }
         res.append('Set-Cookie', modifiedCookie);
       } else {
         res.setHeader(key, value);

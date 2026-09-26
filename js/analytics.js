@@ -21,9 +21,53 @@ document.addEventListener("DOMContentLoaded", async () => {
   const subjectListContainer = document.getElementById("subject-list-container");
   const historyTableBody = document.getElementById("history-table-body");
 
+  function getStoredToken() {
+    try {
+      return sessionStorage.getItem("gradient_access_token") || localStorage.getItem("gradient_access_token") || "";
+    } catch (_) {
+      return "";
+    }
+  }
+
+  function getStoredRefreshToken() {
+    try {
+      return localStorage.getItem("gradient_refresh_token") || sessionStorage.getItem("gradient_refresh_token") || "";
+    } catch (_) {
+      return "";
+    }
+  }
+
+  function setStoredTokens(accessToken, refreshToken) {
+    try {
+      if (accessToken) {
+        sessionStorage.setItem("gradient_access_token", accessToken);
+        localStorage.setItem("gradient_access_token", accessToken);
+      }
+      if (refreshToken) {
+        localStorage.setItem("gradient_refresh_token", refreshToken);
+        sessionStorage.setItem("gradient_refresh_token", refreshToken);
+      }
+    } catch (_) {}
+  }
+
+  function clearStoredTokens() {
+    try {
+      sessionStorage.removeItem("gradient_access_token");
+      localStorage.removeItem("gradient_access_token");
+      sessionStorage.removeItem("gradient_refresh_token");
+      localStorage.removeItem("gradient_refresh_token");
+    } catch (_) {}
+  }
+
   // Qlobal Təhlükəsiz API Sorğu İdarəedicisi
   async function fetchWithAuth(endpoint, options = {}) {
     options.credentials = "include";
+    options.headers = options.headers || {};
+
+    const token = getStoredToken();
+    if (token && !options.headers["Authorization"]) {
+      options.headers["Authorization"] = `Bearer ${token}`;
+    }
 
     let response;
     try {
@@ -35,18 +79,33 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     if (response && response.status === 401) {
       try {
+        const rfToken = getStoredRefreshToken();
+        const refreshHeaders = {};
+        if (rfToken) {
+          refreshHeaders["x-refresh-token"] = rfToken;
+          refreshHeaders["Authorization"] = `Bearer ${rfToken}`;
+        }
+
         const refreshRes = await fetch(`${API_BASE_URL}/api/v1/auth/refresh`, {
           method: "POST",
+          headers: refreshHeaders,
           credentials: "include"
         });
 
-        if (refreshRes.ok) {
+        if (refreshRes && refreshRes.ok) {
+          const rfData = await refreshRes.json().catch(() => ({}));
+          if (rfData && rfData.access_token) {
+            setStoredTokens(rfData.access_token, rfData.refresh_token);
+            options.headers["Authorization"] = `Bearer ${rfData.access_token}`;
+          }
           response = await fetch(`${API_BASE_URL}${endpoint}`, options);
         } else {
+          clearStoredTokens();
           window.location.href = "auth.html";
           return null;
         }
       } catch (e) {
+        clearStoredTokens();
         window.location.href = "auth.html";
         return null;
       }

@@ -129,6 +129,17 @@ document.addEventListener("DOMContentLoaded", async () => {
         try { sessionStorage.removeItem(STORAGE_KEY); } catch (_) { /* no-op */ }
     };
 
+    const getAuthHeaders = (extra = {}) => {
+        const headers = { ...extra };
+        try {
+            const token = sessionStorage.getItem("gradient_access_token") || localStorage.getItem("gradient_access_token");
+            if (token && !headers["Authorization"]) {
+                headers["Authorization"] = `Bearer ${token}`;
+            }
+        } catch (_) {}
+        return headers;
+    };
+
     // =========================================================================
     // 1. REPETİTOR PDF SINAĞI İDARƏETMƏSİ (ASSIGNMENT EXAM)
     // =========================================================================
@@ -136,6 +147,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         try {
             const response = await fetch(`${API_BASE_URL}/api/v1/tutor/assignments/${encodeURIComponent(assignmentId)}/start`, {
                 method: 'GET',
+                headers: getAuthHeaders(),
                 credentials: 'include'
             });
 
@@ -339,6 +351,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         try {
             const response = await fetch(`${API_BASE_URL}/api/v1/exams/${encodeURIComponent(examId)}/start`, {
                 method: 'GET',
+                headers: getAuthHeaders(),
                 credentials: 'include'
             });
 
@@ -596,7 +609,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             const response = await fetch(submitUrl, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
                 credentials: 'include',
                 body: JSON.stringify({ answers: userAnswers })
             });

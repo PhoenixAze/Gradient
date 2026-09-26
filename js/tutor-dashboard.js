@@ -154,9 +154,54 @@ document.addEventListener("DOMContentLoaded", async () => {
   let aiConversationHistory = [];
   let isAiResponding = false;
 
-  // --- QLOBAL TƏHLÜKƏSİZ API SORĞU İDARƏEDİCİSİ (ZERO-TRUST & REFRESH TOKEN) ---
+  // Token Köməkçiləri (Third-party cookie-lər bloklanan və Safari/Mobil brauzerlər üçün)
+  function getStoredToken() {
+    try {
+      return sessionStorage.getItem("gradient_access_token") || localStorage.getItem("gradient_access_token") || "";
+    } catch (_) {
+      return "";
+    }
+  }
+
+  function getStoredRefreshToken() {
+    try {
+      return localStorage.getItem("gradient_refresh_token") || sessionStorage.getItem("gradient_refresh_token") || "";
+    } catch (_) {
+      return "";
+    }
+  }
+
+  function setStoredTokens(accessToken, refreshToken) {
+    try {
+      if (accessToken) {
+        sessionStorage.setItem("gradient_access_token", accessToken);
+        localStorage.setItem("gradient_access_token", accessToken);
+      }
+      if (refreshToken) {
+        localStorage.setItem("gradient_refresh_token", refreshToken);
+        sessionStorage.setItem("gradient_refresh_token", refreshToken);
+      }
+    } catch (_) {}
+  }
+
+  function clearStoredTokens() {
+    try {
+      sessionStorage.removeItem("gradient_access_token");
+      localStorage.removeItem("gradient_access_token");
+      sessionStorage.removeItem("gradient_refresh_token");
+      localStorage.removeItem("gradient_refresh_token");
+    } catch (_) {}
+  }
+
+  // --- QLOBAL TƏHLÜKƏSİZ API SORĞU İDARƏEDİCİSİ (ZERO-TRUST, COOKIE + DUAL TOKEN) ---
   async function fetchWithAuth(endpoint, options = {}) {
     options.credentials = "include";
+    options.headers = options.headers || {};
+
+    const token = getStoredToken();
+    if (token && !options.headers["Authorization"]) {
+      options.headers["Authorization"] = `Bearer ${token}`;
+    }
 
     let response;
     try {
@@ -168,19 +213,34 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     if (response && response.status === 401) {
       try {
+        const rfToken = getStoredRefreshToken();
+        const refreshHeaders = {};
+        if (rfToken) {
+          refreshHeaders["x-refresh-token"] = rfToken;
+          refreshHeaders["Authorization"] = `Bearer ${rfToken}`;
+        }
+
         const refreshResponse = await fetch(`${API_BASE_URL}/api/v1/auth/refresh`, {
           method: "POST",
+          headers: refreshHeaders,
           credentials: "include"
         });
 
-        if (refreshResponse.ok) {
+        if (refreshResponse && refreshResponse.ok) {
+          const rfData = await refreshResponse.json().catch(() => ({}));
+          if (rfData && rfData.access_token) {
+            setStoredTokens(rfData.access_token, rfData.refresh_token);
+            options.headers["Authorization"] = `Bearer ${rfData.access_token}`;
+          }
           response = await fetch(`${API_BASE_URL}${endpoint}`, options);
         } else {
+          clearStoredTokens();
           window.location.href = "auth.html";
           return null;
         }
       } catch (refreshErr) {
         console.error("Token yeniləmə xətası:", refreshErr);
+        clearStoredTokens();
         window.location.href = "auth.html";
         return null;
       }
@@ -1402,7 +1462,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   async function loadAssignments() {
     try {
       const res = await fetchWithAuth("/api/v1/tutor/assignments");
-      if (!res.ok) throw new Error("Sınaqlar siyahısı alına bilmədi.");
+      if (!res || !res.ok) throw new Error("Sınaqlar siyahısı alına bilmədi.");
       const list = await res.json();
       tutorAssignmentsList = Array.isArray(list) ? list : [];
 
@@ -1567,7 +1627,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     try {
       const res = await fetchWithAuth(`/api/v1/tutor/assignments/${encodeURIComponent(asgId)}/submissions`);
-      if (!res.ok) throw new Error("Nəticələr yüklənmədi.");
+      if (!res || !res.ok) throw new Error("Nəticələr yüklənmədi.");
       const data = await res.json();
 
       const asg = data.assignment || {};
@@ -1676,7 +1736,14 @@ document.addEventListener("DOMContentLoaded", async () => {
         else card.classList.add("incorrect");
 
         const qInfo = document.createElement("div");
-        qInfo.innerHTML = `<strong>Sual ${i}:</strong> Müəllim Açarı: <b>${correctAns || "-"}</b>`;
+        const strongEl = document.createElement("strong");
+        strongEl.textContent = `Sual ${i}: `;
+        const labelText = document.createTextNode("Müəllim Açarı: ");
+        const bEl = document.createElement("b");
+        bEl.textContent = correctAns || "-";
+        qInfo.appendChild(strongEl);
+        qInfo.appendChild(labelText);
+        qInfo.appendChild(bEl);
         card.appendChild(qInfo);
 
         const badge = document.createElement("span");
@@ -1706,5 +1773,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (btnCloseReviewModal) btnCloseReviewModal.addEventListener("click", closeStudentAnswerReview);
   if (btnCloseReviewModalBtn) btnCloseReviewModalBtn.addEventListener("click", closeStudentAnswerReview);
 
-  // İlk açılışda həm ümumi məlumatları, həm də sınaqları yükləyirik
-  loadAssignments();
+  // İlk açılışda həm ümumi repetitor panelini, həm də fərdi PDF sınaqları paralel yükləyirik
+  await Promise.allSettled([
+    loadDashboard(),
+    loadAssignments()
+  ]);
+});

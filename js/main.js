@@ -12,8 +12,52 @@ const API_BASE_URL = isProductionFrontend
   ? "https://gradient-backend-fam5.onrender.com"
   : "";
 
+function getStoredToken() {
+    try {
+        return sessionStorage.getItem("gradient_access_token") || localStorage.getItem("gradient_access_token") || "";
+    } catch (_) {
+        return "";
+    }
+}
+
+function getStoredRefreshToken() {
+    try {
+        return localStorage.getItem("gradient_refresh_token") || sessionStorage.getItem("gradient_refresh_token") || "";
+    } catch (_) {
+        return "";
+    }
+}
+
+function setStoredTokens(accessToken, refreshToken) {
+    try {
+        if (accessToken) {
+            sessionStorage.setItem("gradient_access_token", accessToken);
+            localStorage.setItem("gradient_access_token", accessToken);
+        }
+        if (refreshToken) {
+            localStorage.setItem("gradient_refresh_token", refreshToken);
+            sessionStorage.setItem("gradient_refresh_token", refreshToken);
+        }
+    } catch (_) {}
+}
+
+function clearStoredTokens() {
+    try {
+        sessionStorage.removeItem("gradient_access_token");
+        localStorage.removeItem("gradient_access_token");
+        sessionStorage.removeItem("gradient_refresh_token");
+        localStorage.removeItem("gradient_refresh_token");
+    } catch (_) {}
+}
+
 async function fetchWithAuth(endpoint, options = {}, redirectOnFailure = true) {
-    options.credentials = 'include'; // HttpOnly cookie-lər üçün məcburidir
+    options.credentials = 'include';
+    options.headers = options.headers || {};
+
+    const token = getStoredToken();
+    if (token && !options.headers["Authorization"]) {
+        options.headers["Authorization"] = `Bearer ${token}`;
+    }
     
     let response;
     try {
@@ -24,19 +68,32 @@ async function fetchWithAuth(endpoint, options = {}, redirectOnFailure = true) {
     }
 
     // Əgər Access Token bitibsə (401)
-    if (response.status === 401) {
+    if (response && response.status === 401) {
         try {
+            const rfToken = getStoredRefreshToken();
+            const refreshHeaders = {};
+            if (rfToken) {
+                refreshHeaders["x-refresh-token"] = rfToken;
+                refreshHeaders["Authorization"] = `Bearer ${rfToken}`;
+            }
+
             // Refresh Token ilə yeni Access Token al
             const refreshResponse = await fetch(`${API_BASE_URL}/api/v1/auth/refresh`, {
                 method: 'POST',
+                headers: refreshHeaders,
                 credentials: 'include'
             });
 
-            if (refreshResponse.ok) {
-                const refreshData = await refreshResponse.json();
+            if (refreshResponse && refreshResponse.ok) {
+                const refreshData = await refreshResponse.json().catch(() => ({}));
+                if (refreshData && refreshData.access_token) {
+                    setStoredTokens(refreshData.access_token, refreshData.refresh_token);
+                    options.headers["Authorization"] = `Bearer ${refreshData.access_token}`;
+                }
                 // Token yeniləndi, orijinal sorğunu təkrarla
                 response = await fetch(`${API_BASE_URL}${endpoint}`, options);
             } else {
+                clearStoredTokens();
                 // Refresh token də bitib -> Lazım gələrsə Çıxış et
                 if (redirectOnFailure) {
                     window.location.href = "auth.html";
@@ -45,6 +102,7 @@ async function fetchWithAuth(endpoint, options = {}, redirectOnFailure = true) {
             }
         } catch (error) {
             console.error("Token yenilənmə xətası:", error);
+            clearStoredTokens();
             if (redirectOnFailure) {
                 window.location.href = "auth.html";
             }
