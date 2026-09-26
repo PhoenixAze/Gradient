@@ -20,7 +20,74 @@
 </head>
 <body class="tutor-layout">
 
-  <!-- REPETİTOR HEADER (Şagird görünüşü düyməsi çıxarılıb) -->
+  <!-- OVERLAY VƏ SAĞ PROFİL MENYUSU -->
+  <div class="overlay" id="tutor-drawer-overlay"></div>
+
+  <aside class="drawer drawer-right" id="tutor-profile-drawer">
+    <div class="drawer-header">
+      <h2 class="drawer-title">Repetitor Profili</h2>
+      <button class="icon-btn close-drawer" id="btn-close-tutor-drawer" aria-label="Bağla">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    
+    <div class="profile-card">
+      <div class="profile-avatar">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+      </div>
+      <div class="profile-details">
+        <h3 class="profile-name" id="drawer-tutor-name">Yüklənir...</h3>
+        <div class="profile-sub" id="drawer-tutor-subject">Fənn</div>
+        <div class="profile-contact" id="drawer-tutor-identifier">Əlaqə</div>
+      </div>
+    </div>
+
+    <!-- 4 RƏQƏMLİ KOD KARTI -->
+    <div class="tutor-code-profile-box">
+      <div class="code-box-header">
+        <span>4 Rəqəmli Repetitor Kodu:</span>
+        <span class="code-badge-pill">Sistem Kodu</span>
+      </div>
+      <div class="code-big-display">
+        <span id="drawer-tutor-code" class="code-digits">----</span>
+        <button class="btn btn-primary btn-sm" id="btn-drawer-copy-code">Kopyala</button>
+      </div>
+      <p class="code-hint">Şagirdləriniz saytda bu 4 rəqəmli kodu daxil edərək qrupunuza qoşulma istəyi göndərə bilərlər.</p>
+    </div>
+
+    <!-- PROFİL TƏNZİMLƏMƏLƏRİ FORMASI -->
+    <div class="tutor-profile-form-wrap">
+      <h4 style="font-size: 0.95rem; margin-bottom: 12px; font-weight: 600;">Məlumatları Yenilə</h4>
+      <form id="tutor-profile-edit-form">
+        <div class="form-group mb-2">
+          <label class="form-label" style="font-size: 0.8rem;">Ad</label>
+          <input type="text" id="edit-tutor-name" class="input-field input-sm" required>
+        </div>
+        <div class="form-group mb-2">
+          <label class="form-label" style="font-size: 0.8rem;">Soyad</label>
+          <input type="text" id="edit-tutor-surname" class="input-field input-sm" required>
+        </div>
+        <div class="form-group mb-3">
+          <label class="form-label" style="font-size: 0.8rem;">Tədris Fənni</label>
+          <input type="text" id="edit-tutor-subject" class="input-field input-sm" required>
+        </div>
+        <div id="profile-edit-feedback" class="auth-alert hidden mb-2" style="font-size: 0.85rem; padding: 8px;"></div>
+        <button type="submit" id="btn-save-tutor-profile" class="btn btn-secondary btn-sm" style="width: 100%;">Məlumatları Saxla</button>
+      </form>
+    </div>
+
+    <nav class="drawer-nav mt-auto">
+      <button class="drawer-link" id="drawer-nav-students">Şagirdlərim</button>
+      <button class="drawer-link" id="drawer-nav-requests">Şagird İstəkləri</button>
+      <button class="drawer-link" id="drawer-nav-assignments">Fərdi Sınaqlar</button>
+      <button class="drawer-link" id="drawer-nav-ai">AI Köməkçi</button>
+      <button class="drawer-link" id="drawer-nav-profile">Profil və Ayarlar</button>
+      <div class="drawer-divider"></div>
+      <button class="drawer-link text-danger" id="btn-drawer-logout">Çıxış et</button>
+    </nav>
+  </aside>
+
+  <!-- REPETİTOR HEADER -->
   <header class="tutor-header">
     <div class="tutor-header-container">
       <div class="tutor-brand-area">
@@ -39,11 +106,14 @@
       </div>
 
       <div class="tutor-user-info">
-        <div class="tutor-profile-pill">
+        <div class="tutor-profile-pill" id="header-profile-pill" style="cursor: pointer;" title="Profili Aç">
           <span id="tutor-name">Yüklənir...</span>
           <span style="color: var(--text-sub);">&bull;</span>
           <span id="tutor-subject" style="color: var(--accent);">Fənn</span>
         </div>
+        <button class="icon-btn" id="btn-toggle-tutor-profile" aria-label="Profil Menyusu" title="Profil və Tənzimləmələr">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+        </button>
         <button id="btn-tutor-logout" class="btn btn-ghost btn-sm">Çıxış</button>
       </div>
     </div>
@@ -60,9 +130,9 @@
       </div>
 
       <div class="tutor-actions-group">
-        <div class="invite-code-box" title="Şagirdləriniz qeydiyyatdan keçərkən bu kodu daxil edə bilərlər">
-          <span style="color: var(--text-muted);">Repetitor Kodu:</span>
-          <span class="invite-code-val" id="invite-code-display">...</span>
+        <div class="invite-code-box" title="Şagirdləriniz saytda bu 4 rəqəmli kodu daxil edərək qrupunuza istək göndərə bilərlər">
+          <span style="color: var(--text-muted); font-size: 0.8rem; font-weight: 600;">4 Rəqəmli Kod:</span>
+          <span class="invite-code-val" id="invite-code-display" style="letter-spacing: 2px; font-weight: 800; font-size: 1.15rem;">----</span>
           <button id="btn-copy-code" class="btn btn-ghost btn-sm" style="padding: 2px 8px;">Kopyala</button>
         </div>
         <button id="btn-hero-create-asg" class="btn btn-primary btn-sm">+ PDF Sınaq Yarat</button>
@@ -119,6 +189,10 @@
             <span>Şagirdlərim</span>
             <span class="tab-badge" id="tab-students-count">0</span>
           </button>
+          <button class="tutor-tab-btn" data-tab="requests" id="tab-btn-requests">
+            <span>Şagird İstəkləri</span>
+            <span class="tab-badge" id="tab-requests-count">0</span>
+          </button>
           <button class="tutor-tab-btn" data-tab="assignments" id="tab-btn-assignments">
             <span>Fərdi Sınaqlar (PDF)</span>
             <span class="tab-badge" id="tab-assignments-count">0</span>
@@ -130,6 +204,9 @@
           <button class="tutor-tab-btn tutor-tab-ai" data-tab="ai" id="tab-btn-ai">
             <span>Tutor AI Köməkçi</span>
             <span class="ai-pill-tag">Gemini AI</span>
+          </button>
+          <button class="tutor-tab-btn" data-tab="profile" id="tab-btn-profile">
+            <span>Profil</span>
           </button>
         </div>
       </div>
@@ -185,6 +262,30 @@
                 <!-- Dinamik doldurulacaq -->
               </tbody>
             </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: ŞAGİRD İSTƏKLƏRİ (JOIN REQUESTS) -->
+      <div class="tutor-tab-pane hidden" id="pane-requests">
+        <div class="tutor-section">
+          <div class="tutor-section-header">
+            <div>
+              <h2 class="tutor-section-title">Şagirdlərin Qrupa Qoşulma İstəkləri</h2>
+              <p class="tutor-section-sub">Şagirdlər sizin 4 rəqəmli kodunuzu daxil edərək qrupa qoşulma sorğusu göndərdikdə burada görünür. Təsdiq etdikdən sonra şagird avtomatik qrupunuza daxil olur.</p>
+            </div>
+            <button class="btn btn-secondary btn-sm" id="btn-refresh-requests">Yenilə</button>
+          </div>
+
+          <div id="requests-empty-state" class="empty-box hidden">
+            <h3 class="empty-box-title">Gözləyən yeni qoşulma istəyi yoxdur</h3>
+            <p class="empty-box-desc">
+              Şagirdləriniz saytda sizin 4 rəqəmli repetitor kodunuzu daxil etdikdə istəklər burada görünəcək və bir kliklə qəbul edə biləcəksiniz.
+            </p>
+          </div>
+
+          <div class="requests-grid" id="requests-grid">
+            <!-- Dinamik olaraq doldurulacaq -->
           </div>
         </div>
       </div>
@@ -359,6 +460,138 @@
                 </button>
               </div>
             </form>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- TAB 5: REPETİTOR PROFİLİ VƏ AYARLAR -->
+      <div class="tutor-tab-pane hidden" id="pane-profile">
+        <div class="tutor-profile-page-grid">
+          
+          <!-- Kart 1: Repetitor Kimliyi və 4 Rəqəmli Sistem Kodu -->
+          <div class="tutor-section profile-card-hero">
+            <div class="profile-hero-top">
+              <div class="profile-avatar-large">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+              </div>
+              <div class="profile-hero-info">
+                <div class="profile-badge-row">
+                  <span class="role-badge">Təsdiqlənmiş Repetitor</span>
+                  <span class="subject-badge" id="profile-pane-subject-pill">Fənn: Ümumi</span>
+                </div>
+                <h2 class="profile-hero-name" id="profile-pane-fullname">Yüklənir...</h2>
+                <div class="profile-hero-email" id="profile-pane-identifier">istifadeci@gradient.az</div>
+              </div>
+            </div>
+
+            <!-- 4 Rəqəmli Kod Ön Plan Bloku -->
+            <div class="tutor-code-highlight-card">
+              <div class="code-highlight-header">
+                <div>
+                  <span class="code-label-tag">Sistem Tərəfindən Təyin Edilmiş 4 Rəqəmli Kod:</span>
+                  <h3 class="code-sub-title">Şagirdlərinizin qrupa qoşulması üçün rəsmi kodunuz</h3>
+                </div>
+                <button type="button" class="btn btn-primary btn-sm" id="btn-profile-pane-copy-code">
+                  Kodu Kopyala
+                </button>
+              </div>
+              <div class="code-number-display">
+                <span id="profile-pane-code" class="code-huge-digits">----</span>
+              </div>
+              <p class="code-instruction-text">
+                Bu 4 rəqəmli kodu şagirdlərinizlə bölüşün. Şagirdlər sistemə daxil olaraq "Mənim Repetitorum" bölməsində bu kodu yazıb istək göndərəcəklər. Siz gələn istəkləri <a href="#" id="link-goto-requests" style="color: var(--accent); font-weight: 600;">Şagird İstəkləri</a> bölməsindən bir kliklə təsdiq edə bilərsiniz.
+              </p>
+            </div>
+          </div>
+
+          <!-- Kart 2: Şəxsi Məlumatları Redaktə Et -->
+          <div class="tutor-section">
+            <div class="tutor-section-header">
+              <div>
+                <h3 class="tutor-section-title">Şəxsi Məlumatlar</h3>
+                <p class="tutor-section-sub">Profil adınızı, soyadınızı və tədris etdiyiniz fənni yeniləyin.</p>
+              </div>
+            </div>
+
+            <form id="form-profile-pane-info" class="profile-pane-form">
+              <div class="form-row-2">
+                <div class="form-group">
+                  <label for="profile-input-firstname" class="form-label">Ad</label>
+                  <input type="text" id="profile-input-firstname" class="input-field" placeholder="Adınız" required>
+                </div>
+                <div class="form-group">
+                  <label for="profile-input-lastname" class="form-label">Soyad</label>
+                  <input type="text" id="profile-input-lastname" class="input-field" placeholder="Soyadınız" required>
+                </div>
+              </div>
+
+              <div class="form-row-2">
+                <div class="form-group">
+                  <label for="profile-input-subject" class="form-label">Tədris Fənni</label>
+                  <input type="text" id="profile-input-subject" class="input-field" placeholder="Məs: Riyaziyyat, Fizika, Azərbaycan dili" required>
+                </div>
+                <div class="form-group">
+                  <label for="profile-input-identifier" class="form-label">Əlaqə E-poçt / Nömrə (Sistem ID)</label>
+                  <input type="text" id="profile-input-identifier" class="input-field" disabled readonly style="background: var(--bg-muted); color: var(--text-muted); cursor: not-allowed;">
+                </div>
+              </div>
+
+              <div id="profile-pane-feedback" class="auth-alert hidden mb-3"></div>
+
+              <button type="submit" id="btn-save-profile-pane" class="btn btn-primary">
+                <span class="btn-text">Məlumatları Saxla</span>
+                <span class="loader hidden"></span>
+              </button>
+            </form>
+          </div>
+
+          <!-- Kart 3: Təhlükəsizlik və Şifrə Dəyişdirmə -->
+          <div class="tutor-section">
+            <div class="tutor-section-header">
+              <div>
+                <h3 class="tutor-section-title">Hesab Təhlükəsizliyi və Şifrə</h3>
+                <p class="tutor-section-sub">Hesabınızın təhlükəsizliyi üçün şifrənizi mütəmadi yeniləyin.</p>
+              </div>
+            </div>
+
+            <form id="form-profile-pane-password" class="profile-pane-form">
+              <div class="form-row-3">
+                <div class="form-group">
+                  <label for="profile-pass-current" class="form-label">Cari Şifrə</label>
+                  <input type="password" id="profile-pass-current" class="input-field" placeholder="••••••••" required>
+                </div>
+                <div class="form-group">
+                  <label for="profile-pass-new" class="form-label">Yeni Şifrə</label>
+                  <input type="password" id="profile-pass-new" class="input-field" placeholder="Ən azı 8 simvol" minlength="8" required>
+                </div>
+                <div class="form-group">
+                  <label for="profile-pass-confirm" class="form-label">Yeni Şifrə Təkrarı</label>
+                  <input type="password" id="profile-pass-confirm" class="input-field" placeholder="••••••••" minlength="8" required>
+                </div>
+              </div>
+
+              <div id="profile-pass-feedback" class="auth-alert hidden mb-3"></div>
+
+              <button type="submit" id="btn-save-profile-pass" class="btn btn-secondary">
+                <span class="btn-text">Şifrəni Yenilə</span>
+                <span class="loader hidden"></span>
+              </button>
+            </form>
+          </div>
+
+          <!-- Kart 4: Çıxış -->
+          <div class="tutor-section" style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <h4 style="margin: 0 0 4px 0; font-size: 1rem;">Hesabdan Çıxış</h4>
+              <p style="margin: 0; color: var(--text-muted); font-size: 0.85rem;">Bütün aktiv sessiyanı sonlandıraraq təhlükəsiz çıxış edin.</p>
+            </div>
+            <button type="button" class="btn btn-ghost btn-sm text-danger" id="btn-profile-pane-logout" style="border: 1px solid var(--border);">
+              Çıxış et
+            </button>
           </div>
 
         </div>

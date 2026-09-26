@@ -36,11 +36,14 @@
       <div class="profile-details">
         <h3 class="profile-name">Yüklənir...</h3>
         <div class="profile-balance">Balans: <span>0.00 ₼</span></div>
+        <div id="drawer-student-tutor-pill" style="font-size: 0.8rem; color: var(--accent); margin-top: 4px;">Repetitor: Yoxdur</div>
         <button id="btn-topup" class="btn-topup mt-2">Balansı artır</button>
       </div>
     </div>
 
     <nav class="drawer-nav">
+      <button class="drawer-link" data-target="view-exams">Sınaqlar</button>
+      <button class="drawer-link" data-target="view-tutor">Mənim Repetitorum</button>
       <button class="drawer-link" data-target="view-completed-exams">Bitmiş sınaqlar</button>
       <a href="analytics.html" class="drawer-link">Analitika</a>
       <button class="drawer-link" data-target="view-settings">Tənzimləmələr</button>
@@ -71,6 +74,22 @@
         <div class="dash-welcome">
           <h1 class="dash-title">Xoş gəldin</h1>
           <p class="dash-subtitle">İşləmək istədiyin sınağı seç.</p>
+        </div>
+
+        <!-- Repetitora Qoşulma və ya Aktiv Qrup Quick Card -->
+        <div id="quick-tutor-banner" class="settings-card mb-4" style="padding: 12px 18px; display: flex; align-items: center; justify-content: space-between; border-left: 4px solid var(--accent); background: var(--bg-card); cursor: pointer;" title="Repetitor bölməsinə keç">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(59, 130, 246, 0.1); color: var(--accent); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            </div>
+            <div>
+              <div id="quick-tutor-title" style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Repetitor Qrupuna Qoşul</div>
+              <div id="quick-tutor-sub" style="font-size: 0.8rem; color: var(--text-muted);">Müəlliminizin 4 rəqəmli kodunu daxil edərək fərdi sınaqları qəbul edin</div>
+            </div>
+          </div>
+          <button type="button" class="btn btn-secondary btn-sm" id="btn-quick-goto-tutor" style="pointer-events: none;">
+            Keçid &rarr;
+          </button>
         </div>
 
         <div class="exam-content">
@@ -163,6 +182,81 @@
               <strong id="contact-phone" class="contact-value">Yüklənir...</strong>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- BÖLMƏ 5: MƏNİM REPETİTORUM (4 RƏQƏMLİ KOD VƏ İSTƏK) -->
+      <div id="view-tutor" class="main-view hidden">
+        <button class="btn-back go-home-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          Geri qayıt
+        </button>
+        <h1 class="dash-title">Mənim Repetitorum</h1>
+        <p class="dash-subtitle mb-4">Repetitorunuzun 4 rəqəmli sistem kodunu daxil edərək qrupa qoşulun və ya aktiv tədris qrupunuzu idarə edin.</p>
+
+        <!-- VƏZİYYƏT 1: REPETİTORA BAĞLIDIR -->
+        <div id="tutor-connected-card" class="settings-card hidden">
+          <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 16px;">
+            <div>
+              <span style="font-size: 0.8rem; color: var(--accent); font-weight: 700; text-transform: uppercase;">Aktiv Repetitor Qrupu</span>
+              <h2 id="connected-tutor-name" style="margin: 4px 0; font-size: 1.25rem;">Müəllim</h2>
+              <div id="connected-tutor-subject" style="color: var(--text-muted); font-size: 0.9rem;">Fənn: Riyaziyyat</div>
+            </div>
+            <div style="text-align: right;">
+              <span style="font-size: 0.75rem; color: var(--text-muted); display: block;">Repetitor Kodu:</span>
+              <span id="connected-tutor-code" style="font-family: monospace; font-size: 1.25rem; font-weight: 800; color: var(--accent); letter-spacing: 2px;">----</span>
+            </div>
+          </div>
+          <p style="font-size: 0.9rem; color: var(--text-muted); margin: 0;">
+            Siz bu repetitorun rəsmi qrupundasınız. Müəlliminizin təyin etdiyi fərdi sınaqlar və cavab kartları profilinizdə avtomatik aktivləşir.
+          </p>
+          <div style="margin-top: 8px;">
+            <button id="btn-leave-tutor" class="btn btn-ghost btn-sm text-danger">Qrupdan Ayrıl</button>
+          </div>
+        </div>
+
+        <!-- VƏZİYYƏT 2: İSTƏK GÖNDƏRİLİB (GÖZLƏNİLİR) -->
+        <div id="tutor-pending-card" class="settings-card hidden">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div>
+              <span class="status-badge status-warning" style="font-size: 0.75rem;">Təsdiq Gözlənilir</span>
+              <h3 id="pending-tutor-name" style="margin: 8px 0 4px 0; font-size: 1.15rem;">Müəllim</h3>
+              <p id="pending-tutor-desc" style="color: var(--text-muted); font-size: 0.85rem; margin: 0;">Qoşulma istəyiniz repetitora göndərilib. Müəllim təsdiq etdikdən sonra qrupa daxil olacaqsınız.</p>
+            </div>
+          </div>
+          <div style="margin-top: 12px;">
+            <button id="btn-cancel-tutor-request" class="btn btn-secondary btn-sm">İstəyi Ləğv Et</button>
+          </div>
+        </div>
+
+        <!-- VƏZİYYƏT 3: REPETİTOR YOXDUR (4 RƏQƏMLİ KOD FORMASI) -->
+        <div id="tutor-join-card" class="settings-card">
+          <h3 style="font-size: 1.05rem; margin: 0 0 8px 0; font-weight: 600;">4 Rəqəmli Kod ilə Repetitora Qoşul</h3>
+          <p style="font-size: 0.9rem; color: var(--text-muted); margin: 0 0 20px 0;">
+            Repetitorunuzdan onun sistem tərəfindən verilmiş 4 rəqəmli kodunu öyrənin və aşağıya daxil edin.
+          </p>
+          <form id="form-join-tutor">
+            <div class="form-group mb-3">
+              <label for="input-tutor-code" class="form-label" style="font-weight: 600;">Repetitor Kodu (4 rəqəm):</label>
+              <div style="display: flex; gap: 12px; max-width: 340px; margin-top: 6px;">
+                <input 
+                  type="text" 
+                  id="input-tutor-code" 
+                  maxlength="4" 
+                  class="search-box" 
+                  placeholder="Məs: 4829" 
+                  style="font-family: monospace; font-size: 1.25rem; font-weight: 700; letter-spacing: 4px; text-align: center; padding: 10px; min-width: unset; width: 160px;" 
+                  required
+                  autocomplete="off"
+                >
+                <button type="submit" id="btn-submit-join-tutor" class="btn btn-primary" style="white-space: nowrap; padding: 10px 18px;">
+                  <span class="btn-text">İstək Göndər</span>
+                  <span class="loader hidden"></span>
+                </button>
+              </div>
+            </div>
+            <div id="tutor-join-feedback" class="auth-alert hidden" style="max-width: 400px;"></div>
+          </form>
         </div>
       </div>
 

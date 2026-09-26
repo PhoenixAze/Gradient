@@ -2,6 +2,7 @@
 
 const isProductionFrontend = typeof window !== "undefined" && (
   window.location.hostname === "phoenixaze.github.io" ||
+  window.location.hostname.endsWith("github.io") ||
   window.location.hostname === "gradient.az" ||
   window.location.hostname === "www.gradient.az"
 );

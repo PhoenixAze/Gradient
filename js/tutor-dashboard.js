@@ -2,6 +2,7 @@
 
 const isProductionFrontend = typeof window !== "undefined" && (
   window.location.hostname === "phoenixaze.github.io" ||
+  window.location.hostname.endsWith("github.io") ||
   window.location.hostname === "gradient.az" ||
   window.location.hostname === "www.gradient.az"
 );
@@ -21,6 +22,61 @@ document.addEventListener("DOMContentLoaded", async () => {
   const inviteCodeDisplay = document.getElementById("invite-code-display");
   const btnCopyCode = document.getElementById("btn-copy-code");
   const btnLogout = document.getElementById("btn-tutor-logout");
+  const btnToggleTutorProfile = document.getElementById("btn-toggle-tutor-profile");
+  const headerProfilePill = document.getElementById("header-profile-pill");
+
+  // Repetitor Profil Menyu (Drawer) Elementləri
+  const tutorDrawerOverlay = document.getElementById("tutor-drawer-overlay");
+  const tutorProfileDrawer = document.getElementById("tutor-profile-drawer");
+  const btnCloseTutorDrawer = document.getElementById("btn-close-tutor-drawer");
+  const drawerTutorName = document.getElementById("drawer-tutor-name");
+  const drawerTutorSubject = document.getElementById("drawer-tutor-subject");
+  const drawerTutorIdentifier = document.getElementById("drawer-tutor-identifier");
+  const drawerTutorCode = document.getElementById("drawer-tutor-code");
+  const btnDrawerCopyCode = document.getElementById("btn-drawer-copy-code");
+  const btnDrawerLogout = document.getElementById("btn-drawer-logout");
+  const tutorProfileEditForm = document.getElementById("tutor-profile-edit-form");
+  const editTutorName = document.getElementById("edit-tutor-name");
+  const editTutorSurname = document.getElementById("edit-tutor-surname");
+  const editTutorSubject = document.getElementById("edit-tutor-subject");
+  const profileEditFeedback = document.getElementById("profile-edit-feedback");
+
+  // Drawer Naviqasiya
+  const drawerNavStudents = document.getElementById("drawer-nav-students");
+  const drawerNavRequests = document.getElementById("drawer-nav-requests");
+  const drawerNavAssignments = document.getElementById("drawer-nav-assignments");
+  const drawerNavAi = document.getElementById("drawer-nav-ai");
+  const drawerNavProfile = document.getElementById("drawer-nav-profile");
+
+  // Profil Bölməsi (Dedicated Profile Pane) Elementləri
+  const tabBtnProfile = document.getElementById("tab-btn-profile");
+  const paneProfile = document.getElementById("pane-profile");
+  const profilePaneFullname = document.getElementById("profile-pane-fullname");
+  const profilePaneSubjectPill = document.getElementById("profile-pane-subject-pill");
+  const profilePaneIdentifier = document.getElementById("profile-pane-identifier");
+  const profilePaneCode = document.getElementById("profile-pane-code");
+  const btnProfilePaneCopyCode = document.getElementById("btn-profile-pane-copy-code");
+  const linkGotoRequests = document.getElementById("link-goto-requests");
+  const formProfilePaneInfo = document.getElementById("form-profile-pane-info");
+  const profileInputFirstname = document.getElementById("profile-input-firstname");
+  const profileInputLastname = document.getElementById("profile-input-lastname");
+  const profileInputSubject = document.getElementById("profile-input-subject");
+  const profileInputIdentifier = document.getElementById("profile-input-identifier");
+  const profilePaneFeedback = document.getElementById("profile-pane-feedback");
+  const formProfilePanePassword = document.getElementById("form-profile-pane-password");
+  const profilePassCurrent = document.getElementById("profile-pass-current");
+  const profilePassNew = document.getElementById("profile-pass-new");
+  const profilePassConfirm = document.getElementById("profile-pass-confirm");
+  const profilePassFeedback = document.getElementById("profile-pass-feedback");
+  const btnProfilePaneLogout = document.getElementById("btn-profile-pane-logout");
+
+  // Şagird İstəkləri (Join Requests) Elementləri
+  const tabBtnRequests = document.getElementById("tab-btn-requests");
+  const paneRequests = document.getElementById("pane-requests");
+  const tabRequestsCount = document.getElementById("tab-requests-count");
+  const requestsEmptyState = document.getElementById("requests-empty-state");
+  const requestsGrid = document.getElementById("requests-grid");
+  const btnRefreshRequests = document.getElementById("btn-refresh-requests");
 
   // Metrikalar
   const statTotalStudents = document.getElementById("stat-total-students");
@@ -336,13 +392,75 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
+  // --- PROFIL MENYUSU (DRAWER) VƏ 4 RƏQƏMLİ KOD IDARƏETMƏSİ ---
+  function openTutorDrawer() {
+    if (tutorProfileDrawer) tutorProfileDrawer.classList.add("active");
+    if (tutorDrawerOverlay) tutorDrawerOverlay.classList.add("active");
+  }
+
+  function closeTutorDrawer() {
+    if (tutorProfileDrawer) tutorProfileDrawer.classList.remove("active");
+    if (tutorDrawerOverlay) tutorDrawerOverlay.classList.remove("active");
+  }
+
+  if (btnToggleTutorProfile) btnToggleTutorProfile.addEventListener("click", openTutorDrawer);
+  if (headerProfilePill) headerProfilePill.addEventListener("click", openTutorDrawer);
+  if (btnCloseTutorDrawer) btnCloseTutorDrawer.addEventListener("click", closeTutorDrawer);
+  if (tutorDrawerOverlay) tutorDrawerOverlay.addEventListener("click", closeTutorDrawer);
+
+  if (drawerNavStudents) drawerNavStudents.addEventListener("click", () => { closeTutorDrawer(); switchTab("students"); });
+  if (drawerNavRequests) drawerNavRequests.addEventListener("click", () => { closeTutorDrawer(); switchTab("requests"); });
+  if (drawerNavAssignments) drawerNavAssignments.addEventListener("click", () => { closeTutorDrawer(); switchTab("assignments"); });
+  if (drawerNavAi) drawerNavAi.addEventListener("click", () => { closeTutorDrawer(); switchTab("ai"); });
+
+  async function copy4DigitCode() {
+    const code = (drawerTutorCode && drawerTutorCode.textContent) || (inviteCodeDisplay && inviteCodeDisplay.textContent) || "";
+    if (!code || code === "----" || code === "...") return;
+    try {
+      await navigator.clipboard.writeText(code);
+      if (btnCopyCode) {
+        const orig = btnCopyCode.textContent;
+        btnCopyCode.textContent = "Kopyalandı!";
+        setTimeout(() => { btnCopyCode.textContent = orig; }, 2000);
+      }
+      if (btnDrawerCopyCode) {
+        const orig = btnDrawerCopyCode.textContent;
+        btnDrawerCopyCode.textContent = "Kopyalandı!";
+        setTimeout(() => { btnDrawerCopyCode.textContent = orig; }, 2000);
+      }
+    } catch (_) {}
+  }
+  if (btnCopyCode) btnCopyCode.addEventListener("click", copy4DigitCode);
+  if (btnDrawerCopyCode) btnDrawerCopyCode.addEventListener("click", copy4DigitCode);
+
   function renderTutorInfo(tutor) {
     if (!tutor) return;
     const fullName = `${tutor.first_name || ""} ${tutor.last_name || ""}`.trim() || "Repetitor";
     tutorNameEl.textContent = fullName;
     tutorSubjectEl.textContent = tutor.subject || "Ümumi";
     welcomeHeadingEl.textContent = `Xoş gəldiniz, ${tutor.first_name || "Müəllim"}`;
-    inviteCodeDisplay.textContent = tutor.invite_code || tutor.identifier || "-";
+    
+    // 4 rəqəmli unikal sistem kodu
+    const code = tutor.tutor_code || tutor.invite_code || tutor.identifier || "-";
+    if (inviteCodeDisplay) inviteCodeDisplay.textContent = code;
+    if (drawerTutorCode) drawerTutorCode.textContent = code;
+    if (drawerTutorName) drawerTutorName.textContent = fullName;
+    if (drawerTutorSubject) drawerTutorSubject.textContent = tutor.subject || "Ümumi";
+    if (drawerTutorIdentifier) drawerTutorIdentifier.textContent = tutor.identifier || "";
+
+    if (editTutorName) editTutorName.value = tutor.first_name || "";
+    if (editTutorSurname) editTutorSurname.value = tutor.last_name || "";
+    if (editTutorSubject) editTutorSubject.value = tutor.subject || "";
+
+    // Profil bölməsi (Dedicated Profile Pane)
+    if (profilePaneFullname) profilePaneFullname.textContent = fullName;
+    if (profilePaneSubjectPill) profilePaneSubjectPill.textContent = `Fənn: ${tutor.subject || "Ümumi"}`;
+    if (profilePaneIdentifier) profilePaneIdentifier.textContent = tutor.identifier || "";
+    if (profilePaneCode) profilePaneCode.textContent = code;
+    if (profileInputFirstname) profileInputFirstname.value = tutor.first_name || "";
+    if (profileInputLastname) profileInputLastname.value = tutor.last_name || "";
+    if (profileInputSubject) profileInputSubject.value = tutor.subject || "";
+    if (profileInputIdentifier) profileInputIdentifier.value = tutor.identifier || "";
   }
 
   function renderStats(stats) {
@@ -368,9 +486,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   function switchTab(targetTab) {
     const tabs = [
       { id: "students", btn: tabBtnStudents, pane: paneStudents },
+      { id: "requests", btn: tabBtnRequests, pane: paneRequests },
       { id: "assignments", btn: tabBtnAssignments, pane: paneAssignments },
       { id: "exams", btn: tabBtnExams, pane: paneExams },
-      { id: "ai", btn: tabBtnAi, pane: paneAi }
+      { id: "ai", btn: tabBtnAi, pane: paneAi },
+      { id: "profile", btn: tabBtnProfile, pane: paneProfile }
     ];
 
     tabs.forEach(({ id, btn, pane }) => {
@@ -380,6 +500,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         pane.classList.remove("hidden");
         if (id === "assignments") {
           loadAssignments();
+        } else if (id === "requests") {
+          loadJoinRequests();
         }
       } else {
         btn.classList.remove("active");
@@ -389,12 +511,23 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   if (tabBtnStudents) tabBtnStudents.addEventListener("click", () => switchTab("students"));
+  if (tabBtnRequests) tabBtnRequests.addEventListener("click", () => switchTab("requests"));
   if (tabBtnAssignments) tabBtnAssignments.addEventListener("click", () => switchTab("assignments"));
   if (tabBtnExams) tabBtnExams.addEventListener("click", () => switchTab("exams"));
   if (tabBtnAi) tabBtnAi.addEventListener("click", () => {
     switchTab("ai");
     if (aiQueryInput) aiQueryInput.focus();
   });
+  if (tabBtnProfile) tabBtnProfile.addEventListener("click", () => switchTab("profile"));
+  if (drawerNavProfile) drawerNavProfile.addEventListener("click", () => {
+    closeTutorDrawer();
+    switchTab("profile");
+  });
+  if (linkGotoRequests) linkGotoRequests.addEventListener("click", (e) => {
+    e.preventDefault();
+    switchTab("requests");
+  });
+  if (btnProfilePaneCopyCode) btnProfilePaneCopyCode.addEventListener("click", copy4DigitCode);
 
   // --- 3. ŞAGİRD AXTARIŞI VƏ FİLTR ---
   function getFilteredStudents() {
@@ -1773,9 +1906,315 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (btnCloseReviewModal) btnCloseReviewModal.addEventListener("click", closeStudentAnswerReview);
   if (btnCloseReviewModalBtn) btnCloseReviewModalBtn.addEventListener("click", closeStudentAnswerReview);
 
-  // İlk açılışda həm ümumi repetitor panelini, həm də fərdi PDF sınaqları paralel yükləyirik
+  // --- ŞAGİRD QOŞULMA İSTƏKLƏRİ İDARƏETMƏSİ (JOIN REQUESTS) ---
+  async function loadJoinRequests() {
+    try {
+      const res = await fetchWithAuth("/api/v1/tutor/requests");
+      if (!res || !res.ok) {
+        renderJoinRequests([]);
+        return;
+      }
+      const requests = await res.json();
+      const list = Array.isArray(requests) ? requests : [];
+      if (tabRequestsCount) tabRequestsCount.textContent = list.length;
+      renderJoinRequests(list);
+    } catch (err) {
+      console.warn("Load requests warning:", err);
+      renderJoinRequests([]);
+    }
+  }
+
+  function renderJoinRequests(requests) {
+    if (!requestsGrid) return;
+    requestsGrid.replaceChildren();
+
+    if (!requests || requests.length === 0) {
+      if (requestsEmptyState) requestsEmptyState.classList.remove("hidden");
+      return;
+    }
+
+    if (requestsEmptyState) requestsEmptyState.classList.add("hidden");
+
+    requests.forEach(req => {
+      const card = document.createElement("div");
+      card.className = "request-card";
+
+      const header = document.createElement("div");
+      header.className = "request-card-header";
+
+      const nameEl = document.createElement("h3");
+      nameEl.className = "request-student-name";
+      nameEl.textContent = req.student_name || "Şagird";
+
+      const timeEl = document.createElement("span");
+      timeEl.className = "request-time-badge";
+      timeEl.textContent = req.created_at ? new Date(req.created_at).toLocaleDateString("az-AZ") : "Yeni";
+
+      header.appendChild(nameEl);
+      header.appendChild(timeEl);
+      card.appendChild(header);
+
+      const details = document.createElement("div");
+      details.className = "request-details";
+
+      const gradeRow = document.createElement("div");
+      const gradeStrong = document.createElement("strong");
+      gradeStrong.textContent = "Sinif: ";
+      gradeRow.appendChild(gradeStrong);
+      gradeRow.appendChild(document.createTextNode(req.student_grade ? `${req.student_grade}-ci sinif` : "Qeyd edilməyib"));
+
+      const contactRow = document.createElement("div");
+      const contactStrong = document.createElement("strong");
+      contactStrong.textContent = "Əlaqə: ";
+      contactRow.appendChild(contactStrong);
+      contactRow.appendChild(document.createTextNode(req.student_identifier || "-"));
+
+      details.appendChild(gradeRow);
+      details.appendChild(contactRow);
+      card.appendChild(details);
+
+      const actions = document.createElement("div");
+      actions.className = "request-actions";
+
+      const btnAccept = document.createElement("button");
+      btnAccept.type = "button";
+      btnAccept.className = "btn btn-primary btn-sm";
+      btnAccept.textContent = "✓ Qəbul Et";
+      btnAccept.addEventListener("click", () => acceptJoinRequest(req.id, req.student_name));
+
+      const btnReject = document.createElement("button");
+      btnReject.type = "button";
+      btnReject.className = "btn btn-ghost btn-sm text-danger";
+      btnReject.textContent = "✕ Rədd Et";
+      btnReject.addEventListener("click", () => rejectJoinRequest(req.id, req.student_name));
+
+      actions.appendChild(btnAccept);
+      actions.appendChild(btnReject);
+      card.appendChild(actions);
+
+      requestsGrid.appendChild(card);
+    });
+  }
+
+  async function acceptJoinRequest(requestId, studentName) {
+    try {
+      const res = await fetchWithAuth(`/api/v1/tutor/requests/${encodeURIComponent(requestId)}/accept`, {
+        method: "POST"
+      });
+      if (!res || !res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || "İstəyi qəbul etmək mümkün olmadı.");
+      }
+      alert(`${studentName || 'Şagird'} uğurla qrupa qəbul edildi.`);
+      await Promise.allSettled([
+        loadDashboard(),
+        loadJoinRequests()
+      ]);
+    } catch (err) {
+      alert("Xəta: " + err.message);
+    }
+  }
+
+  async function rejectJoinRequest(requestId, studentName) {
+    if (!confirm(`${studentName || 'Şagirdin'} qoşulma istəyini rədd etmək istədiyinizdən əminsiniz?`)) return;
+    try {
+      const res = await fetchWithAuth(`/api/v1/tutor/requests/${encodeURIComponent(requestId)}/reject`, {
+        method: "POST"
+      });
+      if (!res || !res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || "İstəyi rədd etmək mümkün olmadı.");
+      }
+      await loadJoinRequests();
+    } catch (err) {
+      alert("Xəta: " + err.message);
+    }
+  }
+
+  if (btnRefreshRequests) {
+    btnRefreshRequests.addEventListener("click", () => loadJoinRequests());
+  }
+
+  // --- REPETİTOR PROFİL FORMASI DƏYİŞİKLİKLƏRİ ---
+  if (tutorProfileEditForm) {
+    tutorProfileEditForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const first_name = editTutorName ? editTutorName.value.trim() : "";
+      const last_name = editTutorSurname ? editTutorSurname.value.trim() : "";
+      const subject = editTutorSubject ? editTutorSubject.value.trim() : "";
+
+      if (!first_name || !last_name) return;
+
+      try {
+        const btnSave = document.getElementById("btn-save-tutor-profile");
+        if (btnSave) btnSave.disabled = true;
+
+        const res = await fetchWithAuth("/api/v1/tutor/profile", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ first_name, last_name, subject })
+        });
+
+        if (!res || !res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.detail || "Profil yenilənmədi.");
+        }
+
+        if (profileEditFeedback) {
+          profileEditFeedback.textContent = "Profil məlumatları uğurla saxlanıldı!";
+          profileEditFeedback.className = "auth-alert alert-success";
+          profileEditFeedback.classList.remove("hidden");
+          setTimeout(() => profileEditFeedback.classList.add("hidden"), 3000);
+        }
+
+        await loadDashboard();
+      } catch (err) {
+        if (profileEditFeedback) {
+          profileEditFeedback.textContent = err.message;
+          profileEditFeedback.className = "auth-alert alert-danger";
+          profileEditFeedback.classList.remove("hidden");
+        }
+      } finally {
+        const btnSave = document.getElementById("btn-save-tutor-profile");
+        if (btnSave) btnSave.disabled = false;
+      }
+    });
+  }
+
+  // --- PROFİL PANE: MƏLUMATLARIN SAXLANILMASI ---
+  if (formProfilePaneInfo) {
+    formProfilePaneInfo.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const first_name = profileInputFirstname ? profileInputFirstname.value.trim() : "";
+      const last_name = profileInputLastname ? profileInputLastname.value.trim() : "";
+      const subject = profileInputSubject ? profileInputSubject.value.trim() : "";
+
+      if (!first_name || !last_name) return;
+
+      const btnSave = document.getElementById("btn-save-profile-pane");
+      const btnText = btnSave ? btnSave.querySelector(".btn-text") : null;
+      const loader = btnSave ? btnSave.querySelector(".loader") : null;
+      if (btnText) btnText.classList.add("hidden");
+      if (loader) loader.classList.remove("hidden");
+      if (btnSave) btnSave.disabled = true;
+
+      try {
+        const res = await fetchWithAuth("/api/v1/tutor/profile", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ first_name, last_name, subject })
+        });
+
+        if (!res || !res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.detail || "Məlumatları saxlamaq mümkün olmadı.");
+        }
+
+        if (profilePaneFeedback) {
+          profilePaneFeedback.textContent = "Şəxsi məlumatlarınız uğurla saxlanıldı!";
+          profilePaneFeedback.className = "auth-alert alert-success";
+          profilePaneFeedback.classList.remove("hidden");
+          setTimeout(() => profilePaneFeedback.classList.add("hidden"), 3500);
+        }
+
+        await loadDashboard();
+      } catch (err) {
+        if (profilePaneFeedback) {
+          profilePaneFeedback.textContent = err.message;
+          profilePaneFeedback.className = "auth-alert alert-danger";
+          profilePaneFeedback.classList.remove("hidden");
+        }
+      } finally {
+        if (btnText) btnText.classList.remove("hidden");
+        if (loader) loader.classList.add("hidden");
+        if (btnSave) btnSave.disabled = false;
+      }
+    });
+  }
+
+  // --- PROFİL PANE: ŞİFRƏNİN YENİLƏNMƏSİ ---
+  if (formProfilePanePassword) {
+    formProfilePanePassword.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const current_password = profilePassCurrent ? profilePassCurrent.value : "";
+      const new_password = profilePassNew ? profilePassNew.value : "";
+      const confirm_password = profilePassConfirm ? profilePassConfirm.value : "";
+
+      if (!current_password || !new_password) return;
+
+      if (new_password !== confirm_password) {
+        if (profilePassFeedback) {
+          profilePassFeedback.textContent = "Yeni şifrələr uyğun gəlmir.";
+          profilePassFeedback.className = "auth-alert alert-danger";
+          profilePassFeedback.classList.remove("hidden");
+        }
+        return;
+      }
+
+      if (new_password.length < 8) {
+        if (profilePassFeedback) {
+          profilePassFeedback.textContent = "Yeni şifrə ən azı 8 simvol olmalıdır.";
+          profilePassFeedback.className = "auth-alert alert-danger";
+          profilePassFeedback.classList.remove("hidden");
+        }
+        return;
+      }
+
+      const btnSave = document.getElementById("btn-save-profile-pass");
+      const btnText = btnSave ? btnSave.querySelector(".btn-text") : null;
+      const loader = btnSave ? btnSave.querySelector(".loader") : null;
+      if (btnText) btnText.classList.add("hidden");
+      if (loader) loader.classList.remove("hidden");
+      if (btnSave) btnSave.disabled = true;
+
+      try {
+        const res = await fetchWithAuth("/api/v1/tutor/profile", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ current_password, new_password })
+        });
+
+        if (!res || !res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.detail || "Şifrəni yeniləmək mümkün olmadı. Cari şifrənin doğruluğunu yoxlayın.");
+        }
+
+        formProfilePanePassword.reset();
+        if (profilePassFeedback) {
+          profilePassFeedback.textContent = "Şifrəniz uğurla yeniləndi!";
+          profilePassFeedback.className = "auth-alert alert-success";
+          profilePassFeedback.classList.remove("hidden");
+          setTimeout(() => profilePassFeedback.classList.add("hidden"), 3500);
+        }
+      } catch (err) {
+        if (profilePassFeedback) {
+          profilePassFeedback.textContent = err.message;
+          profilePassFeedback.className = "auth-alert alert-danger";
+          profilePassFeedback.classList.remove("hidden");
+        }
+      } finally {
+        if (btnText) btnText.classList.remove("hidden");
+        if (loader) loader.classList.add("hidden");
+        if (btnSave) btnSave.disabled = false;
+      }
+    });
+  }
+
+  const handleLogout = async () => {
+    try {
+      await fetchWithAuth("/api/v1/auth/logout", { method: "POST" });
+    } catch (_) {}
+    clearStoredTokens();
+    window.location.href = "auth.html";
+  };
+
+  if (btnDrawerLogout) btnDrawerLogout.addEventListener("click", handleLogout);
+  if (btnProfilePaneLogout) btnProfilePaneLogout.addEventListener("click", handleLogout);
+
+  // İlk açılışda repetitor panelini, sınaqları və şagird istəklərini paralel yükləyirik
   await Promise.allSettled([
     loadDashboard(),
-    loadAssignments()
+    loadAssignments(),
+    loadJoinRequests()
   ]);
 });

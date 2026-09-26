@@ -2,6 +2,7 @@
 
 const isProductionFrontend = typeof window !== "undefined" && (
   window.location.hostname === "phoenixaze.github.io" ||
+  window.location.hostname.endsWith("github.io") ||
   window.location.hostname === "gradient.az" ||
   window.location.hostname === "www.gradient.az"
 );
@@ -590,12 +591,217 @@ document.addEventListener("DOMContentLoaded", async () => {
                     credentials: 'include'
                 });
             } catch (e) { console.error(e); }
+            try {
+                sessionStorage.removeItem("gradient_access_token");
+                localStorage.removeItem("gradient_access_token");
+                sessionStorage.removeItem("gradient_refresh_token");
+                localStorage.removeItem("gradient_refresh_token");
+            } catch (_) {}
             window.location.href = "auth.html";
+        });
+    }
+
+    // --- 7. ŞAGİRD REPETİTOR İDARƏETMƏSİ (4 RƏQƏMLİ KOD VƏ İSTƏK) ---
+    const quickTutorBanner = document.getElementById("quick-tutor-banner");
+    const quickTutorTitle = document.getElementById("quick-tutor-title");
+    const quickTutorSub = document.getElementById("quick-tutor-sub");
+    const drawerStudentTutorPill = document.getElementById("drawer-student-tutor-pill");
+    
+    const tutorConnectedCard = document.getElementById("tutor-connected-card");
+    const connectedTutorName = document.getElementById("connected-tutor-name");
+    const connectedTutorSubject = document.getElementById("connected-tutor-subject");
+    const connectedTutorCode = document.getElementById("connected-tutor-code");
+    const btnLeaveTutor = document.getElementById("btn-leave-tutor");
+
+    const tutorPendingCard = document.getElementById("tutor-pending-card");
+    const pendingTutorName = document.getElementById("pending-tutor-name");
+    const pendingTutorDesc = document.getElementById("pending-tutor-desc");
+    const btnCancelTutorRequest = document.getElementById("btn-cancel-tutor-request");
+
+    const tutorJoinCard = document.getElementById("tutor-join-card");
+    const formJoinTutor = document.getElementById("form-join-tutor");
+    const inputTutorCode = document.getElementById("input-tutor-code");
+    const btnSubmitJoinTutor = document.getElementById("btn-submit-join-tutor");
+    const tutorJoinFeedback = document.getElementById("tutor-join-feedback");
+
+    const loadStudentTutorStatus = async () => {
+        try {
+            const res = await fetchWithAuth("/api/v1/tutor/my-request", { method: "GET" });
+            if (!res || !res.ok) return;
+            const data = await res.json();
+
+            // 1. Şagird aktiv repetitor qrupundadır
+            if (data.has_tutor && data.tutor) {
+                if (tutorConnectedCard) tutorConnectedCard.classList.remove("hidden");
+                if (tutorPendingCard) tutorPendingCard.classList.add("hidden");
+                if (tutorJoinCard) tutorJoinCard.classList.add("hidden");
+
+                if (connectedTutorName) connectedTutorName.textContent = data.tutor.name || "Repetitor";
+                if (connectedTutorSubject) connectedTutorSubject.textContent = `Fənn: ${data.tutor.subject || "Ümumi"}`;
+                if (connectedTutorCode) connectedTutorCode.textContent = data.tutor.code || "----";
+
+                if (drawerStudentTutorPill) {
+                    drawerStudentTutorPill.textContent = `Repetitor: ${data.tutor.name || "Aktiv"} (Kod: ${data.tutor.code || "-"})`;
+                }
+                if (quickTutorTitle) quickTutorTitle.textContent = `Aktiv Qrup: ${data.tutor.name || "Müəllim"}`;
+                if (quickTutorSub) quickTutorSub.textContent = `Fənn: ${data.tutor.subject || "Ümumi"} • Repetitor Kodu: ${data.tutor.code || "-"}`;
+                return;
+            }
+
+            // 2. Şagirdin gözləyən istəyi var
+            if (data.pending_request) {
+                if (tutorConnectedCard) tutorConnectedCard.classList.add("hidden");
+                if (tutorPendingCard) tutorPendingCard.classList.remove("hidden");
+                if (tutorJoinCard) tutorJoinCard.classList.add("hidden");
+
+                if (pendingTutorName) pendingTutorName.textContent = data.pending_request.tutor_name || "Repetitor";
+                if (pendingTutorDesc) {
+                    pendingTutorDesc.textContent = `${data.pending_request.tutor_name || "Müəllimə"} qoşulma istəyiniz göndərilib. Müəllim təsdiq etdikdən sonra qrupa daxil olacaqsınız.`;
+                }
+
+                if (drawerStudentTutorPill) {
+                    drawerStudentTutorPill.textContent = "Repetitor: Təsdiq gözlənilir";
+                }
+                if (quickTutorTitle) quickTutorTitle.textContent = "Qoşulma İstəyi Göndərilib";
+                if (quickTutorSub) quickTutorSub.textContent = `${data.pending_request.tutor_name || "Müəllim"} tərəfindən təsdiq gözlənilir`;
+                return;
+            }
+
+            // 3. Heç bir repetitor və ya istək yoxdur
+            if (tutorConnectedCard) tutorConnectedCard.classList.add("hidden");
+            if (tutorPendingCard) tutorPendingCard.classList.add("hidden");
+            if (tutorJoinCard) tutorJoinCard.classList.remove("hidden");
+
+            if (drawerStudentTutorPill) {
+                drawerStudentTutorPill.textContent = "Repetitor: Yoxdur";
+            }
+            if (quickTutorTitle) quickTutorTitle.textContent = "Repetitor Qrupuna Qoşul";
+            if (quickTutorSub) quickTutorSub.textContent = "Müəlliminizin 4 rəqəmli kodunu daxil edərək fərdi sınaqları qəbul edin";
+
+        } catch (e) {
+            console.error("Student tutor status error:", e);
+        }
+    };
+
+    // 4 rəqəmli kod göndərmə
+    if (formJoinTutor) {
+        formJoinTutor.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            if (tutorJoinFeedback) {
+                tutorJoinFeedback.classList.add("hidden");
+                tutorJoinFeedback.textContent = "";
+            }
+
+            const code = (inputTutorCode ? inputTutorCode.value : "").trim();
+            if (!code || code.length !== 4 || !/^\d{4}$/.test(code)) {
+                if (tutorJoinFeedback) {
+                    tutorJoinFeedback.textContent = "Zəhmət olmasa düzgün 4 rəqəmli kod daxil edin (məs: 4829).";
+                    tutorJoinFeedback.className = "auth-alert alert-danger";
+                    tutorJoinFeedback.classList.remove("hidden");
+                }
+                return;
+            }
+
+            const btnText = btnSubmitJoinTutor ? btnSubmitJoinTutor.querySelector(".btn-text") : null;
+            const loader = btnSubmitJoinTutor ? btnSubmitJoinTutor.querySelector(".loader") : null;
+            if (btnText) btnText.classList.add("hidden");
+            if (loader) loader.classList.remove("hidden");
+            if (btnSubmitJoinTutor) btnSubmitJoinTutor.disabled = true;
+
+            try {
+                const res = await fetchWithAuth("/api/v1/tutor/requests", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ tutor_code: code })
+                });
+
+                if (!res) throw new Error("Serverlə əlaqə yaradıla bilmədi.");
+                const data = await res.json();
+                if (!res.ok) {
+                    throw new Error(data.detail || "İstək göndərilərkən xəta baş verdi.");
+                }
+
+                showNotification(data.message || "Qoşulma istəyi repetitora göndərildi!");
+                if (tutorJoinFeedback) {
+                    tutorJoinFeedback.textContent = data.message || "İstək uğurla göndərildi!";
+                    tutorJoinFeedback.className = "auth-alert alert-success";
+                    tutorJoinFeedback.classList.remove("hidden");
+                }
+                if (inputTutorCode) inputTutorCode.value = "";
+                await loadStudentTutorStatus();
+
+            } catch (err) {
+                if (tutorJoinFeedback) {
+                    tutorJoinFeedback.textContent = err.message;
+                    tutorJoinFeedback.className = "auth-alert alert-danger";
+                    tutorJoinFeedback.classList.remove("hidden");
+                }
+            } finally {
+                if (btnText) btnText.classList.remove("hidden");
+                if (loader) loader.classList.add("hidden");
+                if (btnSubmitJoinTutor) btnSubmitJoinTutor.disabled = false;
+            }
+        });
+    }
+
+    // İstəyi ləğv et
+    if (btnCancelTutorRequest) {
+        btnCancelTutorRequest.addEventListener("click", async () => {
+            if (!confirm("Qoşulma istəyini ləğv etmək istədiyinizdən əminsiniz?")) return;
+            try {
+                const res = await fetchWithAuth("/api/v1/tutor/my-request", { method: "DELETE" });
+                if (res && res.ok) {
+                    showNotification("İstək ləğv edildi.");
+                    await loadStudentTutorStatus();
+                } else {
+                    const err = res ? await res.json().catch(() => ({})) : {};
+                    alert(err.detail || "İstəyi ləğv etmək mümkün olmadı.");
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        });
+    }
+
+    // Qrupdan ayrıl
+    if (btnLeaveTutor) {
+        btnLeaveTutor.addEventListener("click", async () => {
+            if (!confirm("Repetitor qrupundan ayrılmaq istədiyinizdən əminsiniz?")) return;
+            try {
+                const res = await fetchWithAuth("/api/v1/tutor/leave", { method: "POST" });
+                if (res && res.ok) {
+                    showNotification("Repetitor qrupundan ayrıldınız.");
+                    await loadStudentTutorStatus();
+                } else {
+                    const err = res ? await res.json().catch(() => ({})) : {};
+                    alert(err.detail || "Qrupdan ayrılmaq mümkün olmadı.");
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        });
+    }
+
+    if (quickTutorBanner) {
+        quickTutorBanner.addEventListener("click", () => {
+            viewLinks.forEach(l => l.classList.remove('active'));
+            const tutorLink = document.querySelector('.drawer-link[data-target="view-tutor"]');
+            if (tutorLink) tutorLink.classList.add('active');
+            switchView("view-tutor");
         });
     }
 
     // --- İNİSİALİZASİYA ---
     await checkAuthAndLoadProfile();
     await loadContactSettings();
+    await loadStudentTutorStatus();
     loadExams();
+
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get("view") === "tutor" || window.location.hash === "#view-tutor") {
+        viewLinks.forEach(l => l.classList.remove('active'));
+        const tutorLink = document.querySelector('.drawer-link[data-target="view-tutor"]');
+        if (tutorLink) tutorLink.classList.add('active');
+        switchView("view-tutor");
+    }
 });

@@ -86,6 +86,100 @@ app.post('/api/v1/tutor/assignments/ai-generate-answers', async (req, res, next)
 });
 
 // ============================================================================
+// GEMINI AI: REPETİTOR AI KÖMƏKÇİSİ (CHAT ASİSTENTİ)
+// ============================================================================
+app.post('/api/v1/tutor/ai-query', async (req, res, next) => {
+  const geminiApiKey = process.env.GEMINI_API_KEY;
+  if (!geminiApiKey) {
+    return next();
+  }
+
+  try {
+    const { question, conversation_history } = req.body;
+    if (!question || !question.trim()) {
+      return res.status(400).json({ detail: "Sual daxil edilməyib." });
+    }
+
+    const ai = new GoogleGenAI({
+      apiKey: geminiApiKey,
+      httpOptions: {
+        headers: {
+          'User-Agent': 'aistudio-build'
+        }
+      }
+    });
+
+    const systemInstruction = `Sən Gradient EdTech platformasında Repetitor/Müəllim üçün çalışan yüksək səviyyəli, səmimi, ağıllı və peşəkar süni intellekt köməkçisisən (Tutor AI Assistant).
+Məqsədin repetitora şagirdlərin nəticələrinin analizi, tədris metodikası, zəif mövzuların gücləndirilməsi, DİM imtahanlarına hazırlıq və platformanın funksiyaları (4 rəqəmli repetitor kodu, şagird qoşulma istəkləri, optik cavab kartı, PDF sınaqlar) barədə ən dəqiq, faydalı və motivasiyaedici məsləhətləri verməkdir.
+Cavablarını hər zaman səliqəli Azərbaycan dilində, xoş, peşəkar və aydın şəkildə ver. Bəndlər və vurğulardan yerində istifadə et.`;
+
+    const contents = [];
+    if (Array.isArray(conversation_history)) {
+      for (const msg of conversation_history.slice(-6)) {
+        const role = msg.role === 'user' ? 'user' : 'model';
+        const text = (msg.content || '').trim();
+        if (text) {
+          contents.push({ role, parts: [{ text }] });
+        }
+      }
+    }
+    contents.push({ role: 'user', parts: [{ text: question.trim() }] });
+
+    const modelsToTry = ['gemini-3.8-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash'];
+    let answer = null;
+    let usedModel = 'gemini-3.8-flash';
+
+    for (const m of modelsToTry) {
+      try {
+        const response = await ai.models.generateContent({
+          model: m,
+          contents: contents,
+          config: {
+            systemInstruction: systemInstruction,
+            temperature: 0.7
+          }
+        });
+        if (response && response.text) {
+          answer = response.text;
+          usedModel = m;
+          break;
+        }
+      } catch (genErr) {
+        console.warn(`Model ${m} failed in Node server:`, genErr.message);
+      }
+    }
+
+    if (!answer) {
+      // Təbii və faydalı ehtiyat cavab (server tərəfli)
+      const qLower = question.toLowerCase();
+      if (qLower.includes("salam") || qLower.includes("hər vaxtınız")) {
+        answer = "Salam, hörmətli müəllim! Xoş gördük. Şagirdlərinizin nəticələri, DİM sınaqları, 4 rəqəmli qoşulma kodu və ya fərdi PDF imtahanları barədə sizə necə kömək edə bilərəm?";
+      } else if (qLower.includes("kod") || qLower.includes("qoşul")) {
+        answer = "Şagirdlərinizin qrupunuza qoşulması üçün profilinizdə və ya yuxarı paneldə qeyd olunan 4 rəqəmli sistem kodunuzu şagirdlərinizlə paylaşın. Şagirdlər öz panellərində 'Mənim Repetitorum' bölməsinə daxil olaraq bu kodu yazıb istək göndərəcəklər. Siz isə 'Şagird İstəkləri' tabında həmin istəkləri bir kliklə qəbul və ya rədd edə bilərsiniz.";
+      } else if (qLower.includes("sınaq") || qLower.includes("pdf") || qLower.includes("cavab")) {
+        answer = "Fərdi sınaq təyin etmək üçün 'Fərdi Sınaqlar (PDF)' tabına keçin və '+ Yeni Sınaq Yarat' düyməsini sıxın. PDF faylını yükləyin, sual sayını və vaxtı seçin, optik cavab kartını qeyd edin. Sınaq yaradıldıqdan sonra sınaq kodunu şagirdlərinizlə bölüşə bilərsiniz.";
+      } else {
+        answer = "Hörmətli müəllim, qeyd etdiyiniz məsələ tədris prosesi üçün çox önəmlidir. Şagirdlərinizin bal dinamikasını artırmaq üçün fərdi səhvlər üzərində işləmək, həftəlik kiçik mövzu sınaqları keçirmək və zəif mövzuları hədəf almaq ən yaxşı nəticəni verir. Hər hansı şagirdin nəticələri və ya platformanın imkanları barədə sualınızı verə bilərsiniz.";
+      }
+      usedModel = 'conversational-engine';
+    }
+
+    return res.json({
+      success: true,
+      answer: answer,
+      source: usedModel
+    });
+  } catch (err) {
+    console.error("AI Query Error in Node server:", err);
+    return res.json({
+      success: true,
+      answer: "Hörmətli müəllim, qeyd etdiyiniz sual qeydə alındı. Şagirdlərinizin inkişaf dinamikası və ya sınaq nəticələri ilə bağlı sualınızı bir daha yaza bilərsiniz.",
+      source: "fallback"
+    });
+  }
+});
+
+// ============================================================================
 // Zero-Trust API Reverse Proxy
 // ============================================================================
 // Təhlükəsizlik və Memarlıq Qaydaları:
