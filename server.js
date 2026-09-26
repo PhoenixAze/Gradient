@@ -1,6 +1,7 @@
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { GoogleGenAI } from '@google/genai';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -9,8 +10,80 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const BACKEND_URL = process.env.BACKEND_API_URL || 'https://gradient-backend-fam5.onrender.com';
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// PDF və böyük sınaq məlumatları üçün payload həddini artırırıq (50mb)
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+// In-memory assignment store for dev/preview resilience (Zero-Trust fallback)
+const devAssignments = new Map();
+const devAnswerSheets = new Map();
+
+// ============================================================================
+// GEMINI AI: PDF SINAQDAN CAVAB AÇARININ ÇIXARILMASI (SERVER-SIDE)
+// ============================================================================
+app.post('/api/v1/tutor/assignments/ai-generate-answers', async (req, res, next) => {
+  const geminiApiKey = process.env.GEMINI_API_KEY;
+  if (!geminiApiKey) {
+    // Əgər yerli mühitdə açar yoxdursa, Render backend-inə ötür
+    return next();
+  }
+
+  try {
+    const { pdf_base64, question_count } = req.body;
+    if (!pdf_base64) {
+      return res.status(400).json({ detail: "PDF faylı göndərilməyib." });
+    }
+
+    const qCount = Math.min(Math.max(Number(question_count) || 25, 1), 120);
+    const cleanBase64 = pdf_base64.includes(',') ? pdf_base64.split(',')[1] : pdf_base64;
+
+    const ai = new GoogleGenAI({
+      apiKey: geminiApiKey,
+      httpOptions: {
+        headers: {
+          'User-Agent': 'aistudio-build'
+        }
+      }
+    });
+
+    const prompt = `Sən peşəkar DİM imtahan eksperti və müəllimsən. Təqdim olunan PDF sınaq imtahan sənədini diqqətlə nəzərdən keçir. Sənəddəki hər bir sualı həll et və 1-dən ${qCount}-ə qədər olan suallar üçün doğru variantı (A, B, C, D və ya E) müəyyən et. ÇIXIŞI YALNIZ AŞAĞIDAKI DƏQİQ JSON FORMATINDA VER, başqa heç bir izahat və ya markdown bloku yazma:\n{\n  "answers": {\n    "1": "A",\n    "2": "B"\n  }\n}`;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.8-flash',
+      contents: {
+        parts: [
+          {
+            inlineData: {
+              mimeType: 'application/pdf',
+              data: cleanBase64
+            }
+          },
+          { text: prompt }
+        ]
+      },
+      config: {
+        temperature: 0.1,
+        responseMimeType: 'application/json'
+      }
+    });
+
+    const text = response.text || '';
+    let parsed;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      const match = text.match(/\{[\s\S]*\}/);
+      if (match) parsed = JSON.parse(match[0]);
+    }
+
+    const answers = (parsed && parsed.answers) ? parsed.answers : (parsed || {});
+    return res.json({ success: true, answers, source: "gemini-3.8-flash" });
+  } catch (err) {
+    console.error("AI Generation Error in Node server:", err);
+    // Əgər SDK xətası olarsa, backend proxy-sinə yönəlt
+    return next();
+  }
+});
 
 // ============================================================================
 // Zero-Trust API Reverse Proxy
@@ -42,11 +115,114 @@ app.all('/api/*', async (req, res) => {
     }
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30000);
+    const timeout = setTimeout(() => controller.abort(), 35000);
     fetchOptions.signal = controller.signal;
 
     const backendRes = await fetch(targetUrl, fetchOptions);
     clearTimeout(timeout);
+
+    // Əgər backend 404/502 verərsə və bu sınaq tapşırığıdırsa (məs: Render deploy ərəfəsində),
+    // yerli dev mağazasından xidmət göstər
+    if (!backendRes.ok && req.originalUrl.includes('/api/v1/tutor/assignments')) {
+      if (req.method === 'POST' && req.originalUrl === '/api/v1/tutor/assignments') {
+        const id = 'asg_' + Math.random().toString(36).substring(2, 10);
+        const data = {
+          id,
+          title: req.body.title || 'Sınaq İmtahanı',
+          pdf_url: req.body.pdf_url || '',
+          answer_key: req.body.answer_key || {},
+          question_count: req.body.question_count || 25,
+          duration_minutes: req.body.duration_minutes || 60,
+          created_at: new Date().toISOString()
+        };
+        devAssignments.set(id, data);
+        return res.json({ success: true, assignment_id: id, assignment: data });
+      }
+
+      if (req.method === 'GET' && req.originalUrl === '/api/v1/tutor/assignments') {
+        const list = Array.from(devAssignments.values()).map(asg => {
+          const sheets = Array.from(devAnswerSheets.values()).filter(s => s.assignment_id === asg.id);
+          const scores = sheets.map(s => s.score);
+          return {
+            ...asg,
+            submission_count: sheets.length,
+            avg_score: scores.length ? Math.round(scores.reduce((a,b)=>a+b, 0)/scores.length) : 0,
+            max_score: scores.length ? Math.max(...scores) : 0
+          };
+        });
+        return res.json(list);
+      }
+
+      const matchStart = req.originalUrl.match(/\/api\/v1\/tutor\/assignments\/([^/]+)\/start/);
+      if (req.method === 'GET' && matchStart) {
+        const asgId = matchStart[1];
+        const asg = devAssignments.get(asgId);
+        if (asg) {
+          return res.json({
+            id: asg.id,
+            title: asg.title,
+            question_count: asg.question_count,
+            duration_minutes: asg.duration_minutes,
+            pdf_url: asg.pdf_url,
+            tutor_name: "Fərdi Repetitor",
+            is_completed: false
+          });
+        }
+      }
+
+      const matchSubmit = req.originalUrl.match(/\/api\/v1\/tutor\/assignments\/([^/]+)\/submit/);
+      if (req.method === 'POST' && matchSubmit) {
+        const asgId = matchSubmit[1];
+        const asg = devAssignments.get(asgId);
+        if (asg) {
+          const userAnswers = req.body.answers || {};
+          let correct = 0;
+          let incorrect = 0;
+          const total = asg.question_count || 25;
+          for (let i = 1; i <= total; i++) {
+            const corr = (asg.answer_key[String(i)] || '').toUpperCase();
+            const usr = (userAnswers[String(i)] || '').toUpperCase();
+            if (usr) {
+              if (usr === corr) correct++;
+              else incorrect++;
+            }
+          }
+          const empty = Math.max(0, total - (correct + incorrect));
+          const subId = 'sub_' + Math.random().toString(36).substring(2, 10);
+          devAnswerSheets.set(subId, {
+            id: subId,
+            assignment_id: asgId,
+            student_name: "Abituriyent",
+            score: correct,
+            incorrect_count: incorrect,
+            empty_count: empty,
+            answers: userAnswers,
+            submitted_at: new Date().toISOString()
+          });
+          return res.json({
+            message: "Sınaq uğurla təhvil verildi!",
+            score: correct,
+            incorrect,
+            empty,
+            total,
+            percentage: Math.round((correct / total) * 100)
+          });
+        }
+      }
+
+      const matchSubs = req.originalUrl.match(/\/api\/v1\/tutor\/assignments\/([^/]+)\/submissions/);
+      if (req.method === 'GET' && matchSubs) {
+        const asgId = matchSubs[1];
+        const asg = devAssignments.get(asgId);
+        if (asg) {
+          const subs = Array.from(devAnswerSheets.values()).filter(s => s.assignment_id === asgId);
+          return res.json({
+            assignment: asg,
+            submissions: subs
+          });
+        }
+      }
+    }
 
     res.status(backendRes.status);
 
@@ -67,13 +243,114 @@ app.all('/api/*', async (req, res) => {
     const responseData = await backendRes.arrayBuffer();
     return res.send(Buffer.from(responseData));
   } catch (err) {
-    // Təhlükəsizlik: Backend müvəqqəti əlçatan olmadıqda ümumi xəta qaytarılır
     if (req.originalUrl.includes('/api/v1/settings/contact')) {
       return res.json({
         whatsapp_url: "https://wa.me/994505975697",
         email: "support@gradient.az",
         phone: "+994 50 597 56 97"
       });
+    }
+
+    // Local dev resilience for assignments if backend is temporarily unreachable
+    if (req.originalUrl.includes('/api/v1/tutor/assignments')) {
+      if (req.method === 'POST' && req.originalUrl === '/api/v1/tutor/assignments') {
+        const id = 'asg_' + Math.random().toString(36).substring(2, 10);
+        const data = {
+          id,
+          title: req.body.title || 'Sınaq İmtahanı',
+          pdf_url: req.body.pdf_url || '',
+          answer_key: req.body.answer_key || {},
+          question_count: req.body.question_count || 25,
+          duration_minutes: req.body.duration_minutes || 60,
+          created_at: new Date().toISOString()
+        };
+        devAssignments.set(id, data);
+        return res.json({ success: true, assignment_id: id, assignment: data });
+      }
+
+      if (req.method === 'GET' && req.originalUrl === '/api/v1/tutor/assignments') {
+        const list = Array.from(devAssignments.values()).map(asg => {
+          const sheets = Array.from(devAnswerSheets.values()).filter(s => s.assignment_id === asg.id);
+          const scores = sheets.map(s => s.score);
+          return {
+            ...asg,
+            submission_count: sheets.length,
+            avg_score: scores.length ? Math.round(scores.reduce((a,b)=>a+b, 0)/scores.length) : 0,
+            max_score: scores.length ? Math.max(...scores) : 0
+          };
+        });
+        return res.json(list);
+      }
+
+      const matchStart = req.originalUrl.match(/\/api\/v1\/tutor\/assignments\/([^/]+)\/start/);
+      if (req.method === 'GET' && matchStart) {
+        const asgId = matchStart[1];
+        const asg = devAssignments.get(asgId);
+        if (asg) {
+          return res.json({
+            id: asg.id,
+            title: asg.title,
+            question_count: asg.question_count,
+            duration_minutes: asg.duration_minutes,
+            pdf_url: asg.pdf_url,
+            tutor_name: "Fərdi Repetitor",
+            is_completed: false
+          });
+        }
+      }
+
+      const matchSubmit = req.originalUrl.match(/\/api\/v1\/tutor\/assignments\/([^/]+)\/submit/);
+      if (req.method === 'POST' && matchSubmit) {
+        const asgId = matchSubmit[1];
+        const asg = devAssignments.get(asgId);
+        if (asg) {
+          const userAnswers = req.body.answers || {};
+          let correct = 0;
+          let incorrect = 0;
+          const total = asg.question_count || 25;
+          for (let i = 1; i <= total; i++) {
+            const corr = (asg.answer_key[String(i)] || '').toUpperCase();
+            const usr = (userAnswers[String(i)] || '').toUpperCase();
+            if (usr) {
+              if (usr === corr) correct++;
+              else incorrect++;
+            }
+          }
+          const empty = Math.max(0, total - (correct + incorrect));
+          const subId = 'sub_' + Math.random().toString(36).substring(2, 10);
+          devAnswerSheets.set(subId, {
+            id: subId,
+            assignment_id: asgId,
+            student_name: "Abituriyent",
+            score: correct,
+            incorrect_count: incorrect,
+            empty_count: empty,
+            answers: userAnswers,
+            submitted_at: new Date().toISOString()
+          });
+          return res.json({
+            message: "Sınaq uğurla təhvil verildi!",
+            score: correct,
+            incorrect,
+            empty,
+            total,
+            percentage: Math.round((correct / total) * 100)
+          });
+        }
+      }
+
+      const matchSubs = req.originalUrl.match(/\/api\/v1\/tutor\/assignments\/([^/]+)\/submissions/);
+      if (req.method === 'GET' && matchSubs) {
+        const asgId = matchSubs[1];
+        const asg = devAssignments.get(asgId);
+        if (asg) {
+          const subs = Array.from(devAnswerSheets.values()).filter(s => s.assignment_id === asgId);
+          return res.json({
+            assignment: asg,
+            submissions: subs
+          });
+        }
+      }
     }
 
     return res.status(502).json({

@@ -23,7 +23,10 @@
   <header class="exam-header">
     <div class="exam-header-left">
       <div id="title-skeleton" class="skeleton skeleton-text" style="width: 220px; height: 24px;"></div>
-      <h1 id="exam-title" class="exam-title hidden"></h1>
+      <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+        <h1 id="exam-title" class="exam-title hidden"></h1>
+        <span id="exam-type-badge" class="badge hidden" style="font-size: 0.75rem; padding: 2px 8px;"></span>
+      </div>
     </div>
     <div class="exam-header-right">
       <div class="timer-box" id="timer-box">
@@ -35,49 +38,106 @@
   </header>
 
   <!-- Əsas Məzmun -->
-  <main class="exam-main">
+  <main class="exam-main" id="exam-main-container">
     
-    <!-- Sol Tərəf: Sual Paneli -->
-    <div class="question-container">
-      <!-- Skeleton Loader -->
-      <div id="question-skeleton" class="skeleton-box">
-        <div class="skeleton skeleton-text" style="width: 80%; height: 24px; margin-bottom: 20px;"></div>
-        <div class="skeleton skeleton-text" style="width: 100%; height: 48px; margin-bottom: 12px;"></div>
-        <div class="skeleton skeleton-text" style="width: 100%; height: 48px; margin-bottom: 12px;"></div>
-        <div class="skeleton skeleton-text" style="width: 100%; height: 48px; margin-bottom: 12px;"></div>
+    <!-- FORMAT 1: İNTERAKTİV TESTLƏR GÖRÜNÜŞÜ (Platforma Sınaqları) -->
+    <div id="standard-exam-view" style="display: contents;">
+      <!-- Sol Tərəf: Sual Paneli -->
+      <div class="question-container">
+        <!-- Skeleton Loader -->
+        <div id="question-skeleton" class="skeleton-box">
+          <div class="skeleton skeleton-text" style="width: 80%; height: 24px; margin-bottom: 20px;"></div>
+          <div class="skeleton skeleton-text" style="width: 100%; height: 48px; margin-bottom: 12px;"></div>
+          <div class="skeleton skeleton-text" style="width: 100%; height: 48px; margin-bottom: 12px;"></div>
+          <div class="skeleton skeleton-text" style="width: 100%; height: 48px; margin-bottom: 12px;"></div>
+        </div>
+
+        <!-- Real Sual Məzmunu -->
+        <div id="question-content" class="hidden">
+          <div class="question-header">
+            <span class="question-number" id="q-number">Sual 1</span>
+          </div>
+          <p class="question-text" id="q-text"></p>
+          
+          <div class="options-list" id="options-container" role="radiogroup" aria-labelledby="q-text">
+            <!-- JS ilə bura radio buttonlar gələcək -->
+          </div>
+        </div>
+
+        <!-- Naviqasiya Düymələri -->
+        <div class="question-nav">
+          <button id="btn-prev" type="button" class="btn btn-outline" disabled>Əvvəlki</button>
+          <button id="btn-next" type="button" class="btn btn-accent" disabled>Növbəti</button>
+        </div>
       </div>
 
-      <!-- Real Sual Məzmunu -->
-      <div id="question-content" class="hidden">
-        <div class="question-header">
-          <span class="question-number" id="q-number">Sual 1</span>
+      <!-- Sağ Tərəf: Suallar Palitrası -->
+      <aside class="palette-container">
+        <h3 class="palette-title">Suallar</h3>
+        <div class="palette-grid" id="palette-grid">
+          <!-- JS ilə bura sual nömrələri gələcək -->
         </div>
-        <p class="question-text" id="q-text"></p>
-        
-        <div class="options-list" id="options-container" role="radiogroup" aria-labelledby="q-text">
-          <!-- JS ilə bura radio buttonlar gələcək -->
+        <div class="palette-legend">
+          <div class="legend-item"><span class="legend-box answered"></span> Cavablandırılıb</div>
+          <div class="legend-item"><span class="legend-box current"></span> Hazırkı</div>
+          <div class="legend-item"><span class="legend-box unanswered"></span> Boş</div>
         </div>
-      </div>
-
-      <!-- Naviqasiya Düymələri -->
-      <div class="question-nav">
-        <button id="btn-prev" type="button" class="btn btn-outline" disabled>Əvvəlki</button>
-        <button id="btn-next" type="button" class="btn btn-accent" disabled>Növbəti</button>
-      </div>
+      </aside>
     </div>
 
-    <!-- Sağ Tərəf: Suallar Palitrası -->
-    <aside class="palette-container">
-      <h3 class="palette-title">Suallar</h3>
-      <div class="palette-grid" id="palette-grid">
-        <!-- JS ilə bura sual nömrələri gələcək -->
+    <!-- FORMAT 2: PDF SINAQ VƏ RƏQƏMSAL CAVAB KARTI GÖRÜNÜŞÜ (Repetitor Sınaqları) -->
+    <div id="pdf-exam-view" class="hidden" style="width: 100%;">
+      <!-- Mobil Switcher (900px altında PDF və ya Cavab kartı) -->
+      <div class="mobile-view-tabs" id="pdf-mobile-tabs">
+        <button type="button" class="mobile-view-tab active" id="tab-show-pdf">📄 Sınaq PDF-i</button>
+        <button type="button" class="mobile-view-tab" id="tab-show-sheet">📝 Cavab Kartı</button>
       </div>
-      <div class="palette-legend">
-        <div class="legend-item"><span class="legend-box answered"></span> Cavablandırılıb</div>
-        <div class="legend-item"><span class="legend-box current"></span> Hazırkı</div>
-        <div class="legend-item"><span class="legend-box unanswered"></span> Boş</div>
+
+      <div class="pdf-exam-container">
+        <!-- Sol Tərəf: PDF Viewer -->
+        <section class="pdf-viewer-section" id="pdf-viewer-section">
+          <div class="pdf-viewer-header">
+            <span id="pdf-viewer-title">Sınaq PDF Sənədi</span>
+            <div style="display: flex; gap: 8px;">
+              <button type="button" id="btn-pdf-fullscreen" class="btn btn-ghost btn-sm" style="padding: 2px 8px; font-size: 0.8rem;">Tam Ekran</button>
+            </div>
+          </div>
+          <iframe id="pdf-viewer-frame" class="pdf-viewer-frame" title="PDF Sınaq Sənədi" src="about:blank"></iframe>
+        </section>
+
+        <!-- Sağ Tərəf: Rəqəmsal DİM Cavab Kartı -->
+        <section class="answer-sheet-section mobile-hidden" id="answer-sheet-section">
+          <div class="answer-sheet-header">
+            <div class="answer-sheet-title">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+              </svg>
+              <span>Rəqəmsal Cavab Kartı</span>
+            </div>
+            <div class="answer-sheet-sub" id="answer-sheet-sub">
+              DİM Standartı ilə sualların doğru variantlarını qeyd edin.
+            </div>
+            <div class="answer-sheet-progress-bar-wrap">
+              <div class="answer-sheet-progress-bar" id="answer-sheet-progress-bar"></div>
+            </div>
+          </div>
+
+          <div class="optical-sheet-scroll">
+            <div class="optical-rows-grid" id="pdf-optical-sheet">
+              <!-- JS ilə 1-dən N-ə qədər optik dairələr doldurulacaq -->
+            </div>
+          </div>
+
+          <div class="answer-sheet-footer">
+            <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);" id="pdf-counter-display">
+              0 / 25 cavablandırılıb
+            </span>
+            <button type="button" id="btn-submit-pdf-exam" class="btn btn-danger btn-sm">Sınağı Təhvil Ver</button>
+          </div>
+        </section>
       </div>
-    </aside>
+    </div>
 
   </main>
 

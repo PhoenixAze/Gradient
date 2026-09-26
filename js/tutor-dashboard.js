@@ -32,13 +32,77 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Tab Elementləri
   const tabBtnStudents = document.getElementById("tab-btn-students");
+  const tabBtnAssignments = document.getElementById("tab-btn-assignments");
   const tabBtnExams = document.getElementById("tab-btn-exams");
   const tabBtnAi = document.getElementById("tab-btn-ai");
   const paneStudents = document.getElementById("pane-students");
+  const paneAssignments = document.getElementById("pane-assignments");
   const paneExams = document.getElementById("pane-exams");
   const paneAi = document.getElementById("pane-ai");
   const tabStudentsCount = document.getElementById("tab-students-count");
+  const tabAssignmentsCount = document.getElementById("tab-assignments-count");
   const tabSubmissionsCount = document.getElementById("tab-submissions-count");
+
+  // Fərdi Sınaqlar (PDF Assignments) Elementləri
+  const btnHeroCreateAsg = document.getElementById("btn-hero-create-asg");
+  const btnOpenCreateAsg = document.getElementById("btn-open-create-asg");
+  const btnEmptyCreateAsg = document.getElementById("btn-empty-create-asg");
+  const assignmentsEmptyState = document.getElementById("assignments-empty-state");
+  const assignmentsGrid = document.getElementById("assignments-grid");
+
+  // Sınaq Yaratma Modalı Elementləri
+  const createAssignmentModal = document.getElementById("create-assignment-modal");
+  const createAssignmentForm = document.getElementById("create-assignment-form");
+  const asgTitleInput = document.getElementById("asg-title-input");
+  const asgQCountInput = document.getElementById("asg-qcount-input");
+  const asgDurationInput = document.getElementById("asg-duration-input");
+  const asgPdfFileInput = document.getElementById("asg-pdf-file-input");
+  const pdfDropzone = document.getElementById("pdf-dropzone");
+  const pdfFileInfo = document.getElementById("pdf-file-info");
+  const pdfFileName = document.getElementById("pdf-file-name");
+  const pdfFileSize = document.getElementById("pdf-file-size");
+  const btnRemovePdf = document.getElementById("btn-remove-pdf");
+  const btnAiExtractAnswers = document.getElementById("btn-ai-extract-answers");
+  const answerKeyGrid = document.getElementById("answer-key-grid");
+  const answerKeyCounter = document.getElementById("answer-key-counter");
+  const btnClearAnswerKey = document.getElementById("btn-clear-answer-key");
+  const createAsgFeedback = document.getElementById("create-asg-feedback");
+  const btnSubmitCreateAsg = document.getElementById("btn-submit-create-asg");
+  const btnCloseCreateAsgModal = document.getElementById("btn-close-create-asg-modal");
+  const btnCancelCreateAsg = document.getElementById("btn-cancel-create-asg");
+
+  // Sınaq Paylaşma Linki Modalı
+  const shareAssignmentModal = document.getElementById("share-assignment-modal");
+  const shareLinkInput = document.getElementById("share-link-input");
+  const btnCopyShareLink = document.getElementById("btn-copy-share-link");
+  const shareCopyFeedback = document.getElementById("share-copy-feedback");
+  const btnCloseShareModal = document.getElementById("btn-close-share-modal");
+  const btnDoneShareModal = document.getElementById("btn-done-share-modal");
+
+  // Sınaq Nəticələri Modalı
+  const assignmentSubmissionsModal = document.getElementById("assignment-submissions-modal");
+  const submissionsModalTitle = document.getElementById("submissions-modal-title");
+  const submissionsModalMeta = document.getElementById("submissions-modal-meta");
+  const asgSubmissionsTableBody = document.getElementById("asg-submissions-table-body");
+  const asgSubmissionsEmpty = document.getElementById("asg-submissions-empty");
+  const btnCloseSubmissionsModal = document.getElementById("btn-close-submissions-modal");
+  const btnCloseSubmissionsModalBtn = document.getElementById("btn-close-submissions-modal-btn");
+
+  // Şagird Cavab Kartı İncələmə Modalı
+  const assignmentAnswersReviewModal = document.getElementById("assignment-answers-review-modal");
+  const reviewStudentName = document.getElementById("review-student-name");
+  const reviewStudentMeta = document.getElementById("review-student-meta");
+  const reviewScore = document.getElementById("review-score");
+  const reviewCounts = document.getElementById("review-counts");
+  const reviewPercent = document.getElementById("review-percent");
+  const studentReviewGrid = document.getElementById("student-review-grid");
+  const btnCloseReviewModal = document.getElementById("btn-close-review-modal");
+  const btnCloseReviewModalBtn = document.getElementById("btn-close-review-modal-btn");
+
+  // Assignment Qlobal Vəziyyəti
+  let currentPdfBase64 = null;
+  let answerKeyMap = {};
+  let tutorAssignmentsList = [];
 
   // Şagirdlər Siyahısı & Filtrlər
   const studentSearchInput = document.getElementById("student-search-input");
@@ -244,14 +308,19 @@ document.addEventListener("DOMContentLoaded", async () => {
   function switchTab(targetTab) {
     const tabs = [
       { id: "students", btn: tabBtnStudents, pane: paneStudents },
+      { id: "assignments", btn: tabBtnAssignments, pane: paneAssignments },
       { id: "exams", btn: tabBtnExams, pane: paneExams },
       { id: "ai", btn: tabBtnAi, pane: paneAi }
     ];
 
     tabs.forEach(({ id, btn, pane }) => {
+      if (!btn || !pane) return;
       if (id === targetTab) {
         btn.classList.add("active");
         pane.classList.remove("hidden");
+        if (id === "assignments") {
+          loadAssignments();
+        }
       } else {
         btn.classList.remove("active");
         pane.classList.add("hidden");
@@ -260,6 +329,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   if (tabBtnStudents) tabBtnStudents.addEventListener("click", () => switchTab("students"));
+  if (tabBtnAssignments) tabBtnAssignments.addEventListener("click", () => switchTab("assignments"));
   if (tabBtnExams) tabBtnExams.addEventListener("click", () => switchTab("exams"));
   if (tabBtnAi) tabBtnAi.addEventListener("click", () => {
     switchTab("ai");
@@ -942,6 +1012,699 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
-  // Başlat
-  await loadDashboard();
-});
+  // ============================================================================
+  // FƏRDİ SINAQLAR (PDF ASSIGNMENTS) VƏ CAVAB KARTLARI İDARƏETMƏSİ
+  // ============================================================================
+
+  // 1. Doğru Cavab Kartı Cədvəlinin Qurulması (Answer Key Builder)
+  function renderAnswerKeyGrid(count) {
+    if (!answerKeyGrid) return;
+    answerKeyGrid.replaceChildren();
+
+    const options = ["A", "B", "C", "D", "E"];
+    const total = Math.min(Math.max(Number(count) || 25, 1), 120);
+
+    for (let i = 1; i <= total; i++) {
+      const qNumStr = String(i);
+
+      const row = document.createElement("div");
+      row.className = "answer-key-row";
+
+      const numEl = document.createElement("span");
+      numEl.className = "answer-key-qnum";
+      numEl.textContent = `${i}.`;
+      row.appendChild(numEl);
+
+      const group = document.createElement("div");
+      group.className = "bubble-options-group";
+
+      options.forEach((opt) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "bubble-btn";
+        btn.textContent = opt;
+        btn.setAttribute("data-q", qNumStr);
+        btn.setAttribute("data-opt", opt);
+
+        if (answerKeyMap[qNumStr] === opt) {
+          btn.classList.add("active");
+        }
+
+        btn.addEventListener("click", () => {
+          if (answerKeyMap[qNumStr] === opt) {
+            delete answerKeyMap[qNumStr];
+            btn.classList.remove("active");
+          } else {
+            answerKeyMap[qNumStr] = opt;
+            group.querySelectorAll(".bubble-btn").forEach((b) => b.classList.remove("active"));
+            btn.classList.add("active");
+          }
+          updateAnswerKeyCounter(total);
+        });
+
+        group.appendChild(btn);
+      });
+
+      row.appendChild(group);
+      answerKeyGrid.appendChild(row);
+    }
+
+    updateAnswerKeyCounter(total);
+  }
+
+  function updateAnswerKeyCounter(total) {
+    if (!answerKeyCounter) return;
+    const filled = Object.keys(answerKeyMap).length;
+    answerKeyCounter.textContent = `${filled} / ${total} qeyd edilib`;
+  }
+
+  if (asgQCountInput) {
+    asgQCountInput.addEventListener("input", () => {
+      const count = Number(asgQCountInput.value) || 25;
+      renderAnswerKeyGrid(count);
+    });
+  }
+
+  if (btnClearAnswerKey) {
+    btnClearAnswerKey.addEventListener("click", () => {
+      answerKeyMap = {};
+      const count = Number(asgQCountInput ? asgQCountInput.value : 25) || 25;
+      renderAnswerKeyGrid(count);
+    });
+  }
+
+  // 2. PDF Fayl Yükləmə İdarəedicisi
+  function handlePdfFileSelect(file) {
+    if (!file) return;
+
+    if (!file.name.toLowerCase().endsWith(".pdf") && file.type !== "application/pdf") {
+      showCreateAsgError("Yalnız .pdf formatında sənədlər qəbul edilir.");
+      return;
+    }
+
+    const maxSize = 25 * 1024 * 1024; // 25 MB
+    if (file.size > maxSize) {
+      showCreateAsgError("PDF faylının həcmi 25MB-dan çox olmamalıdır.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      currentPdfBase64 = e.target.result;
+      if (pdfDropzone) pdfDropzone.classList.add("hidden");
+      if (pdfFileInfo) pdfFileInfo.classList.remove("hidden");
+      if (pdfFileName) pdfFileName.textContent = file.name;
+      if (pdfFileSize) pdfFileSize.textContent = ` (${Math.round(file.size / 1024)} KB)`;
+      if (btnAiExtractAnswers) btnAiExtractAnswers.disabled = false;
+      hideCreateAsgError();
+    };
+    reader.onerror = () => {
+      showCreateAsgError("PDF faylı oxunarkən xəta baş verdi. Zəhmət olmasa yenidən cəhd edin.");
+    };
+    reader.readAsDataURL(file);
+  }
+
+  if (pdfDropzone) {
+    pdfDropzone.addEventListener("click", () => {
+      if (asgPdfFileInput) asgPdfFileInput.click();
+    });
+
+    pdfDropzone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      pdfDropzone.classList.add("dragover");
+    });
+
+    pdfDropzone.addEventListener("dragleave", () => {
+      pdfDropzone.classList.remove("dragover");
+    });
+
+    pdfDropzone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      pdfDropzone.classList.remove("dragover");
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        handlePdfFileSelect(e.dataTransfer.files[0]);
+      }
+    });
+  }
+
+  if (asgPdfFileInput) {
+    asgPdfFileInput.addEventListener("change", (e) => {
+      if (e.target.files && e.target.files.length > 0) {
+        handlePdfFileSelect(e.target.files[0]);
+      }
+    });
+  }
+
+  if (btnRemovePdf) {
+    btnRemovePdf.addEventListener("click", () => {
+      currentPdfBase64 = null;
+      if (asgPdfFileInput) asgPdfFileInput.value = "";
+      if (pdfDropzone) pdfDropzone.classList.remove("hidden");
+      if (pdfFileInfo) pdfFileInfo.classList.add("hidden");
+      if (btnAiExtractAnswers) btnAiExtractAnswers.disabled = true;
+    });
+  }
+
+  // 3. AI ilə Cavab Kartının Çıxarılması
+  if (btnAiExtractAnswers) {
+    btnAiExtractAnswers.addEventListener("click", async () => {
+      if (!currentPdfBase64) {
+        showCreateAsgError("Əvvəlcə sınaq PDF faylını yükləyin.");
+        return;
+      }
+
+      const qCount = Number(asgQCountInput ? asgQCountInput.value : 25) || 25;
+      const btnText = btnAiExtractAnswers.querySelector(".btn-text");
+      const loader = btnAiExtractAnswers.querySelector(".loader");
+
+      btnAiExtractAnswers.disabled = true;
+      if (btnText) btnText.classList.add("hidden");
+      if (loader) loader.classList.remove("hidden");
+      showCreateAsgInfo("Süni İntellekt PDF sənədini analiz edir və doğru cavab kartını həll edir... Zəhmət olmasa gözləyin.");
+
+      try {
+        const response = await fetchWithAuth("/api/v1/tutor/assignments/ai-generate-answers", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            pdf_base64: currentPdfBase64,
+            question_count: qCount
+          })
+        });
+
+        if (!response.ok) {
+          let msg = "Süni İntellekt cavabları generasiya edə bilmədi.";
+          try {
+            const err = await response.json();
+            if (err.detail) msg = err.detail;
+          } catch (_) {}
+          throw new Error(msg);
+        }
+
+        const data = await response.json();
+        const extracted = data.answers || {};
+
+        answerKeyMap = {};
+        for (let i = 1; i <= qCount; i++) {
+          const k = String(i);
+          if (extracted[k]) {
+            const val = String(extracted[k]).trim().toUpperCase();
+            if (["A", "B", "C", "D", "E"].includes(val)) {
+              answerKeyMap[k] = val;
+            }
+          }
+        }
+
+        renderAnswerKeyGrid(qCount);
+        showCreateAsgSuccess(`Gemini AI ${Object.keys(answerKeyMap).length} sual üçün cavab açarını uğurla təyin etdi! Lazım gələrsə variantları yoxlayıb dəyişə bilərsiniz.`);
+
+      } catch (err) {
+        console.error("AI answer extraction error:", err);
+        showCreateAsgError(err.message || "Süni intellekt analizi uğursuz oldu. Cavabları əl ilə qeyd edə bilərsiniz.");
+      } finally {
+        btnAiExtractAnswers.disabled = false;
+        if (btnText) btnText.classList.remove("hidden");
+        if (loader) loader.classList.add("hidden");
+      }
+    });
+  }
+
+  function showCreateAsgError(msg) {
+    if (!createAsgFeedback) return;
+    createAsgFeedback.className = "auth-alert error";
+    createAsgFeedback.textContent = msg;
+    createAsgFeedback.classList.remove("hidden");
+  }
+
+  function showCreateAsgSuccess(msg) {
+    if (!createAsgFeedback) return;
+    createAsgFeedback.className = "auth-alert success";
+    createAsgFeedback.textContent = msg;
+    createAsgFeedback.classList.remove("hidden");
+  }
+
+  function showCreateAsgInfo(msg) {
+    if (!createAsgFeedback) return;
+    createAsgFeedback.className = "auth-alert info";
+    createAsgFeedback.textContent = msg;
+    createAsgFeedback.classList.remove("hidden");
+  }
+
+  function hideCreateAsgError() {
+    if (createAsgFeedback) createAsgFeedback.classList.add("hidden");
+  }
+
+  // 4. Sınaq Yaratma Modalının Açılması / Bağlanması
+  function openCreateAssignmentModal() {
+    if (!createAssignmentModal) return;
+    hideCreateAsgError();
+    if (createAssignmentForm) createAssignmentForm.reset();
+    currentPdfBase64 = null;
+    answerKeyMap = {};
+
+    if (asgQCountInput) asgQCountInput.value = "25";
+    if (asgDurationInput) asgDurationInput.value = "60";
+    if (pdfDropzone) pdfDropzone.classList.remove("hidden");
+    if (pdfFileInfo) pdfFileInfo.classList.add("hidden");
+    if (btnAiExtractAnswers) btnAiExtractAnswers.disabled = true;
+
+    renderAnswerKeyGrid(25);
+    createAssignmentModal.classList.add("active");
+  }
+
+  function closeCreateAssignmentModal() {
+    if (createAssignmentModal) createAssignmentModal.classList.remove("active");
+  }
+
+  if (btnOpenCreateAsg) btnOpenCreateAsg.addEventListener("click", openCreateAssignmentModal);
+  if (btnEmptyCreateAsg) btnEmptyCreateAsg.addEventListener("click", openCreateAssignmentModal);
+  if (btnHeroCreateAsg) btnHeroCreateAsg.addEventListener("click", openCreateAssignmentModal);
+  if (btnCloseCreateAsgModal) btnCloseCreateAsgModal.addEventListener("click", closeCreateAssignmentModal);
+  if (btnCancelCreateAsg) btnCancelCreateAsg.addEventListener("click", closeCreateAssignmentModal);
+
+  // 5. Sınağı Təsdiqlə və Yarat
+  if (createAssignmentForm) {
+    createAssignmentForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      hideCreateAsgError();
+
+      const title = (asgTitleInput ? asgTitleInput.value : "").trim();
+      const qCount = Number(asgQCountInput ? asgQCountInput.value : 25) || 25;
+      const duration = Number(asgDurationInput ? asgDurationInput.value : 60) || 60;
+
+      if (!title) {
+        showCreateAsgError("Zəhmət olmasa sınaq adını daxil edin.");
+        return;
+      }
+
+      if (!currentPdfBase64) {
+        showCreateAsgError("Zəhmət olmasa sınaq PDF faylını yükləyin.");
+        return;
+      }
+
+      const answeredCount = Object.keys(answerKeyMap).length;
+      if (answeredCount === 0) {
+        showCreateAsgError("Doğru cavab kartında ən azı 1 sualın cavabını qeyd edin və ya AI ilə generasiya edin.");
+        return;
+      }
+
+      const btnText = btnSubmitCreateAsg.querySelector(".btn-text");
+      const loader = btnSubmitCreateAsg.querySelector(".loader");
+      btnSubmitCreateAsg.disabled = true;
+      if (btnText) btnText.classList.add("hidden");
+      if (loader) loader.classList.remove("hidden");
+
+      try {
+        const payload = {
+          title,
+          pdf_url: currentPdfBase64,
+          answer_key: answerKeyMap,
+          question_count: qCount,
+          duration_minutes: duration
+        };
+
+        const res = await fetchWithAuth("/api/v1/tutor/assignments", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+          let msg = "Sınaq yaradılarkən xəta baş verdi.";
+          try {
+            const err = await res.json();
+            if (err.detail) msg = err.detail;
+          } catch (_) {}
+          throw new Error(msg);
+        }
+
+        const data = await res.json();
+        closeCreateAssignmentModal();
+
+        // Paylaşma linki modalını açırıq
+        const assignmentId = data.assignment_id || (data.assignment ? data.assignment.id : "");
+        openShareModal(assignmentId);
+
+        // Siyahını yeniləyirik
+        await loadAssignments();
+
+      } catch (err) {
+        console.error("Create assignment error:", err);
+        showCreateAsgError(err.message || "Sınaq yaradılarkən xəta baş verdi.");
+      } finally {
+        btnSubmitCreateAsg.disabled = false;
+        if (btnText) btnText.classList.remove("hidden");
+        if (loader) loader.classList.add("hidden");
+      }
+    });
+  }
+
+  // 6. Paylaşma Linki Modalı
+  function openShareModal(assignmentId) {
+    if (!shareAssignmentModal || !shareLinkInput) return;
+    const shareUrl = `${window.location.origin}/exam-hall.html?assignment_id=${encodeURIComponent(assignmentId)}`;
+    shareLinkInput.value = shareUrl;
+    if (shareCopyFeedback) shareCopyFeedback.classList.add("hidden");
+    shareAssignmentModal.classList.add("active");
+  }
+
+  function closeShareModal() {
+    if (shareAssignmentModal) shareAssignmentModal.classList.remove("active");
+  }
+
+  if (btnCloseShareModal) btnCloseShareModal.addEventListener("click", closeShareModal);
+  if (btnDoneShareModal) btnDoneShareModal.addEventListener("click", closeShareModal);
+
+  if (btnCopyShareLink) {
+    btnCopyShareLink.addEventListener("click", async () => {
+      const url = shareLinkInput ? shareLinkInput.value : "";
+      if (!url) return;
+      try {
+        await navigator.clipboard.writeText(url);
+        if (shareCopyFeedback) {
+          shareCopyFeedback.classList.remove("hidden");
+          setTimeout(() => shareCopyFeedback.classList.add("hidden"), 3000);
+        }
+        btnCopyShareLink.textContent = "Kopyalandı!";
+        setTimeout(() => {
+          btnCopyShareLink.textContent = "Linki Kopyala";
+        }, 2000);
+      } catch (_) {
+        if (shareLinkInput) {
+          shareLinkInput.select();
+          document.execCommand("copy");
+        }
+      }
+    });
+  }
+
+  // 7. Sınaqların Yüklənməsi və Render Edilməsi
+  async function loadAssignments() {
+    try {
+      const res = await fetchWithAuth("/api/v1/tutor/assignments");
+      if (!res.ok) throw new Error("Sınaqlar siyahısı alına bilmədi.");
+      const list = await res.json();
+      tutorAssignmentsList = Array.isArray(list) ? list : [];
+
+      if (tabAssignmentsCount) {
+        tabAssignmentsCount.textContent = tutorAssignmentsList.length;
+      }
+
+      renderAssignments(tutorAssignmentsList);
+    } catch (err) {
+      console.warn("Load assignments warning:", err);
+      renderAssignments([]);
+    }
+  }
+
+  function renderAssignments(assignments) {
+    if (!assignmentsGrid) return;
+    assignmentsGrid.replaceChildren();
+
+    if (!assignments || assignments.length === 0) {
+      if (assignmentsEmptyState) assignmentsEmptyState.classList.remove("hidden");
+      assignmentsGrid.classList.add("hidden");
+      return;
+    }
+
+    if (assignmentsEmptyState) assignmentsEmptyState.classList.add("hidden");
+    assignmentsGrid.classList.remove("hidden");
+
+    assignments.forEach((asg) => {
+      const card = document.createElement("div");
+      card.className = "assignment-card";
+
+      const header = document.createElement("div");
+      header.className = "asg-header";
+
+      const tag = document.createElement("span");
+      tag.className = "asg-tag";
+      tag.textContent = "PDF Sınaq";
+      header.appendChild(tag);
+
+      const dateStr = asg.created_at
+        ? new Date(asg.created_at).toLocaleDateString("az-AZ", { day: "2-digit", month: "2-digit", year: "numeric" })
+        : "Yeni";
+      const dateEl = document.createElement("span");
+      dateEl.style.fontSize = "0.8rem";
+      dateEl.style.color = "var(--text-sub)";
+      dateEl.textContent = dateStr;
+      header.appendChild(dateEl);
+      card.appendChild(header);
+
+      const titleEl = document.createElement("h3");
+      titleEl.className = "asg-title";
+      titleEl.textContent = asg.title || "Sınaq";
+      card.appendChild(titleEl);
+
+      const metaRow = document.createElement("div");
+      metaRow.className = "asg-meta-row";
+
+      const qItem = document.createElement("div");
+      qItem.className = "asg-meta-item";
+      qItem.textContent = `${asg.question_count || 25} sual`;
+      metaRow.appendChild(qItem);
+
+      const dItem = document.createElement("div");
+      dItem.className = "asg-meta-item";
+      dItem.textContent = `${asg.duration_minutes || 60} dəqiqə`;
+      metaRow.appendChild(dItem);
+
+      card.appendChild(metaRow);
+
+      const statsBanner = document.createElement("div");
+      statsBanner.className = "asg-stats-banner";
+
+      const subCount = asg.submission_count || 0;
+      const subInfo = document.createElement("span");
+      subInfo.textContent = `${subCount} şagird təhvil verib`;
+      statsBanner.appendChild(subInfo);
+
+      const avgInfo = document.createElement("span");
+      avgInfo.className = "asg-stats-val";
+      avgInfo.textContent = subCount > 0 ? `Orta: ${asg.avg_score || 0} bal` : "Hələ işlənməyib";
+      statsBanner.appendChild(avgInfo);
+
+      card.appendChild(statsBanner);
+
+      const actions = document.createElement("div");
+      actions.className = "asg-actions";
+
+      // Linki kopyala düyməsi
+      const btnCopy = document.createElement("button");
+      btnCopy.type = "button";
+      btnCopy.className = "btn btn-primary btn-sm";
+      btnCopy.textContent = "Linki Kopyala";
+      btnCopy.addEventListener("click", async () => {
+        const shareUrl = `${window.location.origin}/exam-hall.html?assignment_id=${encodeURIComponent(asg.id)}`;
+        try {
+          await navigator.clipboard.writeText(shareUrl);
+          btnCopy.textContent = "Kopyalandı!";
+          setTimeout(() => { btnCopy.textContent = "Linki Kopyala"; }, 2000);
+        } catch (_) {
+          openShareModal(asg.id);
+        }
+      });
+      actions.appendChild(btnCopy);
+
+      // Nəticələrə bax düyməsi
+      const btnResults = document.createElement("button");
+      btnResults.type = "button";
+      btnResults.className = "btn btn-outline btn-sm";
+      btnResults.textContent = "Nəticələrə Bax";
+      btnResults.addEventListener("click", () => {
+        openAssignmentSubmissions(asg.id, asg.title);
+      });
+      actions.appendChild(btnResults);
+
+      // PDF-ə bax düyməsi
+      if (asg.pdf_url) {
+        const btnPdf = document.createElement("button");
+        btnPdf.type = "button";
+        btnPdf.className = "btn btn-ghost btn-sm";
+        btnPdf.textContent = "PDF";
+        btnPdf.title = "Sınaq PDF faylını aç";
+        btnPdf.addEventListener("click", () => {
+          const w = window.open("");
+          if (w) {
+            w.document.write(`<iframe src="${asg.pdf_url}" style="width:100%;height:100vh;border:none;"></iframe>`);
+          }
+        });
+        actions.appendChild(btnPdf);
+      }
+
+      // Sınağı sil düyməsi
+      const btnDel = document.createElement("button");
+      btnDel.type = "button";
+      btnDel.className = "btn btn-ghost btn-sm";
+      btnDel.textContent = "Sil";
+      btnDel.style.color = "var(--danger)";
+      btnDel.addEventListener("click", async () => {
+        if (!confirm(`"${asg.title}" sınağını və ona aid bütün nəticələri silmək istədiyinizdən əminsiniz?`)) return;
+        try {
+          await fetchWithAuth(`/api/v1/tutor/assignments/${encodeURIComponent(asg.id)}`, { method: "DELETE" });
+          await loadAssignments();
+        } catch (err) {
+          alert("Sınağı silmək mümkün olmadı: " + err.message);
+        }
+      });
+      actions.appendChild(btnDel);
+
+      card.appendChild(actions);
+      assignmentsGrid.appendChild(card);
+    });
+  }
+
+  // 8. Sınaq Nəticələri Modalı (Tələbələrin Cavab Kartları ilə)
+  async function openAssignmentSubmissions(asgId, title) {
+    if (!assignmentSubmissionsModal) return;
+    if (submissionsModalTitle) submissionsModalTitle.textContent = title || "Sınaq Nəticələri";
+    if (submissionsModalMeta) submissionsModalMeta.textContent = "Yüklənir...";
+    if (asgSubmissionsTableBody) asgSubmissionsTableBody.replaceChildren();
+    if (asgSubmissionsEmpty) asgSubmissionsEmpty.classList.add("hidden");
+
+    assignmentSubmissionsModal.classList.add("active");
+
+    try {
+      const res = await fetchWithAuth(`/api/v1/tutor/assignments/${encodeURIComponent(asgId)}/submissions`);
+      if (!res.ok) throw new Error("Nəticələr yüklənmədi.");
+      const data = await res.json();
+
+      const asg = data.assignment || {};
+      const subs = data.submissions || [];
+
+      if (submissionsModalMeta) {
+        submissionsModalMeta.textContent = `${asg.question_count || 25} sual • Cəmi ${subs.length} şagird iştirak edib`;
+      }
+
+      if (subs.length === 0) {
+        if (asgSubmissionsEmpty) asgSubmissionsEmpty.classList.remove("hidden");
+        return;
+      }
+
+      subs.forEach((sub) => {
+        const tr = document.createElement("tr");
+
+        const tdName = document.createElement("td");
+        tdName.style.fontWeight = "600";
+        tdName.textContent = sub.student_name || "Şagird";
+        tr.appendChild(tdName);
+
+        const tdContact = document.createElement("td");
+        tdContact.textContent = sub.student_identifier || "-";
+        tr.appendChild(tdContact);
+
+        const tdScore = document.createElement("td");
+        tdScore.style.fontWeight = "700";
+        tdScore.style.color = "var(--primary)";
+        tdScore.textContent = `${sub.score} / ${sub.total_questions}`;
+        tr.appendChild(tdScore);
+
+        const tdCounts = document.createElement("td");
+        tdCounts.textContent = `Düz: ${sub.score} | Səhv: ${sub.incorrect_count || 0} | Boş: ${sub.empty_count || 0}`;
+        tr.appendChild(tdCounts);
+
+        const tdAcc = document.createElement("td");
+        const accTag = document.createElement("span");
+        accTag.className = "student-tag " + (sub.percentage >= 80 ? "good" : sub.percentage >= 50 ? "mid" : "bad");
+        accTag.textContent = `${sub.percentage}%`;
+        tdAcc.appendChild(accTag);
+        tr.appendChild(tdAcc);
+
+        const tdDate = document.createElement("td");
+        tdDate.textContent = sub.submitted_at
+          ? new Date(sub.submitted_at).toLocaleDateString("az-AZ", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
+          : "-";
+        tr.appendChild(tdDate);
+
+        const tdAction = document.createElement("td");
+        const btnReview = document.createElement("button");
+        btnReview.type = "button";
+        btnReview.className = "btn btn-outline btn-sm";
+        btnReview.textContent = "Cavab Kartına Bax";
+        btnReview.addEventListener("click", () => {
+          openStudentAnswerReview(sub, asg.answer_key || {}, asg.question_count || 25);
+        });
+        tdAction.appendChild(btnReview);
+        tr.appendChild(tdAction);
+
+        asgSubmissionsTableBody.appendChild(tr);
+      });
+
+    } catch (err) {
+      console.error("Fetch submissions error:", err);
+      if (submissionsModalMeta) submissionsModalMeta.textContent = "Məlumat yüklənərkən xəta baş verdi.";
+    }
+  }
+
+  function closeAssignmentSubmissions() {
+    if (assignmentSubmissionsModal) assignmentSubmissionsModal.classList.remove("active");
+  }
+
+  if (btnCloseSubmissionsModal) btnCloseSubmissionsModal.addEventListener("click", closeAssignmentSubmissions);
+  if (btnCloseSubmissionsModalBtn) btnCloseSubmissionsModalBtn.addEventListener("click", closeAssignmentSubmissions);
+
+  // 9. Şagird Cavab Kartı İncələmə Modalı
+  function openStudentAnswerReview(submission, answerKey, totalQuestions) {
+    if (!assignmentAnswersReviewModal) return;
+
+    if (reviewStudentName) reviewStudentName.textContent = `${submission.student_name} — Cavab Kartı`;
+    if (reviewStudentMeta) reviewStudentMeta.textContent = `${submission.student_identifier || ""} • Təhvil verilib: ${new Date(submission.submitted_at).toLocaleString("az-AZ")}`;
+
+    if (reviewScore) reviewScore.textContent = `${submission.score} / ${totalQuestions}`;
+    if (reviewCounts) reviewCounts.textContent = `${submission.score} düzgün, ${submission.incorrect_count || 0} səhv`;
+    if (reviewPercent) reviewPercent.textContent = `${submission.percentage}%`;
+
+    if (studentReviewGrid) {
+      studentReviewGrid.replaceChildren();
+
+      const userAnswers = submission.answers || {};
+
+      for (let i = 1; i <= totalQuestions; i++) {
+        const qNumStr = String(i);
+        const correctAns = (answerKey[qNumStr] || "").toUpperCase();
+        const studentAns = (userAnswers[qNumStr] || "").toUpperCase();
+
+        const card = document.createElement("div");
+        card.className = "review-q-card";
+
+        const isCorrect = studentAns && studentAns === correctAns;
+        const isEmpty = !studentAns;
+
+        if (isCorrect) card.classList.add("correct");
+        else if (isEmpty) card.classList.add("empty");
+        else card.classList.add("incorrect");
+
+        const qInfo = document.createElement("div");
+        qInfo.innerHTML = `<strong>Sual ${i}:</strong> Müəllim Açarı: <b>${correctAns || "-"}</b>`;
+        card.appendChild(qInfo);
+
+        const badge = document.createElement("span");
+        if (isCorrect) {
+          badge.className = "review-badge correct";
+          badge.textContent = `✓ Şagird: ${studentAns}`;
+        } else if (isEmpty) {
+          badge.className = "review-badge empty";
+          badge.textContent = "Boş";
+        } else {
+          badge.className = "review-badge incorrect";
+          badge.textContent = `✗ Şagird: ${studentAns}`;
+        }
+        card.appendChild(badge);
+
+        studentReviewGrid.appendChild(card);
+      }
+    }
+
+    assignmentAnswersReviewModal.classList.add("active");
+  }
+
+  function closeStudentAnswerReview() {
+    if (assignmentAnswersReviewModal) assignmentAnswersReviewModal.classList.remove("active");
+  }
+
+  if (btnCloseReviewModal) btnCloseReviewModal.addEventListener("click", closeStudentAnswerReview);
+  if (btnCloseReviewModalBtn) btnCloseReviewModalBtn.addEventListener("click", closeStudentAnswerReview);
+
+  // İlk açılışda həm ümumi məlumatları, həm də sınaqları yükləyirik
+  loadAssignments();

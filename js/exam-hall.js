@@ -14,6 +14,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     // --- DOM Elementləri ---
     const titleSkeleton = document.getElementById('title-skeleton');
     const examTitleEl = document.getElementById('exam-title');
+    const examTypeBadge = document.getElementById('exam-type-badge');
     const timerBox = document.getElementById('timer-box');
     const timerDisplay = document.getElementById('timer-display');
     const skeletonBox = document.getElementById('question-skeleton');
@@ -27,6 +28,21 @@ document.addEventListener("DOMContentLoaded", async () => {
     const btnNext = document.getElementById('btn-next');
     const btnFinish = document.getElementById('btn-finish-exam');
 
+    // Format Görünüşləri
+    const standardExamView = document.getElementById('standard-exam-view');
+    const pdfExamView = document.getElementById('pdf-exam-view');
+    const pdfViewerFrame = document.getElementById('pdf-viewer-frame');
+    const pdfViewerTitle = document.getElementById('pdf-viewer-title');
+    const btnPdfFullscreen = document.getElementById('btn-pdf-fullscreen');
+    const pdfOpticalSheet = document.getElementById('pdf-optical-sheet');
+    const pdfCounterDisplay = document.getElementById('pdf-counter-display');
+    const answerSheetProgressBar = document.getElementById('answer-sheet-progress-bar');
+    const btnSubmitPdfExam = document.getElementById('btn-submit-pdf-exam');
+    const tabShowPdf = document.getElementById('tab-show-pdf');
+    const tabShowSheet = document.getElementById('tab-show-sheet');
+    const pdfViewerSection = document.getElementById('pdf-viewer-section');
+    const answerSheetSection = document.getElementById('answer-sheet-section');
+
     const overlay = document.getElementById('exam-overlay');
     const modalTitle = document.getElementById('modal-title');
     const modalMessage = document.getElementById('modal-message');
@@ -34,17 +50,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     const btnModalConfirm = document.getElementById('btn-modal-confirm');
 
     // --- State (Vəziyyət) ---
+    let isAssignment = false;
     let questions = [];
-    let examDurationMinutes = 60; // Default olaraq 60
+    let assignmentTotalQuestions = 25;
     let currentQuestionIndex = 0;
-    let userAnswers = {}; // Format: {"q_id": "A"}
+    let userAnswers = {}; // Standard: {"q_id": "A"}, Assignment: {"1": "A"}
     let timerInterval = null;
-    let endTime = 0;       // Sayğac yox, mütləq bitmə anı (ms) - arxa plan tabında sapma (drift) olmasın deyə
+    let endTime = 0;
     let isSubmitting = false;
-    let examInProgress = false; // true olduqda səhifədən çıxış xəbərdarlığı aktivdir
+    let examInProgress = false;
 
-    // --- Modal (Diqqət: bütün dinamik hallar bura yığılıb ki, "düymələri gizli qalan"
-    //     modal vəziyyəti yaranmasın - əvvəlki versiyada xəta zamanı bu baş verirdi) ---
+    // --- Modal İdarəetməsi ---
     const showModal = ({ title, message, closeLabel = null, confirmLabel = null, onClose = null, onConfirm = null }) => {
         modalTitle.textContent = title;
         modalMessage.textContent = message;
@@ -69,24 +85,25 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     };
 
-    // --- URL-dən sınaq ID-sini alırıq ---
+    // --- URL Parametrlərinin Analizi ---
     const urlParams = new URLSearchParams(window.location.search);
-    const examId = urlParams.get('id');
+    const assignmentParam = urlParams.get('assignment_id');
+    const idParam = urlParams.get('id');
+    const typeParam = urlParams.get('type');
+
+    let examId = assignmentParam || idParam;
+    isAssignment = Boolean(assignmentParam || typeParam === 'assignment');
 
     if (!examId) {
-        // Əvvəlki versiya çılpaq alert() göstərirdi - dizayn sistemi ilə uyğunsuz idi
         showModal({
             title: "Sınaq tapılmadı",
-            message: "Zəhmət olmasa sınaqlar siyahısından düzgün sınaq seçin.",
-            closeLabel: "Sınaqlara qayıt",
-            onClose: () => { window.location.href = "exam.html"; }
+            message: "Zəhmət olmasa düzgün sınaq linki daxil edin və ya sınaqlar siyahısından seçim edin.",
+            closeLabel: "Ana Səhifəyə Qayıt",
+            onClose: () => { window.location.href = "index.html"; }
         });
         return;
     }
 
-    // --- Səhifə yenilənməsindən (refresh) qorunma: qalan vaxt və cavablar sessionStorage-də saxlanılır ---
-    // Qeyd: bu sırf UI rahatlığıdır. Yekun nəticənin doğruluğu hər zaman backend tərəfindən təsdiqlənməlidir,
-    // çünki Zero-Trust prinsipinə görə client-in bildirdiyi vaxta/cavaba deyil, server tərəfin hesabına etibar edilir.
     const STORAGE_KEY = `gradient_exam_state_${examId}`;
 
     const loadPersistedState = () => {
@@ -94,7 +111,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             const raw = sessionStorage.getItem(STORAGE_KEY);
             return raw ? JSON.parse(raw) : null;
         } catch (_) {
-            return null; // Private rejim və ya storage bloklanıbsa, sadəcə yaddaşsız davam et
+            return null;
         }
     };
 
@@ -105,14 +122,219 @@ document.addEventListener("DOMContentLoaded", async () => {
                 answers: userAnswers,
                 currentIndex: currentQuestionIndex
             }));
-        } catch (_) { /* saxlama uğursuz olsa belə sınaq davam edə bilməlidir */ }
+        } catch (_) { /* no-op */ }
     };
 
     const clearPersistedState = () => {
         try { sessionStorage.removeItem(STORAGE_KEY); } catch (_) { /* no-op */ }
     };
 
-    // --- 1. AUTH GUARD VƏ MƏLUMATIN ÇƏKİLMƏSİ ---
+    // =========================================================================
+    // 1. REPETİTOR PDF SINAĞI İDARƏETMƏSİ (ASSIGNMENT EXAM)
+    // =========================================================================
+    const initAssignmentExam = async (assignmentId) => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/v1/tutor/assignments/${encodeURIComponent(assignmentId)}/start`, {
+                method: 'GET',
+                credentials: 'include'
+            });
+
+            if (response.status === 401) {
+                window.location.href = `auth.html?redirect=${encodeURIComponent(window.location.href)}`;
+                return;
+            }
+
+            if (!response.ok) {
+                let message = "Repetitor sınağını yükləmək mümkün olmadı.";
+                try {
+                    const errData = await response.json();
+                    if (errData && typeof errData.detail === 'string') message = errData.detail;
+                } catch (_) {}
+                throw new Error(message);
+            }
+
+            const data = await response.json();
+
+            // Əgər şagird artıq bu sınağı tamamlayıbsa
+            if (data.is_completed) {
+                const sub = data.submission || {};
+                showModal({
+                    title: "Sınaq Tamamlanıb",
+                    message: data.message || `Siz bu sınağı artıq təhvil vermisiniz. Nəticəniz: ${sub.score || 0} bal.`,
+                    closeLabel: "Ana Səhifəyə Qayıt",
+                    onClose: () => { window.location.href = "index.html"; }
+                });
+                return;
+            }
+
+            // UI Konfiqurasiyası
+            if (standardExamView) standardExamView.style.display = 'none';
+            if (pdfExamView) pdfExamView.classList.remove('hidden');
+
+            titleSkeleton.classList.add('hidden');
+            examTitleEl.textContent = data.title || 'Müəllim Sınağı';
+            examTitleEl.classList.remove('hidden');
+
+            if (examTypeBadge) {
+                examTypeBadge.textContent = data.tutor_name ? `${data.tutor_name} (Müəllim Sınağı)` : "Müəllim Sınağı";
+                examTypeBadge.classList.remove('hidden');
+            }
+
+            assignmentTotalQuestions = Math.max(1, Number(data.question_count) || 25);
+            const durationMins = Math.max(1, Number(data.duration_minutes) || 60);
+
+            // PDF Sənədinin yüklənməsi
+            if (data.pdf_url && pdfViewerFrame) {
+                pdfViewerFrame.src = data.pdf_url;
+            } else if (pdfViewerFrame) {
+                pdfViewerFrame.src = "about:blank";
+            }
+
+            if (pdfViewerTitle) {
+                pdfViewerTitle.textContent = `${data.title || 'Sınaq'} (PDF Sənədi)`;
+            }
+
+            // Tam Ekran Düyməsi
+            if (btnPdfFullscreen && pdfViewerFrame) {
+                btnPdfFullscreen.onclick = () => {
+                    if (pdfViewerFrame.requestFullscreen) {
+                        pdfViewerFrame.requestFullscreen();
+                    } else if (pdfViewerFrame.webkitRequestFullscreen) {
+                        pdfViewerFrame.webkitRequestFullscreen();
+                    }
+                };
+            }
+
+            // Mobil Switcher Düymələri
+            if (tabShowPdf && tabShowSheet && pdfViewerSection && answerSheetSection) {
+                tabShowPdf.onclick = () => {
+                    tabShowPdf.classList.add('active');
+                    tabShowSheet.classList.remove('active');
+                    pdfViewerSection.classList.remove('mobile-hidden');
+                    answerSheetSection.classList.add('mobile-hidden');
+                };
+                tabShowSheet.onclick = () => {
+                    tabShowSheet.classList.add('active');
+                    tabShowPdf.classList.remove('active');
+                    answerSheetSection.classList.remove('mobile-hidden');
+                    pdfViewerSection.classList.add('mobile-hidden');
+                };
+            }
+
+            // Əvvəlki vəziyyətin bərpası
+            const persisted = loadPersistedState();
+            const nowMs = Date.now();
+            const defaultDurationMs = durationMins * 60 * 1000;
+
+            if (persisted && typeof persisted.endTime === 'number' && persisted.endTime > nowMs) {
+                endTime = persisted.endTime;
+                userAnswers = (persisted.answers && typeof persisted.answers === 'object') ? persisted.answers : {};
+            } else {
+                endTime = nowMs + defaultDurationMs;
+                userAnswers = {};
+            }
+
+            // Optik Cavab Kartının Render Edilməsi
+            renderOpticalSheet(assignmentTotalQuestions);
+            updateOpticalSheetStats();
+
+            // Taymer və Göndərmə Düymələri
+            startTimer();
+            if (btnFinish) btnFinish.disabled = false;
+            if (btnSubmitPdfExam) {
+                btnSubmitPdfExam.onclick = confirmSubmit;
+            }
+
+            examInProgress = true;
+
+        } catch (error) {
+            showModal({
+                title: "Xəta baş verdi",
+                message: error.message,
+                closeLabel: "Yenidən cəhd et",
+                onClose: () => { overlay.classList.add('hidden'); initAssignmentExam(assignmentId); }
+            });
+        }
+    };
+
+    // Optik Cavab Kartının Qurulması
+    const renderOpticalSheet = (total) => {
+        if (!pdfOpticalSheet) return;
+        pdfOpticalSheet.innerHTML = '';
+
+        const options = ['A', 'B', 'C', 'D', 'E'];
+
+        for (let q = 1; q <= total; q++) {
+            const qKey = String(q);
+            const row = document.createElement('div');
+            row.className = 'optical-row';
+            row.id = `optical-row-${qKey}`;
+
+            const qNum = document.createElement('span');
+            qNum.className = 'optical-q-num';
+            qNum.textContent = `${q}.`;
+            row.appendChild(qNum);
+
+            const bubblesWrap = document.createElement('div');
+            bubblesWrap.className = 'optical-bubbles';
+
+            const currentAns = userAnswers[qKey] || '';
+            if (currentAns) {
+                row.classList.add('has-answer');
+            }
+
+            options.forEach(opt => {
+                const bubble = document.createElement('button');
+                bubble.type = 'button';
+                bubble.className = 'optical-bubble';
+                bubble.textContent = opt;
+                bubble.setAttribute('aria-label', `Sual ${q}, Variant ${opt}`);
+
+                if (currentAns === opt) {
+                    bubble.classList.add('selected');
+                }
+
+                bubble.addEventListener('click', () => {
+                    if (userAnswers[qKey] === opt) {
+                        // Təkrar basdıqda seçimi təmizləmək imkanı
+                        delete userAnswers[qKey];
+                        bubble.classList.remove('selected');
+                        row.classList.remove('has-answer');
+                    } else {
+                        userAnswers[qKey] = opt;
+                        bubblesWrap.querySelectorAll('.optical-bubble').forEach(b => b.classList.remove('selected'));
+                        bubble.classList.add('selected');
+                        row.classList.add('has-answer');
+                    }
+
+                    updateOpticalSheetStats();
+                    persistState();
+                });
+
+                bubblesWrap.appendChild(bubble);
+            });
+
+            row.appendChild(bubblesWrap);
+            pdfOpticalSheet.appendChild(row);
+        }
+    };
+
+    const updateOpticalSheetStats = () => {
+        const answeredCount = Object.keys(userAnswers).length;
+        const total = assignmentTotalQuestions;
+        const pct = Math.round((answeredCount / total) * 100);
+
+        if (pdfCounterDisplay) {
+            pdfCounterDisplay.textContent = `${answeredCount} / ${total} cavablandırılıb`;
+        }
+        if (answerSheetProgressBar) {
+            answerSheetProgressBar.style.width = `${pct}%`;
+        }
+    };
+
+    // =========================================================================
+    // 2. STANDART PLATFORMA İNTERAKTİV SINAĞI İDARƏETMƏSİ
+    // =========================================================================
     const fetchExamData = async () => {
         try {
             const response = await fetch(`${API_BASE_URL}/api/v1/exams/${encodeURIComponent(examId)}/start`, {
@@ -121,18 +343,23 @@ document.addEventListener("DOMContentLoaded", async () => {
             });
 
             if (response.status === 401) {
-                // Zero-Trust: frontend sessiyanın etibarlılığı barədə qərar vermir, yalnız
-                // backend-in 401 cavabına əməl edir
-                window.location.href = "auth.html";
+                window.location.href = `auth.html?redirect=${encodeURIComponent(window.location.href)}`;
                 return;
             }
 
             if (!response.ok) {
+                // Əgər standart sınaq tapılmadısa, bəlkə repetitor sınağıdır?
+                if (response.status === 404 && !isAssignment) {
+                    isAssignment = true;
+                    initAssignmentExam(examId);
+                    return;
+                }
+
                 let message = "Sınağı yükləmək mümkün olmadı. Bir az sonra yenidən cəhd edin.";
                 try {
                     const errData = await response.json();
                     if (errData && typeof errData.detail === 'string') message = errData.detail;
-                } catch (_) { /* JSON deyilsə ümumi mesaj qalır - server detalları sızdırılmır */ }
+                } catch (_) {}
                 throw new Error(message);
             }
 
@@ -143,8 +370,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
             questions = data.questions;
 
-            // Əvvəlki sessiyadan qalan vaxt/cavab varsa bərpa et, yoxdursa yeni sayğac başlat.
-            // (Backend gələcəkdə "duration_minutes" göndərərsə nəzərə alınır, göndərməsə 60 dəqiqə defolt olur.)
             const persisted = loadPersistedState();
             const nowMs = Date.now();
             const defaultDurationMs = (Number(data.duration_minutes) > 0 ? Number(data.duration_minutes) * 60 : 60 * 60) * 1000;
@@ -169,14 +394,11 @@ document.addEventListener("DOMContentLoaded", async () => {
             skeletonBox.classList.add('hidden');
             contentBox.classList.remove('hidden');
 
-            // Məlumat yüklənənə qədər bu düymələr bağlı idi ki, boş sınaq təsadüfən göndərilməsin
             btnNext.disabled = false;
             btnFinish.disabled = false;
             examInProgress = true;
 
         } catch (error) {
-            // Əvvəlki versiyada bu blok yalnız showModal(..., false) çağırırdı - bu isə HEÇ BİR
-            // düymə göstərmirdi və istifadəçi xətadan sonra tamamilə çıxılmaz vəziyyətdə qalırdı.
             showModal({
                 title: "Xəta baş verdi",
                 message: error.message,
@@ -186,21 +408,20 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     };
 
-    // --- 2. SUALLARIN RENDER EDİLMƏSİ (XSS MÜDAFİƏSİ) ---
+    // Standart Sual Renderi (XSS Müdafiəsi - createElement və textContent)
     const renderQuestion = (index) => {
         currentQuestionIndex = index;
         const q = questions[index];
 
         qNumberEl.textContent = `Sual ${index + 1} / ${questions.length}`;
-        qTextEl.textContent = (q && q.text) ? q.text : ''; // innerHTML QƏTİ QADAĞANDIR!
+        qTextEl.textContent = (q && q.text) ? q.text : '';
 
-        optionsContainer.innerHTML = ''; // Sabit boş sətir - istifadəçi datası deyil, təhlükəsizdir
+        optionsContainer.innerHTML = '';
 
         const options = (q && q.options && typeof q.options === 'object') ? q.options : {};
         const optionKeys = Object.keys(options);
 
         if (optionKeys.length === 0) {
-            // Müdafiə: backend gözlənilməz formatda sual göndərsə səhifə çökməsin, təmiz boş vəziyyət göstərsin
             const emptyMsg = document.createElement('p');
             emptyMsg.className = 'question-text';
             emptyMsg.textContent = 'Bu sual üçün cavab variantı tapılmadı.';
@@ -255,7 +476,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         persistState();
     };
 
-    // --- 3. PALİTRA VƏ NAVİQASİYA ---
     const initPalette = () => {
         paletteGrid.innerHTML = '';
         questions.forEach((q, idx) => {
@@ -304,26 +524,25 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     });
 
-    // Ox düymələri ilə naviqasiya (radio-inputların öz native ox-naviqasiyasına mane olmamaq üçün
-    // fokus radio üzərindədirsə və ya modal açıqdırsa iştirak etmir)
     document.addEventListener('keydown', (e) => {
         if (document.activeElement && document.activeElement.tagName === 'INPUT') return;
         if (!overlay.classList.contains('hidden')) return;
         if (btnNext.disabled) return;
 
-        if (e.key === 'ArrowRight') {
+        if (e.key === 'ArrowRight' && !isAssignment) {
             e.preventDefault();
             btnNext.click();
-        } else if (e.key === 'ArrowLeft' && !btnPrev.disabled) {
+        } else if (e.key === 'ArrowLeft' && !btnPrev.disabled && !isAssignment) {
             e.preventDefault();
             btnPrev.click();
         }
     });
 
-    // --- 4. TAYMER (mütləq bitmə vaxtına əsaslanır - arxa plan tabında setInterval-in
-    //     "throttle" olunmasından yaranan vaxt sapmasının qarşısını alır) ---
+    // =========================================================================
+    // 3. TAYMER İDARƏETMƏSİ (Mütləq bitmə anına əsaslanır)
+    // =========================================================================
     const startTimer = () => {
-        if (timerInterval) clearInterval(timerInterval); // təkrar başlatma qorunması
+        if (timerInterval) clearInterval(timerInterval);
 
         const tick = () => {
             const remainingSec = Math.max(0, Math.round((endTime - Date.now()) / 1000));
@@ -338,7 +557,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             if (remainingSec <= 0) {
                 clearInterval(timerInterval);
-                submitExam(); // Vaxt bitəndə avtomatik göndər
+                submitExam();
             }
         };
 
@@ -346,16 +565,18 @@ document.addEventListener("DOMContentLoaded", async () => {
         timerInterval = setInterval(tick, 1000);
     };
 
-    // --- 5. SINAĞI BİTİRMƏK VƏ GÖNDƏRMƏK ---
+    // =========================================================================
+    // 4. SINAĞIN TƏHVİL VERİLMƏSİ VƏ NƏTİCƏNİN GÖSTƏRİLMƏSİ
+    // =========================================================================
     const confirmSubmit = () => {
         const answeredCount = Object.keys(userAnswers).length;
-        const total = questions.length;
+        const total = isAssignment ? assignmentTotalQuestions : questions.length;
         showModal({
             title: "Sınağı bitirirsiniz?",
-            message: `${total} sualdan ${answeredCount} dənəsinə cavab verdiniz. Təsdiqləyirsiniz?`,
-            closeLabel: "Geri qayıt",
+            message: `${total} sualdan ${answeredCount} dənəsinə cavab verdiniz. Sınağı təhvil verməyə əminsiniz?`,
+            closeLabel: "Davam et",
             onClose: () => overlay.classList.add('hidden'),
-            confirmLabel: "Təsdiqlə",
+            confirmLabel: "Təsdiqlə və Bitir",
             onConfirm: () => submitExam()
         });
     };
@@ -363,13 +584,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     btnFinish.addEventListener('click', confirmSubmit);
 
     const submitExam = async () => {
-        if (isSubmitting) return; // Taymerin bitməsi ilə əl ilə təsdiqin eyni ana düşməsindən yaranan təkrar göndərməni önləyir
+        if (isSubmitting) return;
         isSubmitting = true;
         clearInterval(timerInterval);
-        showModal({ title: "Gözləyin", message: "Cavablarınız yoxlanılır..." });
+        showModal({ title: "Gözləyin", message: "Cavablarınız qeydə alınır və yoxlanılır..." });
 
         try {
-            const response = await fetch(`${API_BASE_URL}/api/v1/exams/${encodeURIComponent(examId)}/submit`, {
+            const submitUrl = isAssignment
+                ? `${API_BASE_URL}/api/v1/tutor/assignments/${encodeURIComponent(examId)}/submit`
+                : `${API_BASE_URL}/api/v1/exams/${encodeURIComponent(examId)}/submit`;
+
+            const response = await fetch(submitUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
@@ -381,24 +606,28 @@ document.addEventListener("DOMContentLoaded", async () => {
                 try {
                     const errData = await response.json();
                     if (errData && typeof errData.detail === 'string') message = errData.detail;
-                } catch (_) { /* ümumi mesaj qalır */ }
+                } catch (_) {}
                 throw new Error(message);
             }
 
             const result = await response.json();
 
-            examInProgress = false; // Sınaq təsdiqlənib - artıq səhifədən çıxış xəbərdarlığına ehtiyac yoxdur
+            examInProgress = false;
             clearPersistedState();
+
+            const score = result.score ?? 0;
+            const total = result.total ?? (isAssignment ? assignmentTotalQuestions : questions.length);
+            const pct = result.percentage ?? Math.round((score / total) * 100);
 
             showModal({
                 title: "Sınaq Bitdi!",
-                message: `Nəticəniz: ${result.score} / ${result.total} düzgün cavab.`,
+                message: `Yekun Nəticəniz: ${score} / ${total} (${pct}%).\nDüzgün: ${score} | Səhv: ${result.incorrect ?? result.incorrect_count ?? 0} | Boş: ${result.empty ?? result.empty_count ?? (total - score)}`,
                 closeLabel: "Ana Səhifəyə Qayıt",
-                onClose: () => { window.location.href = "exam.html"; }
+                onClose: () => { window.location.href = "index.html"; }
             });
 
         } catch (error) {
-            isSubmitting = false; // Yenidən cəhd etməyə icazə ver
+            isSubmitting = false;
             showModal({
                 title: "Xəta baş verdi",
                 message: error.message,
@@ -408,7 +637,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     };
 
-    // Səhifədən təsadüfən çıxış (bağlama/yenidən yükləmə) zamanı xəbərdarlıq - sınaq bitənə qədər aktivdir
     window.addEventListener('beforeunload', (e) => {
         if (!examInProgress) return;
         e.preventDefault();
@@ -416,5 +644,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
     // Başlat
-    fetchExamData();
+    if (isAssignment) {
+        initAssignmentExam(examId);
+    } else {
+        fetchExamData();
+    }
 });

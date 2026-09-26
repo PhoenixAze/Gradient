@@ -65,7 +65,8 @@
           <span class="invite-code-val" id="invite-code-display">...</span>
           <button id="btn-copy-code" class="btn btn-ghost btn-sm" style="padding: 2px 8px;">Kopyala</button>
         </div>
-        <button id="btn-open-add-student" class="btn btn-primary btn-sm">+ Şagird Əlavə Et</button>
+        <button id="btn-hero-create-asg" class="btn btn-primary btn-sm">+ PDF Sınaq Yarat</button>
+        <button id="btn-open-add-student" class="btn btn-secondary btn-sm">+ Şagird Əlavə Et</button>
       </div>
     </div>
 
@@ -118,8 +119,12 @@
             <span>Şagirdlərim</span>
             <span class="tab-badge" id="tab-students-count">0</span>
           </button>
+          <button class="tutor-tab-btn" data-tab="assignments" id="tab-btn-assignments">
+            <span>Fərdi Sınaqlar (PDF)</span>
+            <span class="tab-badge" id="tab-assignments-count">0</span>
+          </button>
           <button class="tutor-tab-btn" data-tab="exams" id="tab-btn-exams">
-            <span>Sınaqlar və Nəticələr</span>
+            <span>Platforma Sınaqları</span>
             <span class="tab-badge" id="tab-submissions-count">0</span>
           </button>
           <button class="tutor-tab-btn tutor-tab-ai" data-tab="ai" id="tab-btn-ai">
@@ -184,7 +189,34 @@
         </div>
       </div>
 
-      <!-- TAB 2: SINAQLAR VƏ İMTİHAN NƏTİCƏLƏRİ -->
+      <!-- TAB 2: FƏRDİ SINAQLAR VƏ CAVAB KARTLARI -->
+      <div class="tutor-tab-pane hidden" id="pane-assignments">
+        <div class="tutor-section">
+          <div class="tutor-section-header">
+            <div>
+              <h2 class="tutor-section-title">Fərdi PDF Sınaqlar və Rəqəmsal Cavab Kartları</h2>
+              <p class="tutor-section-sub">Şagirdləriniz üçün öz PDF sınağınızı yükləyin, AI və ya əl ilə doğru cavab kartını qeyd edin və imtahan linkini paylaşın.</p>
+            </div>
+            <button id="btn-open-create-asg" class="btn btn-primary btn-sm">+ Yeni Sınaq Yarat (PDF)</button>
+          </div>
+
+          <div id="assignments-empty-state" class="empty-box hidden">
+            <h3 class="empty-box-title">Hələ heç bir fərdi PDF sınaq yaratmamısınız</h3>
+            <p class="empty-box-desc">
+              Öz sınaq PDF-inizi yükləyin, sual sayını və vaxtı qeyd edin, doğru cavab açarını təyin edərək şagirdləriniz üçün dərhal sınaq linki əldə edin.
+            </p>
+            <div style="margin-top: 16px;">
+              <button id="btn-empty-create-asg" class="btn btn-primary btn-sm">+ İlk PDF Sınağını Yarat</button>
+            </div>
+          </div>
+
+          <div class="assignments-grid" id="assignments-grid">
+            <!-- Dinamik doldurulacaq -->
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: SINAQLAR VƏ İMTİHAN NƏTİCƏLƏRİ -->
       <div class="tutor-tab-pane hidden" id="pane-exams">
         <!-- Sınaq Xülasələri -->
         <div class="tutor-section">
@@ -429,6 +461,242 @@
           </button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- YENİ SINAQ YARATMA MODALI (PDF VƏ CAVAB KARTI) -->
+  <div class="tutor-modal-overlay" id="create-assignment-modal">
+    <div class="tutor-modal-card tutor-modal-xl">
+      <div class="tutor-modal-header">
+        <div>
+          <h3 class="tutor-modal-title">Yeni Fərdi Sınaq Yarat (PDF ilə)</h3>
+          <p class="tutor-modal-sub">PDF sınağınızı yükləyin, sual sayını və vaxtı qeyd edin, doğru cavab kartını təyin edin.</p>
+        </div>
+        <button class="icon-btn" id="btn-close-create-asg-modal" aria-label="Bağla">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div id="create-asg-feedback" class="auth-alert hidden" style="margin-bottom: 16px;"></div>
+
+      <form id="create-assignment-form">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 20px;">
+          <div class="input-group">
+            <label for="asg-title-input" class="input-label">Sınağın Adı *</label>
+            <input 
+              type="text" 
+              id="asg-title-input" 
+              class="input-field" 
+              placeholder="Məs: Blok İmtahanı №3 (Riyaziyyat)" 
+              required 
+              autocomplete="off"
+            >
+          </div>
+
+          <div class="input-group">
+            <label for="asg-qcount-input" class="input-label">Sual Sayı *</label>
+            <input 
+              type="number" 
+              id="asg-qcount-input" 
+              class="input-field" 
+              min="1" 
+              max="100" 
+              value="25" 
+              required
+            >
+          </div>
+
+          <div class="input-group">
+            <label for="asg-duration-input" class="input-label">Müddət (Dəqiqə) *</label>
+            <input 
+              type="number" 
+              id="asg-duration-input" 
+              class="input-field" 
+              min="5" 
+              max="300" 
+              value="60" 
+              required
+            >
+          </div>
+        </div>
+
+        <!-- PDF Fayl Yükləmə Bölməsi -->
+        <div class="input-group" style="margin-bottom: 20px;">
+          <label class="input-label">Sınaq PDF Faylı *</label>
+          <div class="pdf-dropzone" id="pdf-dropzone">
+            <div class="pdf-dropzone-icon">
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="12" y1="18" x2="12" y2="12"></line>
+                <line x1="9" y1="15" x2="15" y2="15"></line>
+              </svg>
+            </div>
+            <div class="pdf-dropzone-title">PDF faylı bura sürükləyin və ya klikləyib seçin</div>
+            <div class="pdf-dropzone-sub">Yalnız .pdf faylları qəbul edilir (maks. 25MB)</div>
+            <input type="file" id="asg-pdf-file-input" accept="application/pdf" style="display: none;">
+          </div>
+          <div id="pdf-file-info" class="pdf-file-info hidden">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="color: var(--success); font-weight: bold;">✓</span>
+              <div>
+                <span class="pdf-file-name" id="pdf-file-name">fayl.pdf</span>
+                <span class="pdf-file-size" id="pdf-file-size"> (0 KB)</span>
+              </div>
+            </div>
+            <button type="button" id="btn-remove-pdf" class="btn btn-ghost btn-sm" style="color: var(--danger); padding: 2px 8px;">Dəyiş</button>
+          </div>
+        </div>
+
+        <!-- AI ilə Cavab Kartını Hazırlama Kartı -->
+        <div class="ai-extractor-banner">
+          <div class="ai-extractor-info">
+            <span class="ai-extractor-badge">Gemini AI</span>
+            <div class="ai-extractor-desc">
+              <strong>Süni İntellekt ilə Avtomatik Cavab Kartı:</strong> Əgər yüklədiyiniz PDF sənədi oxunaqlı və təmizdirsə, sistem sualları həll edib doğru cavab kartını avtomatik doldura bilər.
+            </div>
+          </div>
+          <button type="button" id="btn-ai-extract-answers" class="btn btn-outline btn-sm" disabled style="white-space: nowrap;">
+            <span class="btn-text">AI ilə Cavab Kartını Hazırla</span>
+            <span class="loader hidden"></span>
+          </button>
+        </div>
+
+        <!-- Doğru Cavab Kartı Cədvəli (Answer Key Builder) -->
+        <div class="answer-key-builder-wrap">
+          <div class="answer-key-builder-header">
+            <div>
+              <strong style="color: var(--text-main); font-size: 0.95rem;">Doğru Cavab Kartı (Müəllim Açar Standartı)</strong>
+              <span style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
+                Hər sual üçün doğru variantı (A, B, C, D, E) seçin.
+              </span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span class="answer-key-counter" id="answer-key-counter">0 / 25 qeyd edilib</span>
+              <button type="button" id="btn-clear-answer-key" class="btn btn-ghost btn-sm" style="font-size: 0.8rem;">Təmizlə</button>
+            </div>
+          </div>
+
+          <div class="answer-key-grid" id="answer-key-grid">
+            <!-- Dinamik doldurulacaq: Sual 1..N -->
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
+          <button type="button" class="btn btn-outline btn-sm" id="btn-cancel-create-asg">İmtina</button>
+          <button type="submit" class="btn btn-primary btn-sm" id="btn-submit-create-asg">
+            <span class="btn-text">Sınağı Təsdiqlə və Yarat</span>
+            <span class="loader hidden"></span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- SINAQ PAYLAŞMA LİNKİ MODALI -->
+  <div class="tutor-modal-overlay" id="share-assignment-modal">
+    <div class="tutor-modal-card">
+      <div class="tutor-modal-header">
+        <h3 class="tutor-modal-title">Sınaq Paylaşma Linki</h3>
+        <button class="icon-btn" id="btn-close-share-modal" aria-label="Bağla">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 12px;">
+        Sınaq uğurla aktivləşdirildi! Bu linki kopyalayıb şagirdlərinizlə bölüşün. Şagirdlər linkə daxil olduqda birbaşa sınaq zalında PDF sınağı və cavab kartını görəcəklər.
+      </p>
+
+      <div class="share-link-box">
+        <input type="text" id="share-link-input" class="share-link-input" readonly>
+        <button type="button" id="btn-copy-share-link" class="btn btn-primary btn-sm" style="white-space: nowrap;">Linki Kopyala</button>
+      </div>
+
+      <div id="share-copy-feedback" class="auth-alert success hidden" style="margin-bottom: 12px;">Link buferə kopyalandı!</div>
+
+      <div style="display: flex; justify-content: flex-end; margin-top: 18px;">
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-done-share-modal">Oldu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SINAQ NƏTİCƏLƏRİ VƏ TƏLƏBƏ SİYAHISI MODALI -->
+  <div class="tutor-modal-overlay" id="assignment-submissions-modal">
+    <div class="tutor-modal-card tutor-modal-xl">
+      <div class="tutor-modal-header">
+        <div>
+          <h3 class="tutor-modal-title" id="submissions-modal-title">Sınaq Nəticələri</h3>
+          <p class="tutor-modal-sub" id="submissions-modal-meta">Tələbələrin cavab vərəqələri və balları</p>
+        </div>
+        <button class="icon-btn" id="btn-close-submissions-modal" aria-label="Bağla">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="table-responsive" style="max-height: 440px; overflow-y: auto;">
+        <table class="tutor-table">
+          <thead>
+            <tr>
+              <th>Şagird</th>
+              <th>Əlaqə / Kod</th>
+              <th>Bal</th>
+              <th>Düzgün / Səhv / Boş</th>
+              <th>Dəqiqlik</th>
+              <th>Tarix</th>
+              <th>Cavab Kartı</th>
+            </tr>
+          </thead>
+          <tbody id="asg-submissions-table-body">
+            <!-- Dinamik doldurulacaq -->
+          </tbody>
+        </table>
+      </div>
+
+      <div id="asg-submissions-empty" class="empty-box hidden" style="padding: 24px;">
+        <p class="empty-box-desc">Hələ heç bir şagird bu sınağı təhvil verməyib.</p>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; margin-top: 20px;">
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-close-submissions-modal-btn">Bağla</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ŞAGİRD CAVAB KARTI İNCƏLƏMƏ MODALI -->
+  <div class="tutor-modal-overlay" id="assignment-answers-review-modal">
+    <div class="tutor-modal-card tutor-modal-lg">
+      <div class="tutor-modal-header">
+        <div>
+          <h3 class="tutor-modal-title" id="review-student-name">Cavab Kartı Təhlili</h3>
+          <p class="tutor-modal-sub" id="review-student-meta">Müəllim açarı ilə şagirdin cavablarının fərqi</p>
+        </div>
+        <button class="icon-btn" id="btn-close-review-modal" aria-label="Bağla">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="student-detail-stats-grid" style="margin-bottom: 16px;">
+        <div class="mini-stat-card">
+          <span class="mini-stat-label">Yekun Bal</span>
+          <span class="mini-stat-val" id="review-score">0 / 0</span>
+        </div>
+        <div class="mini-stat-card">
+          <span class="mini-stat-label">Düzgün / Səhv</span>
+          <span class="mini-stat-val" id="review-counts">0 / 0</span>
+        </div>
+        <div class="mini-stat-card">
+          <span class="mini-stat-label">Dəqiqlik Faizi</span>
+          <span class="mini-stat-val" id="review-percent">0%</span>
+        </div>
+      </div>
+
+      <div class="student-review-grid" id="student-review-grid">
+        <!-- Dinamik doldurulacaq: Hər sual üçün doğru cavab və şagirdin cavabı -->
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; margin-top: 20px;">
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-close-review-modal-btn">Bağla</button>
+      </div>
     </div>
   </div>
 
