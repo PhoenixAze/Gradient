@@ -15,6 +15,24 @@
 }
 
 /* Header */
+.title-skeleton {
+  width: 220px;
+  height: 24px;
+}
+
+.exam-header-titles {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.exam-type-badge {
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  margin-bottom: 0;
+}
+
 .exam-header {
   background-color: var(--bg-card);
   border-bottom: 1px solid var(--border);
@@ -55,15 +73,15 @@
 
 /* Taymer xəbərdarlıq vəziyyətləri: son 5 dəqiqədə xəbərdarlıq, son 1 dəqiqədə kritik */
 .timer-box.warning {
-  color: #b45309;
-  border-color: #b45309;
-  background-color: #fffbeb;
+  color: var(--warning);
+  border-color: var(--warning);
+  background-color: var(--warning-soft);
 }
 
 .timer-box.critical {
-  color: #dc2626;
-  border-color: #dc2626;
-  background-color: #fef2f2;
+  color: var(--danger);
+  border-color: var(--danger);
+  background-color: var(--danger-soft);
   animation: pulse-timer 1s ease-in-out infinite;
 }
 
@@ -72,18 +90,48 @@
   50% { opacity: 0.55; }
 }
 
-.btn-danger {
-  background-color: var(--danger, #ef4444);
-  color: white;
-}
-.btn-danger:hover { background-color: var(--danger-hover, #dc2626); }
-
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
+/* .btn-danger, .btn:disabled, .btn-sm, .btn-accent, .btn-outline
+   artıq css/style.css paylaşılan dizayn sistemində təyin olunub. */
 
 /* Main Layout */
+/* "display: contents" əvvəl inline style idi (.clinerules §3 pozuntusu) */
+.standard-exam-view {
+  display: contents;
+}
+
+.pdf-exam-view {
+  width: 100%;
+}
+
+.pdf-viewer-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-xs {
+  padding: 4px 10px;
+  font-size: 0.78rem;
+}
+
+.answer-sheet-counter {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+/* Sual skeleti ölçüləri */
+.sk-q-title {
+  width: 80%;
+  height: 24px;
+  margin-bottom: 20px;
+}
+
+.sk-q-option {
+  width: 100%;
+  height: 48px;
+  margin-bottom: 12px;
+}
+
 .exam-main {
   display: flex;
   flex: 1;
@@ -257,12 +305,12 @@
 .modal-card h2 { margin-bottom: 12px; color: var(--text-main); }
 .modal-card p { margin-bottom: 24px; color: var(--text-muted); }
 .modal-actions { display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; }
+/* .skeleton / .skeleton-text / .skeleton-box artıq css/style.css-də təyin olunub. */
 
-/* Skeleton */
-.skeleton {
-  background: linear-gradient(110deg, #ececec 8%, #f5f5f5 18%, #ececec 33%);
-  border-radius: 5px; background-size: 200% 100%;
-  animation: 1.5s shimmer linear infinite;
+/* Sual skeletinin konteyneri */
+.skeleton-stack {
+  display: flex;
+  flex-direction: column;
 }
 @keyframes shimmer { to { background-position-x: -200%; } }
 
@@ -353,8 +401,8 @@
 .answer-sheet-progress-bar {
   height: 100%;
   background: var(--primary);
-  width: 0%;
-  transition: width 0.2s ease;
+  width: var(--sheet-progress, 0%);
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .optical-sheet-scroll {

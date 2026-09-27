@@ -6,8 +6,13 @@
   <title>Mövzu Diaqnostikası və Fərdi Analitika | Gradient</title>
   <meta name="description" content="Real sınaq nəticələriniz əsasında fərdi analitika və zəif mövzuların təhlili.">
 
-  <!-- TƏHLÜKƏSİZLİK: Strict Content Security Policy -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://gradient-backend-fam5.onrender.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; script-src 'self';">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+
+  <!--
+    TƏHLÜKƏSİZLİK: Strict CSP — 'unsafe-inline' YOXDUR, çünki bütün stiller
+    xarici CSS fayllarındadır (inline style atributları .clinerules §3 əsasında silindi).
+  -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://gradient-backend-fam5.onrender.com; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; script-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -21,8 +26,8 @@
 <body>
 
   <!-- DASHBOARD NAVİQASİYASI -->
-  <header class="navbar" style="border-bottom: 1px solid var(--border); background: var(--bg-card);">
-    <div class="container nav-container" style="display: flex; justify-content: space-between; align-items: center;">
+  <header class="navbar analytics-header">
+    <div class="container nav-container">
       <a href="exam.html" class="brand" aria-label="Sınaqlar">
         <div class="logo-icon">
           <svg viewBox="0 0 512 512" width="32" height="32" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -48,14 +53,14 @@
       <p class="analytics-subtitle">Real imtahan cavablarınıza əsaslanan dəqiq nəticələr və inkişaf tövsiyələri.</p>
     </div>
 
-    <!-- SKELETON LOADER VƏZİYYƏTİ -->
-    <div id="analytics-skeleton">
+    <!-- SKELETON LOADER VƏZİYYƏTİ (.clinerules §4) -->
+    <div id="analytics-skeleton" aria-hidden="true">
       <div class="stats-grid">
-        <div class="stat-box"><div class="skeleton-line" style="width: 40%;"></div><div class="skeleton-line" style="height: 36px; width: 60%;"></div></div>
-        <div class="stat-box"><div class="skeleton-line" style="width: 40%;"></div><div class="skeleton-line" style="height: 36px; width: 60%;"></div></div>
-        <div class="stat-box"><div class="skeleton-line" style="width: 40%;"></div><div class="skeleton-line" style="height: 36px; width: 60%;"></div></div>
+        <div class="stat-box"><div class="skeleton skeleton-line skeleton-line-sm"></div><div class="skeleton skeleton-line skeleton-line-lg"></div></div>
+        <div class="stat-box"><div class="skeleton skeleton-line skeleton-line-sm"></div><div class="skeleton skeleton-line skeleton-line-lg"></div></div>
+        <div class="stat-box"><div class="skeleton skeleton-line skeleton-line-sm"></div><div class="skeleton skeleton-line skeleton-line-lg"></div></div>
       </div>
-      <div class="section-card"><div class="skeleton-line" style="width: 30%;"></div><div class="skeleton-box"></div></div>
+      <div class="section-card"><div class="skeleton skeleton-line skeleton-line-title"></div><div class="skeleton-box"></div></div>
     </div>
 
     <!-- BOŞ VƏZİYYƏT (Hələ heç bir sınaq işlənilməyib) -->
@@ -92,10 +97,10 @@
       <!-- AI Qradient Diaqnozu -->
       <div class="diagnosis-panel" id="diagnosis-panel">
         <div class="diagnosis-header">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
           <h2 class="diagnosis-title">Gradient Diaqnozu</h2>
         </div>
-        <p class="diagnosis-text" id="diagnosis-text">Nəticələr təhlil edilir...</p>
+        <p class="diagnosis-text" id="diagnosis-text" aria-live="polite">Nəticələr təhlil edilir...</p>
       </div>
 
       <!-- Fənlər Üzrə Dəqiqlik -->
@@ -109,7 +114,7 @@
       <!-- Sınaq Tarixçəsi -->
       <div class="section-card">
         <h2 class="section-card-title">Son Sınaq Nəticələri</h2>
-        <div style="overflow-x: auto;">
+        <div class="table-scroll">
           <table class="history-table">
             <thead>
               <tr>

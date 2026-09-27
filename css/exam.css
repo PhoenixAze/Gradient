@@ -1,28 +1,35 @@
 /* ==========================================================================
-   EXAM (DASHBOARD) SƏHİFƏSİ ÜÇÜN XÜSUSİ STİLLƏR
+   EXAM (ŞAGİRD DASHBOARD) SƏHİFƏSİ ÜÇÜN XÜSUSİ STİLLƏR
+   Təmkinli korporativ görünüş: Slate palitrası, 1px sərhədlər,
+   incə kölgələr, tək vurğu rəngi (--accent).
    ========================================================================== */
 
-/* CSS Dəyişənləri (Gündüz/Gecə rejimi dəstəyi) */
 :root {
   --bg-body: #f8fafc;
   --bg-card: #ffffff;
   --bg-muted: #f1f5f9;
   --text-main: #0f172a;
-  --text-muted: #64748b;
+  --text-muted: #475569;
   --text-sub: #94a3b8;
   --border: #e2e8f0;
   --border-focus: #cbd5e1;
   --primary: #0f172a;
+  --primary-hover: #1e293b;
   --accent: #2563eb;
+  --accent-hover: #1d4ed8;
   --accent-soft: #eff6ff;
   --success: #10b981;
+  --success-soft: #ecfdf5;
+  --warning: #f59e0b;
+  --warning-soft: #fffbeb;
   --danger: #ef4444;
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  --danger-soft: #fef2f2;
+  --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.07), 0 2px 4px -2px rgba(15, 23, 42, 0.05);
+  --shadow-lg: 0 12px 24px -4px rgba(15, 23, 42, 0.10), 0 4px 12px -4px rgba(15, 23, 42, 0.05);
   --radius: 8px;
   --radius-lg: 12px;
-  --transition: all 0.2s ease;
+  --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 [data-theme="dark"] {
@@ -30,23 +37,34 @@
   --bg-card: #1e293b;
   --bg-muted: #334155;
   --text-main: #f8fafc;
-  --text-muted: #94a3b8;
-  --text-sub: #64748b;
+  --text-muted: #cbd5e1;
+  --text-sub: #94a3b8;
   --border: #334155;
   --border-focus: #475569;
   --primary: #f8fafc;
-  --accent: #3b82f6;
-  --accent-soft: #1e3a8a;
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+  --primary-hover: #e2e8f0;
+  --accent: #60a5fa;
+  --accent-hover: #93c5fd;
+  --accent-soft: #1e293b;
+  --success: #34d399;
+  --success-soft: #064e3b;
+  --warning: #fbbf24;
+  --warning-soft: #451a03;
+  --danger: #f87171;
+  --danger-soft: #450a0a;
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.40);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 12px 24px -4px rgba(0, 0, 0, 0.55);
 }
 
+/* --- ƏSAS RESET --- */
 body {
   background-color: var(--bg-body);
   color: var(--text-main);
-  font-family: 'Inter', sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   margin: 0;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
@@ -56,7 +74,60 @@ body {
   flex-direction: column;
 }
 
-/* --- HEADER --- */
+/* ==========================================================================
+   1. UTILITY (utility) KLASSLAR
+   ========================================================================== */
+
+/* BUG DÜZƏLİŞİ: .hidden bu səhifədə həm görünməz (display:none),
+   həm də .overlay/.settings-card kimi display təyin edən qaydaları
+   üstələyə bilməlidir. !important bu zəurəti təmin edir. */
+.hidden {
+  display: none !important;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip-link {
+  position: absolute;
+  top: -60px;
+  left: 16px;
+  z-index: 200;
+  background-color: var(--primary);
+  color: #fff;
+  padding: 10px 18px;
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: var(--transition);
+}
+
+.skip-link:focus {
+  top: 16px;
+}
+
+.mt-2 { margin-top: 8px; }
+.mt-4 { margin-top: 16px; }
+.mb-3 { margin-bottom: 16px; }
+.mb-4 { margin-bottom: 24px; }
+
+.text-danger {
+  color: var(--danger) !important;
+}
+
+/* ==========================================================================
+   2. HEADER
+   ========================================================================== */
 .dash-header {
   background-color: var(--bg-card);
   border-bottom: 1px solid var(--border);
@@ -107,7 +178,9 @@ body {
   letter-spacing: -0.02em;
 }
 
-/* --- MAIN CONTENT --- */
+/* ==========================================================================
+   3. MAIN CONTENT
+   ========================================================================== */
 .dash-main {
   flex: 1;
   padding: 40px 0 80px 0;
@@ -134,6 +207,7 @@ body {
 .dash-subtitle {
   font-size: 1rem;
   color: var(--text-muted);
+  margin: 0;
 }
 
 .btn-back {
@@ -155,11 +229,79 @@ body {
   color: var(--text-main);
 }
 
-/* --- AXTARIŞ VƏ FİLTR --- */
+/* ==========================================================================
+   4. REPETİTOR QUICK BANNER
+   ========================================================================== */
+.quick-tutor-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  text-align: left;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: var(--radius-lg);
+  padding: 14px 20px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: var(--transition);
+}
+
+.quick-tutor-banner:hover {
+  border-color: var(--border-focus);
+  border-left-color: var(--accent);
+  box-shadow: var(--shadow-sm);
+}
+
+.quick-tutor-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background-color: var(--accent-soft);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.quick-tutor-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.quick-tutor-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text-main);
+}
+
+.quick-tutor-sub {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.quick-tutor-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+/* ==========================================================================
+   5. AXTARIŞ VƏ FİLTR
+   ========================================================================== */
 .exam-controls {
   display: flex;
   gap: 16px;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
   flex-wrap: wrap;
 }
 
@@ -177,6 +319,7 @@ body {
   background-color: var(--bg-card);
   color: var(--text-main);
   font-size: 0.95rem;
+  font-family: inherit;
   transition: var(--transition);
 }
 
@@ -192,6 +335,7 @@ body {
   top: 50%;
   transform: translateY(-50%);
   color: var(--text-muted);
+  pointer-events: none;
 }
 
 .filter-box {
@@ -206,9 +350,10 @@ body {
   background-color: var(--bg-card);
   color: var(--text-main);
   font-size: 0.95rem;
+  font-family: inherit;
   cursor: pointer;
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/polyline%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 12px center;
   transition: var(--transition);
@@ -217,16 +362,37 @@ body {
 .filter-box select:focus {
   outline: none;
   border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
-/* --- EXAM SECTIONS & EMPTY STATE --- */
+.results-count {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin: 0 0 16px 0;
+}
+
+.results-count:empty {
+  display: none;
+}
+
+/* ==========================================================================
+   6. SƏHİFƏ GÖRÜNÜŞLƏRİ VƏ ANİMASİYA
+   ========================================================================== */
 .exam-section {
   display: none;
-  animation: fadeIn 0.3s ease;
 }
 
 .exam-section.active {
   display: block;
+}
+
+.main-view {
+  display: none;
+}
+
+.main-view.active {
+  display: block;
+  animation: fadeIn 0.25s ease;
 }
 
 @keyframes fadeIn {
@@ -234,37 +400,8 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
-.empty-state {
-  background-color: var(--bg-card);
-  border: 1px dashed var(--border-focus);
-  border-radius: var(--radius-lg);
-  padding: 60px 24px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-}
-
-.empty-icon {
-  font-size: 2rem;
-  color: var(--text-sub);
-  margin-bottom: 16px;
-  font-family: monospace;
-}
-
-.empty-text {
-  font-size: 1.125rem;
-  font-weight: 500;
-  color: var(--text-muted);
-}
-
-.mt-2 { margin-top: 8px; }
-.mt-4 { margin-top: 16px; }
-.mb-4 { margin-bottom: 24px; }
-
 /* ==========================================================================
-   YAN MENYULAR (DRAWERS) VƏ OVERLAY
+   7. DRAWER VƏ OVERLAY
    ========================================================================== */
 .overlay {
   position: fixed;
@@ -272,9 +409,7 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
+  background-color: rgba(15, 23, 42, 0.5);
   z-index: 100;
   opacity: 0;
   pointer-events: none;
@@ -369,6 +504,13 @@ body {
   font-weight: 700;
 }
 
+.profile-tutor-pill {
+  font-size: 0.8rem;
+  color: var(--accent);
+  margin: 4px 0 0 0;
+  font-weight: 500;
+}
+
 .btn-topup {
   background-color: transparent;
   border: 1px solid var(--success);
@@ -377,10 +519,12 @@ body {
   border-radius: 6px;
   font-size: 0.8rem;
   font-weight: 600;
+  font-family: inherit;
   cursor: pointer;
   transition: var(--transition);
   text-align: center;
   width: fit-content;
+  margin-top: 8px;
 }
 
 .btn-topup:hover {
@@ -407,6 +551,7 @@ body {
   background: transparent;
   border: none;
   border-radius: var(--radius);
+  font-family: inherit;
   text-decoration: none;
   text-align: left;
   cursor: pointer;
@@ -430,21 +575,8 @@ body {
   margin: 12px 0;
 }
 
-.text-danger {
-  color: var(--danger) !important;
-}
-
-.main-view {
-  display: none;
-  animation: fadeIn 0.3s ease;
-}
-
-.main-view.active {
-  display: block;
-}
-
 /* ==========================================================================
-   SINAQ KARTLARI
+   8. SINAQ KARTLARI
    ========================================================================== */
 .exam-list {
   display: flex;
@@ -456,18 +588,17 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 16px;
   background-color: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: 16px 24px;
   transition: var(--transition);
-  flex-wrap: wrap;
 }
 
 .exam-card:hover {
   border-color: var(--border-focus);
   box-shadow: var(--shadow-sm);
-  transform: translateY(-1px);
 }
 
 .exam-card-left {
@@ -475,7 +606,7 @@ body {
   align-items: center;
   gap: 16px;
   flex: 1;
-  min-width: 300px;
+  min-width: 0;
 }
 
 .exam-icon {
@@ -495,7 +626,8 @@ body {
   flex-direction: column;
   align-items: flex-start;
   gap: 6px;
-  width: 100%;
+  min-width: 0;
+  flex: 1;
 }
 
 .exam-title {
@@ -503,12 +635,13 @@ body {
   font-weight: 600;
   color: var(--text-main);
   margin: 0;
+  overflow-wrap: anywhere;
 }
 
 .exam-meta {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   font-size: 0.85rem;
   color: var(--text-muted);
   flex-wrap: wrap;
@@ -517,13 +650,17 @@ body {
 .meta-item {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
+}
+
+.meta-item svg {
+  color: var(--text-sub);
 }
 
 .score-badge {
   background-color: var(--accent-soft);
   color: var(--accent);
-  padding: 4px 8px;
+  padding: 3px 8px;
   border-radius: 6px;
   font-weight: 600;
   font-size: 0.8rem;
@@ -532,22 +669,59 @@ body {
   gap: 4px;
 }
 
-.exam-badge {
-  font-size: 0.875rem;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 6px;
+.score-badge.is-perfect {
+  background-color: var(--success-soft);
+  color: var(--success);
 }
 
-.badge-dot-success {
+.score-badge.is-low {
+  background-color: var(--danger-soft);
+  color: var(--danger);
+}
+
+.exam-badge {
+  font-size: 0.8rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+
+.exam-badge.is-free {
+  color: var(--success);
+  background-color: var(--success-soft);
+  border-color: var(--success);
+}
+
+.exam-badge.is-paid {
+  color: var(--text-main);
+  background-color: var(--bg-muted);
+  border-color: var(--border);
+}
+
+.badge-dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
   display: inline-block;
+  flex-shrink: 0;
+  background-color: var(--accent);
 }
 
-/* Düymələr */
+.exam-badge.is-free .badge-dot {
+  background-color: var(--success);
+}
+
+.exam-card-right {
+  flex-shrink: 0;
+}
+
+/* ==========================================================================
+   9. DÜYMƏLƏR
+   ========================================================================== */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -556,46 +730,109 @@ body {
   border-radius: var(--radius);
   font-size: 0.95rem;
   font-weight: 500;
+  font-family: inherit;
   cursor: pointer;
   text-decoration: none;
   transition: var(--transition);
-  border: none;
+  border: 1px solid transparent;
+  white-space: nowrap;
 }
 
-.btn:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
+/*
+  NOT: .btn, .btn:disabled, .btn-sm, .btn-accent, .btn-outline
+  css/style.css paylaşılan dizayn sistemində təyin olunub və eyni dəyərlərə malikdir.
+  Təkrarlar burada saxlanılmır — beləliklə hər iki səhifədə vizual tutarlılık qorunur.
+*/
 
-.btn-accent {
-  background-color: var(--accent);
-  color: #FFFFFF;
+.btn-primary {
+  background-color: var(--primary);
+  color: #ffffff;
   box-shadow: var(--shadow-sm);
 }
 
-.btn-accent:hover:not(:disabled) {
-  background-color: #1D4ED8;
+[data-theme="dark"] .btn-primary {
+  color: #0f172a;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--primary-hover);
   transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
 }
 
-.btn-outline {
-  background-color: transparent;
-  border: 1px solid var(--border-focus);
+.btn-secondary {
+  background-color: var(--bg-card);
   color: var(--text-main);
+  border-color: var(--border);
+  box-shadow: var(--shadow-sm);
 }
 
-.btn-outline:hover:not(:disabled) {
+.btn-secondary:hover:not(:disabled) {
   background-color: var(--bg-muted);
+  border-color: var(--border-focus);
+}
+
+.btn-ghost {
+  background-color: transparent;
+  color: var(--text-muted);
+  box-shadow: none;
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background-color: var(--bg-muted);
+  color: var(--text-main);
 }
 
 .card-actions {
   display: flex;
-  gap: 12px;
+  gap: 10px;
+}
+
+/* .btn-accent:hover üçün bu səhifədə accent-hover dəyişəni istifadə olunur */
+.btn-accent:hover:not(:disabled) {
+  background-color: var(--accent-hover);
 }
 
 /* ==========================================================================
-   TƏNZİMLƏMƏLƏR VƏ ƏLAQƏ KARTLARI
+   10. TOAST (Bildiriş)
+   ========================================================================== */
+.toast-region {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: min(380px, calc(100vw - 48px));
+  pointer-events: none;
+}
+
+.toast {
+  background-color: var(--bg-card);
+  color: var(--text-main);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 12px 18px;
+  box-shadow: var(--shadow-lg);
+  font-size: 0.9rem;
+  font-weight: 500;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.toast-success { border-left-color: var(--success); }
+.toast-error   { border-left-color: var(--danger); }
+.toast-warning { border-left-color: var(--warning); }
+
+/* ==========================================================================
+   11. TƏNİZLƏMƏLƏR, ƏLAQƏ VƏ REPETİTOR KARTLARI
    ========================================================================== */
 .settings-card, .contact-card {
   background-color: var(--bg-card);
@@ -611,6 +848,7 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 16px;
 }
 
 .settings-item-title {
@@ -632,6 +870,7 @@ body {
   display: inline-block;
   width: 44px;
   height: 24px;
+  flex-shrink: 0;
 }
 
 .toggle-switch input {
@@ -659,7 +898,7 @@ body {
   width: 18px;
   left: 3px;
   bottom: 3px;
-  background-color: white;
+  background-color: #fff;
   transition: .3s;
   border-radius: 50%;
 }
@@ -670,6 +909,10 @@ input:checked + .toggle-slider {
 
 input:checked + .toggle-slider:before {
   transform: translateX(20px);
+}
+
+input:focus-visible + .toggle-slider {
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
 .contact-item {
@@ -688,6 +931,7 @@ input:checked + .toggle-slider:before {
 .contact-item svg {
   color: var(--text-muted);
   margin-top: 2px;
+  flex-shrink: 0;
 }
 
 .contact-label {
@@ -700,41 +944,297 @@ input:checked + .toggle-slider:before {
 .contact-value {
   font-size: 1rem;
   color: var(--text-main);
+  overflow-wrap: anywhere;
 }
 
-@media (max-width: 600px) {
-  .exam-controls {
-    flex-direction: column;
-  }
-  .filter-box {
-    width: 100%;
-  }
-  .filter-box select {
-    flex: 1;
-  }
-  .exam-card {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 20px;
-    padding: 20px;
-  }
-  .exam-card-right, .card-actions {
-    width: 100%;
-    flex-direction: column;
-  }
-  .exam-card-right .btn, .card-actions .btn {
-    width: 100%;
-    text-align: center;
-    justify-content: center;
-  }
+/* Repetitor — qoşulmuş vəziyyət */
+.tutor-connected-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.eyebrow-label {
+  display: inline-block;
+  font-size: 0.75rem;
+  color: var(--accent);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.tutor-connected-name {
+  margin: 4px 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.tutor-connected-subject {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.tutor-code-box {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.tutor-code-label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.tutor-code-value {
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--accent);
+  letter-spacing: 3px;
+}
+
+.tutor-connected-desc {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* Repetitor — təsdiq gözlənilir */
+.tutor-pending-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.tutor-pending-name {
+  margin: 8px 0 4px 0;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.tutor-pending-desc {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+/* Repetitor — qoşulma formu */
+.tutor-join-title {
+  font-size: 1.05rem;
+  margin: 0;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.tutor-join-desc {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-bottom: 6px;
+}
+
+.code-input-row {
+  display: flex;
+  gap: 12px;
+  max-width: 340px;
+}
+
+.code-input {
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 4px;
+  text-align: center;
+  padding: 10px;
+  width: 160px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background-color: var(--bg-card);
+  color: var(--text-main);
+  transition: var(--transition);
+}
+
+.code-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.code-input::placeholder {
+  color: var(--text-sub);
+  letter-spacing: 4px;
 }
 
 /* ==========================================================================
-   SKELETON LOADERS
+   12. STATUS BADGE, ALERT VƏ LOADER
+   ========================================================================== */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.status-warning {
+  background-color: var(--warning-soft);
+  color: var(--warning);
+  border: 1px solid var(--warning);
+}
+
+.status-success {
+  background-color: var(--success-soft);
+  color: var(--success);
+  border: 1px solid var(--success);
+}
+
+.status-info {
+  background-color: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}
+
+.alert {
+  display: block;
+  max-width: 400px;
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.alert-danger {
+  background-color: var(--danger-soft);
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.alert-success {
+  background-color: var(--success-soft);
+  color: var(--success);
+  border-color: var(--success);
+}
+
+.alert-info {
+  background-color: var(--accent-soft);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.loader {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  vertical-align: middle;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ==========================================================================
+   13. FOCUS GÖRÜNÜŞÜ (A11Y) — bütün interaktiv elementlər üçün
+   ========================================================================== */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.exam-card:focus-within {
+  border-color: var(--accent);
+}
+
+/* ==========================================================================
+   14. BOŞ VƏ XƏTA VƏZİYYƏTLƏRİ
+   ========================================================================== */
+.empty-state {
+  background-color: var(--bg-card);
+  border: 1px dashed var(--border-focus);
+  border-radius: var(--radius-lg);
+  padding: 56px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 14px;
+}
+
+.empty-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background-color: var(--bg-muted);
+  color: var(--text-sub);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.empty-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text-main);
+  margin: 0;
+}
+
+.empty-text {
+  font-size: 0.925rem;
+  color: var(--text-muted);
+  margin: 0;
+  max-width: 420px;
+}
+
+.empty-state.is-error {
+  border-style: solid;
+  border-color: var(--danger);
+  background-color: var(--danger-soft);
+}
+
+.empty-state.is-error .empty-icon {
+  background-color: var(--bg-card);
+  color: var(--danger);
+}
+
+.empty-action {
+  margin-top: 4px;
+}
+
+/* ==========================================================================
+   15. SKELETON LOADERS
    ========================================================================== */
 .skeleton {
-  background: var(--border);
-  background: linear-gradient(110deg, var(--border) 8%, var(--border-focus) 18%, var(--border) 33%);
+  background: linear-gradient(110deg, var(--bg-muted) 8%, var(--border) 18%, var(--bg-muted) 33%);
   border-radius: 5px;
   background-size: 200% 100%;
   animation: 1.5s shimmer linear infinite;
@@ -748,27 +1248,30 @@ input:checked + .toggle-slider:before {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 16px;
   background-color: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: 16px 24px;
-  margin-bottom: 16px;
 }
 
 .skeleton-icon {
   width: 48px;
   height: 48px;
   border-radius: 12px;
+  flex-shrink: 0;
 }
 
 .skeleton-text-title {
   width: 200px;
+  max-width: 60%;
   height: 20px;
   margin-bottom: 8px;
 }
 
 .skeleton-text-meta {
   width: 120px;
+  max-width: 40%;
   height: 14px;
 }
 
@@ -776,4 +1279,124 @@ input:checked + .toggle-slider:before {
   width: 80px;
   height: 36px;
   border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.skeleton-block {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ==========================================================================
+   16. RESPONSİV DİZAYN
+   ========================================================================== */
+@media (max-width: 640px) {
+  .dash-main {
+    padding: 28px 0 60px 0;
+  }
+
+  .dash-container {
+    padding: 0 16px;
+  }
+
+  .dash-title {
+    font-size: 1.5rem;
+  }
+
+  .exam-controls {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .filter-box {
+    width: 100%;
+  }
+
+  .filter-box select {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .quick-tutor-banner {
+    flex-wrap: wrap;
+    padding: 14px 16px;
+  }
+
+  .quick-tutor-action {
+    display: none;
+  }
+
+  .exam-card {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 18px;
+  }
+
+  .exam-card-left {
+    min-width: 0;
+  }
+
+  .exam-card-right, .card-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .exam-card-right .btn, .card-actions .btn {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+  }
+
+  .card-actions {
+    flex-direction: row;
+  }
+
+  .card-actions .btn {
+    flex: 1;
+  }
+
+  .settings-card, .contact-card {
+    padding: 18px;
+  }
+
+  .code-input-row {
+    flex-direction: column;
+    max-width: none;
+  }
+
+  .code-input {
+    width: 100%;
+  }
+
+  .tutor-connected-head {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .tutor-code-box {
+    text-align: left;
+  }
+
+  .toast-region {
+    right: 16px;
+    left: 16px;
+    bottom: 16px;
+    max-width: none;
+  }
+
+  .empty-state {
+    padding: 40px 20px;
+  }
+}
+
+/* Hərəkət azaltma prefiksi — skelet animasiyası və keçidlər üçün */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

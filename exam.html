@@ -4,71 +4,83 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sınaqlar | Gradient Dashboard</title>
-  
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://gradient-backend-fam5.onrender.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; script-src 'self';">
-  
+  <meta name="description" content="Gradient — DİM imtahanlarına hazırlıq üçün interaktiv sınaqlar, cavablar və analitika.">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+
+  <!--
+    Zero-Trust CSP: 'unsafe-inline' YOXDUR (bütün stiller xarici CSS fayllarındadır),
+    'unsafe-eval' YOXDUR. Skriptlər yalnız 'self' mənşəli əlavə olunmalıdır.
+  -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://gradient-backend-fam5.onrender.com; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; script-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none';">
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  
+
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/exam.css">
-  
+
   <script src="js/exam.js" defer></script>
 </head>
 <body class="dashboard-body">
 
-  <div class="overlay" id="drawer-overlay"></div>
+  <!-- Ekran oxuyucular üçün keçid linki -->
+  <a class="skip-link" href="#view-exams">Əsas məzmuna keç</a>
+
+  <div class="overlay" id="drawer-overlay" aria-hidden="true"></div>
+
+  <!-- TOAST KONTEYNERİ (JS tərəfindən doldurulur) -->
+  <div id="toast-region" class="toast-region" role="status" aria-live="polite" aria-atomic="true"></div>
 
   <!-- SAĞ MENYU (Profil) -->
-  <aside class="drawer drawer-right" id="profile-drawer">
+  <aside class="drawer drawer-right" id="profile-drawer" aria-label="Profil menyusu" aria-hidden="true">
     <div class="drawer-header">
       <h2 class="drawer-title">Profil</h2>
-      <button class="icon-btn close-drawer" aria-label="Bağla">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      <button class="icon-btn close-drawer" type="button" aria-label="Menyunu bağla">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
       </button>
     </div>
-    
+
     <div class="profile-card">
-      <div class="profile-avatar">
+      <div class="profile-avatar" aria-hidden="true">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
       </div>
       <div class="profile-details">
         <h3 class="profile-name">Yüklənir...</h3>
         <div class="profile-balance">Balans: <span>0.00 ₼</span></div>
-        <div id="drawer-student-tutor-pill" style="font-size: 0.8rem; color: var(--accent); margin-top: 4px;">Repetitor: Yoxdur</div>
-        <button id="btn-topup" class="btn-topup mt-2">Balansı artır</button>
+        <p class="profile-tutor-pill" id="drawer-student-tutor-pill">Repetitor: Yoxdur</p>
+        <button id="btn-topup" class="btn-topup" type="button">Balansı artır</button>
       </div>
     </div>
 
-    <nav class="drawer-nav">
-      <button class="drawer-link" data-target="view-exams">Sınaqlar</button>
-      <button class="drawer-link" data-target="view-tutor">Mənim Repetitorum</button>
-      <button class="drawer-link" data-target="view-completed-exams">Bitmiş sınaqlar</button>
+    <nav class="drawer-nav" aria-label="Əsas naviqasiya">
+      <button class="drawer-link" type="button" data-target="view-exams">Sınaqlar</button>
+      <button class="drawer-link" type="button" data-target="view-tutor">Mənim Repetitorum</button>
+      <button class="drawer-link" type="button" data-target="view-completed-exams">Bitmiş sınaqlar</button>
       <a href="analytics.html" class="drawer-link">Analitika</a>
-      <button class="drawer-link" data-target="view-settings">Tənzimləmələr</button>
-      <button class="drawer-link" data-target="view-contact">Əlaqə</button>
-      <div class="drawer-divider"></div>
-      <button class="drawer-link text-danger" id="btn-logout">Çıxış et</button>
+      <button class="drawer-link" type="button" data-target="view-settings">Tənzimləmələr</button>
+      <button class="drawer-link" type="button" data-target="view-contact">Əlaqə</button>
+      <div class="drawer-divider" role="separator"></div>
+      <button class="drawer-link text-danger" type="button" id="btn-logout">Çıxış et</button>
     </nav>
   </aside>
 
   <!-- DASHBOARD HEADER -->
   <header class="dash-header">
     <div class="dash-header-container">
-      <a href="#" class="dash-brand" id="brand-logo">
+      <a href="exam.html" class="dash-brand" id="brand-logo" aria-label="Gradient — sınaqlar səhifəsi">
         <span class="brand-name">Gradient</span>
       </a>
-      <button class="icon-btn" id="profile-toggle" aria-label="Profil menyusu">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+      <button class="icon-btn" id="profile-toggle" type="button" aria-label="Profil menyusunu aç" aria-expanded="false" aria-controls="profile-drawer">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
       </button>
     </div>
   </header>
 
   <!-- ƏSAS MƏZMUN -->
-  <main class="dash-main">
+  <main class="dash-main" id="main-content">
     <div class="dash-container">
-      
+
       <!-- BÖLMƏ 1: SINAQLAR (Əsas Ekran) -->
       <div id="view-exams" class="main-view active">
         <div class="dash-welcome">
@@ -76,36 +88,37 @@
           <p class="dash-subtitle">İşləmək istədiyin sınağı seç.</p>
         </div>
 
-        <!-- Repetitora Qoşulma və ya Aktiv Qrup Quick Card -->
-        <div id="quick-tutor-banner" class="settings-card mb-4" style="padding: 12px 18px; display: flex; align-items: center; justify-content: space-between; border-left: 4px solid var(--accent); background: var(--bg-card); cursor: pointer;" title="Repetitor bölməsinə keç">
-          <div style="display: flex; align-items: center; gap: 12px;">
-            <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(59, 130, 246, 0.1); color: var(--accent); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-            </div>
-            <div>
-              <div id="quick-tutor-title" style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">Repetitor Qrupuna Qoşul</div>
-              <div id="quick-tutor-sub" style="font-size: 0.8rem; color: var(--text-muted);">Müəlliminizin 4 rəqəmli kodunu daxil edərək fərdi sınaqları qəbul edin</div>
-            </div>
-          </div>
-          <button type="button" class="btn btn-secondary btn-sm" id="btn-quick-goto-tutor" style="pointer-events: none;">
-            Keçid &rarr;
-          </button>
-        </div>
+        <!-- Repetitora Qoşulma / Aktiv Qrup kartı (bütün elementlər düymə kimi semantik) -->
+        <button type="button" class="quick-tutor-banner mb-4" id="quick-tutor-banner" title="Repetitor bölməsinə keç">
+          <span class="quick-tutor-icon" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+          </span>
+          <span class="quick-tutor-text">
+            <span class="quick-tutor-title" id="quick-tutor-title">Repetitor Qrupuna Qoşul</span>
+            <span class="quick-tutor-sub" id="quick-tutor-sub">Müəlliminizin 4 rəqəmli kodunu daxil edərək fərdi sınaqları qəbul edin</span>
+          </span>
+          <span class="quick-tutor-action" aria-hidden="true">
+            Keçid
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+          </span>
+        </button>
 
         <div class="exam-content">
           <div id="general-exams" class="exam-section active">
-            
+
             <!-- Axtarış və Filtr Paneli -->
             <div class="exam-controls">
               <div class="search-box">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                <input type="text" id="search-exam" placeholder="Sınaq adına görə axtar...">
+                <label class="sr-only" for="search-exam">Sınaq adına görə axtar</label>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <input type="search" id="search-exam" placeholder="Sınaq adına görə axtar..." autocomplete="off" maxlength="80">
               </div>
               <div class="filter-box">
+                <label class="sr-only" for="filter-subject">Fənn filtrlə</label>
                 <select id="filter-subject">
                   <option value="all">Bütün fənlər</option>
-                  <!-- JS vasitəsilə dinamik doldurulacaq -->
                 </select>
+                <label class="sr-only" for="filter-price">Qiymət filtrlə</label>
                 <select id="filter-price">
                   <option value="all">Bütün qiymətlər</option>
                   <option value="free">Pulsuz</option>
@@ -113,6 +126,8 @@
                 </select>
               </div>
             </div>
+
+            <p class="results-count" id="exam-results-count" aria-live="polite"></p>
 
             <div class="exam-list" id="exam-list-container">
               <!-- JS vasitəsilə Aktiv Sınaq Kartları bura əlavə ediləcək -->
@@ -123,27 +138,27 @@
 
       <!-- BÖLMƏ 2: BİTMİŞ SINAQLAR -->
       <div id="view-completed-exams" class="main-view hidden">
-        <button class="btn-back go-home-btn">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+        <button class="btn-back go-home-btn" type="button">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
           Geri qayıt
         </button>
         <h1 class="dash-title">Bitmiş Sınaqlar</h1>
         <p class="dash-subtitle mb-4">Əvvəllər işlədiyiniz sınaqların siyahısı və nəticələri.</p>
-        
+
         <div class="exam-list" id="completed-exam-list-container">
-           <!-- JS vasitəsilə Bitmiş Sınaq Kartları bura əlavə ediləcək -->
+          <!-- JS vasitəsilə Bitmiş Sınaq Kartları bura əlavə ediləcək -->
         </div>
       </div>
 
       <!-- BÖLMƏ 3: TƏNZİMLƏMƏLƏR -->
       <div id="view-settings" class="main-view hidden">
-        <button class="btn-back go-home-btn">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+        <button class="btn-back go-home-btn" type="button">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
           Geri qayıt
         </button>
         <h1 class="dash-title">Tənzimləmələr</h1>
         <p class="dash-subtitle mb-4">Hesab və görünüş ayarları.</p>
-        
+
         <div class="settings-card">
           <div class="settings-item">
             <div>
@@ -151,7 +166,7 @@
               <p class="settings-item-desc">Göz yorğunluğunu azaltmaq üçün tünd mövzu.</p>
             </div>
             <label class="toggle-switch">
-              <input type="checkbox" id="theme-toggle-checkbox">
+              <input type="checkbox" id="theme-toggle-checkbox" aria-label="Gecə rejimini aktivləşdir">
               <span class="toggle-slider"></span>
             </label>
           </div>
@@ -160,23 +175,23 @@
 
       <!-- BÖLMƏ 4: ƏLAQƏ -->
       <div id="view-contact" class="main-view hidden">
-        <button class="btn-back go-home-btn">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+        <button class="btn-back go-home-btn" type="button">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
           Geri qayıt
         </button>
         <h1 class="dash-title">Əlaqə</h1>
         <p class="dash-subtitle mb-4">Texniki dəstək və suallarınız üçün bizimlə əlaqə saxlayın.</p>
-        
+
         <div class="contact-card">
           <div class="contact-item">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
             <div>
               <span class="contact-label">E-poçt</span>
               <strong id="contact-email" class="contact-value">Yüklənir...</strong>
             </div>
           </div>
           <div class="contact-item">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
             <div>
               <span class="contact-label">Mobil Nömrə / WhatsApp</span>
               <strong id="contact-phone" class="contact-value">Yüklənir...</strong>
@@ -185,10 +200,10 @@
         </div>
       </div>
 
-      <!-- BÖLMƏ 5: MƏNİM REPETİTORUM (4 RƏQƏMLİ KOD VƏ İSTƏK) -->
+      <!-- BÖLMƏ 5: MƏNİM REPETİTORUM -->
       <div id="view-tutor" class="main-view hidden">
-        <button class="btn-back go-home-btn">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+        <button class="btn-back go-home-btn" type="button">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
           Geri qayıt
         </button>
         <h1 class="dash-title">Mənim Repetitorum</h1>
@@ -196,68 +211,76 @@
 
         <!-- VƏZİYYƏT 1: REPETİTORA BAĞLIDIR -->
         <div id="tutor-connected-card" class="settings-card hidden">
-          <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 16px;">
+          <div class="tutor-connected-head">
             <div>
-              <span style="font-size: 0.8rem; color: var(--accent); font-weight: 700; text-transform: uppercase;">Aktiv Repetitor Qrupu</span>
-              <h2 id="connected-tutor-name" style="margin: 4px 0; font-size: 1.25rem;">Müəllim</h2>
-              <div id="connected-tutor-subject" style="color: var(--text-muted); font-size: 0.9rem;">Fənn: Riyaziyyat</div>
+              <span class="eyebrow-label">Aktiv Repetitor Qrupu</span>
+              <h2 id="connected-tutor-name" class="tutor-connected-name">Müəllim</h2>
+              <div id="connected-tutor-subject" class="tutor-connected-subject">Fənn: Riyaziyyat</div>
             </div>
-            <div style="text-align: right;">
-              <span style="font-size: 0.75rem; color: var(--text-muted); display: block;">Repetitor Kodu:</span>
-              <span id="connected-tutor-code" style="font-family: monospace; font-size: 1.25rem; font-weight: 800; color: var(--accent); letter-spacing: 2px;">----</span>
+            <div class="tutor-code-box">
+              <span class="tutor-code-label">Repetitor Kodu:</span>
+              <span id="connected-tutor-code" class="tutor-code-value">----</span>
             </div>
           </div>
-          <p style="font-size: 0.9rem; color: var(--text-muted); margin: 0;">
+          <p class="tutor-connected-desc">
             Siz bu repetitorun rəsmi qrupundasınız. Müəlliminizin təyin etdiyi fərdi sınaqlar və cavab kartları profilinizdə avtomatik aktivləşir.
           </p>
-          <div style="margin-top: 8px;">
-            <button id="btn-leave-tutor" class="btn btn-ghost btn-sm text-danger">Qrupdan Ayrıl</button>
+          <div>
+            <button id="btn-leave-tutor" class="btn btn-ghost btn-sm text-danger" type="button">Qrupdan Ayrıl</button>
           </div>
         </div>
 
         <!-- VƏZİYYƏT 2: İSTƏK GÖNDƏRİLİB (GÖZLƏNİLİR) -->
         <div id="tutor-pending-card" class="settings-card hidden">
-          <div style="display: flex; align-items: center; justify-content: space-between;">
+          <div class="tutor-pending-head">
             <div>
-              <span class="status-badge status-warning" style="font-size: 0.75rem;">Təsdiq Gözlənilir</span>
-              <h3 id="pending-tutor-name" style="margin: 8px 0 4px 0; font-size: 1.15rem;">Müəllim</h3>
-              <p id="pending-tutor-desc" style="color: var(--text-muted); font-size: 0.85rem; margin: 0;">Qoşulma istəyiniz repetitora göndərilib. Müəllim təsdiq etdikdən sonra qrupa daxil olacaqsınız.</p>
+              <span class="status-badge status-warning">Təsdiq Gözlənilir</span>
+              <h3 id="pending-tutor-name" class="tutor-pending-name">Müəllim</h3>
+              <p id="pending-tutor-desc" class="tutor-pending-desc">Qoşulma istəyiniz repetitora göndərilib. Müəllim təsdiq etdikdən sonra qrupa daxil olacaqsınız.</p>
             </div>
           </div>
-          <div style="margin-top: 12px;">
-            <button id="btn-cancel-tutor-request" class="btn btn-secondary btn-sm">İstəyi Ləğv Et</button>
+          <div>
+            <button id="btn-cancel-tutor-request" class="btn btn-secondary btn-sm" type="button">İstəyi Ləğv Et</button>
           </div>
         </div>
 
         <!-- VƏZİYYƏT 3: REPETİTOR YOXDUR (4 RƏQƏMLİ KOD FORMASI) -->
         <div id="tutor-join-card" class="settings-card">
-          <h3 style="font-size: 1.05rem; margin: 0 0 8px 0; font-weight: 600;">4 Rəqəmli Kod ilə Repetitora Qoşul</h3>
-          <p style="font-size: 0.9rem; color: var(--text-muted); margin: 0 0 20px 0;">
+          <h3 class="tutor-join-title">4 Rəqəmli Kod ilə Repetitora Qoşul</h3>
+          <p class="tutor-join-desc">
             Repetitorunuzdan onun sistem tərəfindən verilmiş 4 rəqəmli kodunu öyrənin və aşağıya daxil edin.
           </p>
-          <form id="form-join-tutor">
-            <div class="form-group mb-3">
-              <label for="input-tutor-code" class="form-label" style="font-weight: 600;">Repetitor Kodu (4 rəqəm):</label>
-              <div style="display: flex; gap: 12px; max-width: 340px; margin-top: 6px;">
-                <input 
-                  type="text" 
-                  id="input-tutor-code" 
-                  maxlength="4" 
-                  class="search-box" 
-                  placeholder="Məs: 4829" 
-                  style="font-family: monospace; font-size: 1.25rem; font-weight: 700; letter-spacing: 4px; text-align: center; padding: 10px; min-width: unset; width: 160px;" 
-                  required
+          <form id="form-join-tutor" novalidate>
+            <div class="form-group">
+              <label for="input-tutor-code" class="form-label">Repetitor Kodu (4 rəqəm)</label>
+              <div class="code-input-row">
+                <input
+                  type="text"
+                  id="input-tutor-code"
+                  inputmode="numeric"
+                  pattern="[0-9]{4}"
+                  maxlength="4"
+                  class="code-input"
+                  placeholder="4829"
                   autocomplete="off"
+                  aria-describedby="tutor-join-feedback"
                 >
-                <button type="submit" id="btn-submit-join-tutor" class="btn btn-primary" style="white-space: nowrap; padding: 10px 18px;">
+                <button type="submit" id="btn-submit-join-tutor" class="btn btn-primary">
                   <span class="btn-text">İstək Göndər</span>
-                  <span class="loader hidden"></span>
+                  <span class="loader hidden" aria-hidden="true"></span>
                 </button>
               </div>
             </div>
-            <div id="tutor-join-feedback" class="auth-alert hidden" style="max-width: 400px;"></div>
+            <div id="tutor-join-feedback" class="alert hidden" role="status" aria-live="polite"></div>
           </form>
         </div>
+
+        <!-- Yüklənmə skeleti (status sorğusu gedərkən) -->
+        <div id="tutor-status-skeleton" class="settings-card hidden" aria-hidden="true">
+          <div class="skeleton skeleton-text-title"></div>
+          <div class="skeleton skeleton-text-meta"></div>
+        </div>
+
       </div>
 
     </div>

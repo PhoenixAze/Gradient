@@ -18,6 +18,7 @@
   --primary: #0F172A;         /* Əsas düymə fonu */
   --primary-hover: #1E293B;
   --accent: #2563EB;          /* İnkişaf link və vurğu mavisi */
+  --accent-hover: #1D4ED8;    /* Vurğu düymələri üçün hover halı */
   --accent-soft: #EFF6FF;
 
   /* Status Rəngləri */
@@ -34,6 +35,42 @@
   --shadow-lg: 0 12px 24px -4px rgba(15, 23, 42, 0.08), 0 4px 12px -4px rgba(15, 23, 42, 0.04);
   
   --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Semantik status rəngləri (tək vurğu rəngi + status anomaliyaları) */
+  --success-soft: #ECFDF5;
+  --warning-soft: #FFFBEB;
+  --danger-soft: #FEF2F2;
+}
+
+/* Tünd rejim — bütün səhifələrdə əlçatandır */
+[data-theme="dark"] {
+  --bg-body: #0F172A;
+  --bg-card: #1E293B;
+  --bg-muted: #334155;
+
+  --text-main: #F8FAFC;
+  --text-muted: #CBD5E1;
+  --text-sub: #94A3B8;
+
+  --border: #334155;
+  --border-focus: #475569;
+
+  --primary: #F8FAFC;
+  --primary-hover: #E2E8F0;
+  --accent: #60A5FA;
+  --accent-hover: #93C5FD;
+  --accent-soft: #1E293B;
+
+  --success: #34D399;
+  --success-soft: #064E3B;
+  --warning: #FBBF24;
+  --warning-soft: #451A03;
+  --danger: #F87171;
+  --danger-soft: #450A0A;
+
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.40);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 12px 24px -4px rgba(0, 0, 0, 0.55);
 }
 
 * {
@@ -144,6 +181,52 @@ body {
   font-weight: 600;
 }
 
+/* Kompakt ölçü — bütün modullarda istifadə olunur */
+.btn-sm {
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+/* Vurğu (accent) düymə — sınaq zali, dashboard kimi əməliyyat düymələri */
+.btn-accent {
+  background-color: var(--accent);
+  color: #FFFFFF;
+  box-shadow: var(--shadow-sm);
+}
+.btn-accent:hover:not(:disabled) {
+  background-color: #1D4ED8;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-outline {
+  background-color: transparent;
+  border: 1px solid var(--border-focus);
+  color: var(--text-main);
+}
+.btn-outline:hover:not(:disabled) {
+  background-color: var(--bg-body);
+}
+
+/* Təhlükəli əməliyyat (təhvil vermə, silmə) */
+.btn-danger {
+  background-color: var(--danger);
+  color: #FFFFFF;
+  box-shadow: var(--shadow-sm);
+}
+.btn-danger:hover:not(:disabled) {
+  background-color: #DC2626;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .badge {
   display: inline-flex;
   align-items: center;
@@ -164,6 +247,36 @@ body {
   height: 8px;
   border-radius: 50%;
   background-color: var(--accent);
+}
+
+/* ==========================================================================
+   3.1 PAYLAŞILAN VİZUAL PRİMİTİVLƏR (skeleton loader-lər)
+   .clinerules §4: Dinamik yüklənən bloklar üçün animasiyalı skeleton.
+   ========================================================================== */
+.skeleton {
+  background: linear-gradient(110deg, var(--bg-muted) 8%, var(--border) 18%, var(--bg-muted) 33%);
+  border-radius: 5px;
+  background-size: 200% 100%;
+  animation: 1.5s shimmer linear infinite;
+}
+
+.skeleton-text {
+  height: 16px;
+}
+
+.skeleton-box {
+  display: block;
+  width: 100%;
+}
+
+@keyframes shimmer {
+  to { background-position-x: -200%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
 }
 
 /* ==========================================================================

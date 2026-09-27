@@ -10,33 +10,32 @@ const API_BASE_URL = isProductionFrontend
   ? "https://gradient-backend-fam5.onrender.com"
   : ""; 
 
-function showNotification(message) {
-    let toast = document.getElementById('gradient-toast');
-    if (!toast) {
-        toast = document.createElement('div');
-        toast.id = 'gradient-toast';
-        toast.style.position = 'fixed';
-        toast.style.bottom = '24px';
-        toast.style.right = '24px';
-        toast.style.zIndex = '9999';
-        toast.style.backgroundColor = 'var(--surface)';
-        toast.style.color = 'var(--text-main)';
-        toast.style.border = '1px solid var(--border)';
-        toast.style.borderRadius = '10px';
-        toast.style.padding = '12px 20px';
-        toast.style.boxShadow = '0 8px 24px rgba(0,0,0,0.18)';
-        toast.style.fontWeight = '500';
-        toast.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-        document.body.appendChild(toast);
-    }
-    toast.textContent = message;
-    toast.style.opacity = '1';
-    toast.style.transform = 'translateY(0)';
+// Bildiriş (toast) — bütün stiller .toast klassı ilə CSS-dən gəlir.
+// ƏVVƏL: element JS ilə yaradılırdı və inline style istifadə edirdi
+// (təhlükəsizlik: CSS injection riski) + `var(--surface)` bu səhifədə
+// mövcud DEYİLDİ, ona görə fon rəngi həll olunmurdu.
+// DOMContentLoaded-dan ƏVVƏL icra olunduğu üçün bu element hələ mövcud olmur.
+// Query dəstəklənir: funksiyalar yalnız hadisə baş verdikdən sonra çağırılır.
+const toastRegion = document.getElementById('toast-region');
+
+function showNotification(message, type) {
+    if (!toastRegion) return;
+
+    const variant = ['success', 'error', 'warning'].includes(type) ? type : 'info';
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${variant}`;
+    // XSS müdafiəsi: yalnız textContent (innerHTML qadağandır).
+    toast.textContent = String(message || '');
+
+    toastRegion.appendChild(toast);
+    // Reflow — keçid animasiyasının işləməsi üçün
+    requestAnimationFrame(() => toast.classList.add('show'));
+
     setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transform = 'translateY(10px)';
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
     }, 4000);
-} 
+}
 
 document.addEventListener("DOMContentLoaded", async () => {
     // Token Köməkçiləri (Third-party cookie bloklaması və Safari/Mobil brauzerlər üçün)
@@ -162,6 +161,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const searchInput = document.getElementById('search-exam');
     const filterSubject = document.getElementById('filter-subject');
     const filterPrice = document.getElementById('filter-price');
+    const resultsCount = document.getElementById('exam-results-count');
 
     // Tənzimləmələr və Əlaqə
     const themeToggleCheckbox = document.getElementById('theme-toggle-checkbox');
@@ -199,6 +199,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             // 500, 502, 503 kimi server oyanış xətalarında yönləndirmə etmirik, gözləmə vəziyyətində saxlayırıq
             if (!response.ok) {
+                // BUG DÜZƏLİŞİ: əvvəl bütün səhvlər üçün "Serverlə əlaqə qurulur..."
+                // göstərilirdi. 401/403 halında bu mesaj tamamilə yanıltıcıdır —
+                // istifadəçi ya daxil olmayıb, ya da giriş hüququ yoxdur.
+                if (response.status === 401 || response.status === 403) {
+                    if (profileNameEl) profileNameEl.textContent = "Giriş tələb olunur";
+                    return;
+                }
                 if (profileNameEl) profileNameEl.textContent = "Serverlə əlaqə qurulur...";
                 return;
             }
@@ -248,7 +255,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             if (contactSettings && contactSettings.whatsapp_url) {
                 window.open(contactSettings.whatsapp_url, '_blank', 'noopener,noreferrer');
             } else {
-                showNotification("Əlaqə məlumatı yüklənməyib.");
+                showNotification("Əlaqə məlumatı yüklənməyib.", 'error');
             }
         });
     }
@@ -286,23 +293,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             card.append(left, btnSk);
             container.appendChild(card);
         }
-    };
-
-    // Boş/Error vəziyyət kartı — mesaj textContent ilə təhlükəsiz şəkildə yazılır.
-    const renderEmptyState = (container, message) => {
-        const wrap = document.createElement('div');
-        wrap.className = 'empty-state';
-
-        const icon = document.createElement('span');
-        icon.className = 'empty-icon';
-        icon.textContent = '(+_+)';
-
-        const text = document.createElement('p');
-        text.className = 'empty-text';
-        text.textContent = String(message || '');
-
-        wrap.append(icon, text);
-        container.replaceChildren(wrap);
     };
 
     /**
@@ -352,6 +342,57 @@ document.addEventListener("DOMContentLoaded", async () => {
         ['line', { x1: '3', y1: '18', x2: '3.01', y2: '18' }]
     ];
 
+    const ICON_EMPTY = [
+        ['path', { d: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z' }],
+        ['line', { x1: '16', y1: '13', x2: '8', y2: '13' }],
+        ['line', { x1: '16', y1: '17', x2: '8', y2: '17' }]
+    ];
+
+    const ICON_ALERT = [
+        ['circle', { cx: '12', cy: '12', r: '10' }],
+        ['line', { x1: '12', y1: '8', x2: '12', y2: '12' }],
+        ['line', { x1: '12', y1: '16', x2: '12.01', y2: '16' }]
+    ];
+
+    /**
+     * Boş/Error vəziyyət kartı.
+     * ƏVVƏL: ASCII mətn ikonu "(+_+)" istifadə olunurdu — bu, .clinerules §4
+     * (Anti-AI Aesthetic) tələblərinə zidd idi. İndi real SVG istifadə olunur.
+     */
+    const renderEmptyState = (container, message, options) => {
+        const opts = options || {};
+        const isError = Boolean(opts.isError);
+
+        const wrap = document.createElement('div');
+        wrap.className = isError ? 'empty-state is-error' : 'empty-state';
+
+        const icon = document.createElement('span');
+        icon.className = 'empty-icon';
+        icon.appendChild(createSvgIcon(24, isError ? ICON_ALERT : ICON_EMPTY));
+
+        const title = document.createElement('h3');
+        title.className = 'empty-title';
+        title.textContent = opts.title || (isError ? 'Xəta baş verdi' : 'Məlumat yoxdur');
+
+        const text = document.createElement('p');
+        text.className = 'empty-text';
+        text.textContent = String(message || '');
+
+        wrap.append(icon, title, text);
+
+        // Təkrar cəhd düyməsi (yalnız xəta vəziyyətində)
+        if (typeof opts.onRetry === 'function') {
+            const retry = document.createElement('button');
+            retry.type = 'button';
+            retry.className = 'btn btn-secondary btn-sm empty-action';
+            retry.textContent = 'Yenidən cəhd et';
+            retry.addEventListener('click', opts.onRetry);
+            wrap.appendChild(retry);
+        }
+
+        container.replaceChildren(wrap);
+    };
+
     // Satın alma axını (Purchase Flow)
     const handleExamPurchaseAndStart = async (exam, btnElement) => {
         const originalText = btnElement.textContent;
@@ -372,7 +413,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 }
 
                 if (res.status === 402) {
-                    showNotification("Balansınız kifayət etmir. Zəhmət olmasa balansı artırın.");
+                    showNotification("Balansınız kifayət etmir. Zəhmət olmasa balansı artırın.", 'warning');
                     btnElement.textContent = originalText;
                     btnElement.disabled = false;
                     return;
@@ -380,7 +421,8 @@ document.addEventListener("DOMContentLoaded", async () => {
                 
                 if (!res.ok) {
                     const errData = await res.json().catch(() => ({}));
-                    showNotification(errData.detail || "Sınağı almaq mümkün olmadı. Yenidən cəhd edin.");
+                    // detail backend-dən gələn saf mətn ola bilər; sadəcə string kimi göstərilir.
+                    showNotification(errData.detail || "Sınağı almaq mümkün olmadı. Yenidən cəhd edin.", 'error');
                     btnElement.textContent = originalText;
                     btnElement.disabled = false;
                     return;
@@ -397,7 +439,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             window.location.href = `exam-hall.html?id=${encodeURIComponent(exam.id)}`;
         } catch (error) {
             console.error("Satın alma xətası:", error);
-            showNotification("Sistem xətası baş verdi. Yenidən cəhd edin.");
+            showNotification("Sistem xətası baş verdi. Yenidən cəhd edin.", 'error');
             btnElement.textContent = originalText;
             btnElement.disabled = false;
         }
@@ -452,9 +494,13 @@ document.addEventListener("DOMContentLoaded", async () => {
             scoreItem.className = 'meta-item';
 
             const scoreBadge = document.createElement('span');
-            scoreBadge.className = 'score-badge';
+            // Nəticəyə görə vizual differensiasiya (tək vurğu rəngi qorunur)
+            const ratio = qCount > 0 ? correct / qCount : 0;
+            if (ratio >= 0.8) scoreBadge.className = 'score-badge is-perfect';
+            else if (ratio < 0.5) scoreBadge.className = 'score-badge is-low';
+            else scoreBadge.className = 'score-badge';
             scoreBadge.textContent = `${correct}/${qCount} düzgün`;
-            
+
             scoreItem.appendChild(scoreBadge);
             metaDiv.appendChild(scoreItem);
         }
@@ -463,17 +509,17 @@ document.addEventListener("DOMContentLoaded", async () => {
         detailsDiv.appendChild(metaDiv);
 
         if (!isCompleted) {
-            const badge = document.createElement('span');
-            badge.className = 'exam-badge';
+            // ƏVVƏL: badge rəngləri element.style.* ilə JS-dən verilirdi
+            // (inline style — .clinerules §3 pozuntusu). İndi CSS klassları ilə.
             const isFree = parseFloat(exam.price) === 0;
-            badge.style.color = isFree ? 'var(--success)' : 'var(--text-main)';
-            
+            const badge = document.createElement('span');
+            badge.className = isFree ? 'exam-badge is-free' : 'exam-badge is-paid';
+
             const dot = document.createElement('span');
-            dot.className = 'badge-dot-success';
-            dot.style.backgroundColor = isFree ? 'var(--success)' : 'var(--accent)';
-            
+            dot.className = 'badge-dot';
+
             badge.appendChild(dot);
-            badge.appendChild(document.createTextNode(isFree ? ' pulsuz' : ` ${exam.price} ₼`));
+            badge.appendChild(document.createTextNode(isFree ? 'Pulsuz' : `${exam.price} ₼`));
             detailsDiv.appendChild(badge);
         }
         
@@ -535,11 +581,21 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
 
         if (filteredExams.length === 0) {
-            renderEmptyState(examListContainer, "Axtarışa uyğun sınaq tapılmadı");
+            renderEmptyState(examListContainer, 'Axtarış və filtr şərtlərinə uyğun sınaq tapılmadı.', {
+                title: 'Sınaq tapılmadı'
+            });
         } else {
             filteredExams.forEach(exam => {
                 examListContainer.appendChild(createExamCard(exam, false));
             });
+        }
+
+        // Nəticə sayğacı (a11y: aria-live ilə elan edilir)
+        if (resultsCount) {
+            const total = allExams.filter(e => !e.is_completed).length;
+            resultsCount.textContent = filteredExams.length === total
+                ? `${total} sınaq`
+                : `${filteredExams.length} / ${total} sınaq`;
         }
     };
 
@@ -585,7 +641,9 @@ document.addEventListener("DOMContentLoaded", async () => {
             const completedExams = allExams.filter(e => e.is_completed);
 
             if (completedExams.length === 0) {
-                renderEmptyState(completedExamListContainer, "Hələ heç bir sınaq bitirməmisiniz");
+                renderEmptyState(completedExamListContainer, 'İşlədiyiniz sınaqlar burada görünəcək. Uğurlu olar!', {
+                    title: 'Hələ heç bir sınaq bitirməmisiniz'
+                });
             } else {
                 completedExams.forEach(exam => {
                     completedExamListContainer.appendChild(createExamCard(exam, true));
@@ -593,14 +651,35 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
 
         } catch (error) {
-            console.error(error);
-            renderEmptyState(examListContainer, "Xəta baş verdi. Səhifəni yeniləyin.");
-            renderEmptyState(completedExamListContainer, "Xəta baş verdi.");
+            // Texniki detallar (stack trace, DB məlumatı) istifadəçiyə SIZDIRILMIR —
+            // .clinerules §1: yalnız ümumi mesaj + təkrar cəhd.
+            console.error("Sınaqları yükləmək mümkün olmadı:", error);
+            renderEmptyState(examListContainer, 'Sınaqları yükləmək mümkün olmadı. Şəbəkə bağlantısını yoxlayın.', {
+                isError: true,
+                title: 'Yüklənmə xətası',
+                onRetry: loadExams
+            });
+            renderEmptyState(completedExamListContainer, 'Məlumat yüklənmədi.', {
+                isError: true,
+                title: 'Yüklənmə xətası',
+                onRetry: loadExams
+            });
+            if (resultsCount) resultsCount.textContent = '';
         }
     };
 
+    // Axtarış üçün debounce — hər klaviatura vuruşunda yenidən render
+    // etmək yerine 250ms gözləyir (performans).
+    const debounce = (fn, delay) => {
+        let timer = null;
+        return (...args) => {
+            if (timer) clearTimeout(timer);
+            timer = setTimeout(() => fn(...args), delay);
+        };
+    };
+
     // Event Listeners for Search & Filter
-    searchInput.addEventListener('input', filterAndRenderExams);
+    searchInput.addEventListener('input', debounce(filterAndRenderExams, 250));
     filterSubject.addEventListener('change', filterAndRenderExams);
     filterPrice.addEventListener('change', filterAndRenderExams);
 
@@ -691,6 +770,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const pendingTutorDesc = document.getElementById("pending-tutor-desc");
     const btnCancelTutorRequest = document.getElementById("btn-cancel-tutor-request");
 
+    const tutorStatusSkeleton = document.getElementById("tutor-status-skeleton");
     const tutorJoinCard = document.getElementById("tutor-join-card");
     const formJoinTutor = document.getElementById("form-join-tutor");
     const inputTutorCode = document.getElementById("input-tutor-code");
@@ -698,6 +778,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     const tutorJoinFeedback = document.getElementById("tutor-join-feedback");
 
     const loadStudentTutorStatus = async () => {
+        // .clinerules §4: dinamik yüklənən blok üçün animasiyalı skeleton
+        if (tutorStatusSkeleton) tutorStatusSkeleton.classList.remove("hidden");
         try {
             const res = await fetchWithAuth("/api/v1/tutor/my-request", { method: "GET" });
             if (!res || !res.ok) return;
@@ -753,6 +835,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         } catch (e) {
             console.error("Student tutor status error:", e);
+        } finally {
+            if (tutorStatusSkeleton) tutorStatusSkeleton.classList.add("hidden");
         }
     };
 
@@ -769,7 +853,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             if (!code || code.length !== 4 || !/^\d{4}$/.test(code)) {
                 if (tutorJoinFeedback) {
                     tutorJoinFeedback.textContent = "Zəhmət olmasa düzgün 4 rəqəmli kod daxil edin (məs: 4829).";
-                    tutorJoinFeedback.className = "auth-alert alert-danger";
+                    tutorJoinFeedback.className = "alert alert-danger";
                     tutorJoinFeedback.classList.remove("hidden");
                 }
                 return;
@@ -794,10 +878,12 @@ document.addEventListener("DOMContentLoaded", async () => {
                     throw new Error(data.detail || "İstək göndərilərkən xəta baş verdi.");
                 }
 
-                showNotification(data.message || "Qoşulma istəyi repetitora göndərildi!");
+                showNotification(data.message || "Qoşulma istəyi repetitora göndərildi!", 'success');
                 if (tutorJoinFeedback) {
                     tutorJoinFeedback.textContent = data.message || "İstək uğurla göndərildi!";
-                    tutorJoinFeedback.className = "auth-alert alert-success";
+                    // BUG DÜZƏLİŞİ: "auth-alert" sinifi yalnız css/auth.css-də təyin
+                    // olunub, bu səhifədə o fayl yüklənmir — stil itirdi.
+                    tutorJoinFeedback.className = "alert alert-success";
                     tutorJoinFeedback.classList.remove("hidden");
                 }
                 if (inputTutorCode) inputTutorCode.value = "";
@@ -806,7 +892,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             } catch (err) {
                 if (tutorJoinFeedback) {
                     tutorJoinFeedback.textContent = err.message;
-                    tutorJoinFeedback.className = "auth-alert alert-danger";
+                    tutorJoinFeedback.className = "alert alert-danger";
                     tutorJoinFeedback.classList.remove("hidden");
                 }
             } finally {
@@ -824,14 +910,15 @@ document.addEventListener("DOMContentLoaded", async () => {
             try {
                 const res = await fetchWithAuth("/api/v1/tutor/my-request", { method: "DELETE" });
                 if (res && res.ok) {
-                    showNotification("İstək ləğv edildi.");
+                    showNotification("İstək ləğv edildi.", 'success');
                     await loadStudentTutorStatus();
                 } else {
                     const err = res ? await res.json().catch(() => ({})) : {};
-                    alert(err.detail || "İstəyi ləğv etmək mümkün olmadı.");
+                    showNotification(err.detail || "İstəyi ləğv etmək mümkün olmadı.", 'error');
                 }
             } catch (e) {
-                console.error(e);
+                console.error("İstək ləğv etmə xətası:", e);
+                showNotification("İstəyi ləğv etmək mümkün olmadı.", 'error');
             }
         });
     }
@@ -840,17 +927,24 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (btnLeaveTutor) {
         btnLeaveTutor.addEventListener("click", async () => {
             if (!confirm("Repetitor qrupundan ayrılmaq istədiyinizdən əminsiniz?")) return;
+            const originalText = btnLeaveTutor.textContent;
+            btnLeaveTutor.disabled = true;
+            btnLeaveTutor.textContent = "Gözlənilir...";
             try {
                 const res = await fetchWithAuth("/api/v1/tutor/leave", { method: "POST" });
                 if (res && res.ok) {
-                    showNotification("Repetitor qrupundan ayrıldınız.");
+                    showNotification("Repetitor qrupundan ayrıldınız.", 'success');
                     await loadStudentTutorStatus();
                 } else {
                     const err = res ? await res.json().catch(() => ({})) : {};
-                    alert(err.detail || "Qrupdan ayrılmaq mümkün olmadı.");
+                    showNotification(err.detail || "Qrupdan ayrılmaq mümkün olmadı.", 'error');
                 }
             } catch (e) {
-                console.error(e);
+                console.error("Qrupdan ayrılma xətası:", e);
+                showNotification("Qrupdan ayrılmaq mümkün olmadı.", 'error');
+            } finally {
+                btnLeaveTutor.disabled = false;
+                btnLeaveTutor.textContent = originalText;
             }
         });
     }

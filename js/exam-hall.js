@@ -63,14 +63,21 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // --- Modal İdarəetməsi ---
     const showModal = ({ title, message, closeLabel = null, confirmLabel = null, onClose = null, onConfirm = null }) => {
-        modalTitle.textContent = title;
-        modalMessage.textContent = message;
+        // XSS müdafiəsi: yalnız textContent (innerHTML qadağandır).
+        modalTitle.textContent = String(title || '');
+        modalMessage.textContent = String(message || '');
         overlay.classList.remove('hidden');
+        overlay.setAttribute('aria-hidden', 'false');
+        // Modal açıldıqda fokus düyməyə köçür (a11y)
+        const focusTarget = confirmLabel ? btnModalConfirm : btnModalClose;
+        if (focusTarget && !focusTarget.classList.contains('hidden')) {
+            focusTarget.focus();
+        }
 
         if (closeLabel) {
             btnModalClose.textContent = closeLabel;
             btnModalClose.classList.remove('hidden');
-            btnModalClose.onclick = onClose || (() => overlay.classList.add('hidden'));
+            btnModalClose.onclick = onClose || closeModal;
         } else {
             btnModalClose.classList.add('hidden');
             btnModalClose.onclick = null;
@@ -84,6 +91,12 @@ document.addEventListener("DOMContentLoaded", async () => {
             btnModalConfirm.classList.add('hidden');
             btnModalConfirm.onclick = null;
         }
+    };
+
+    // Modalun bağlanması — overlay-in a11y vəziyyəti də yenilənir
+    const closeModal = () => {
+        overlay.classList.add('hidden');
+        overlay.setAttribute('aria-hidden', 'true');
     };
 
     // --- URL Parametrlərinin Analizi ---
@@ -187,7 +200,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
 
             // UI Konfiqurasiyası
-            if (standardExamView) standardExamView.style.display = 'none';
+            // ƏVVƏL: standardExamView.style.display = 'none' (inline style — §3 pozuntusu)
+            if (standardExamView) standardExamView.classList.add('hidden');
             if (pdfExamView) pdfExamView.classList.remove('hidden');
 
             titleSkeleton.classList.add('hidden');
@@ -271,7 +285,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 title: "Xəta baş verdi",
                 message: error.message,
                 closeLabel: "Yenidən cəhd et",
-                onClose: () => { overlay.classList.add('hidden'); initAssignmentExam(assignmentId); }
+                onClose: () => { closeModal(); initAssignmentExam(assignmentId); }
             });
         }
     };
@@ -347,7 +361,10 @@ document.addEventListener("DOMContentLoaded", async () => {
             pdfCounterDisplay.textContent = `${answeredCount} / ${total} cavablandırılıb`;
         }
         if (answerSheetProgressBar) {
-            answerSheetProgressBar.style.width = `${pct}%`;
+            // Dinamik ölçü CSS custom property vasitəsilə verilir
+            // (CSS qaydası .pdf-answer-progress-da təyin olunub).
+            const safePct = Math.min(100, Math.max(0, Number(pct) || 0));
+            answerSheetProgressBar.style.setProperty('--sheet-progress', `${safePct}%`);
         }
     };
 
@@ -423,7 +440,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 title: "Xəta baş verdi",
                 message: error.message,
                 closeLabel: "Yenidən cəhd et",
-                onClose: () => { overlay.classList.add('hidden'); fetchExamData(); }
+                onClose: () => { closeModal(); fetchExamData(); }
             });
         }
     };
@@ -595,7 +612,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             title: "Sınağı bitirirsiniz?",
             message: `${total} sualdan ${answeredCount} dənəsinə cavab verdiniz. Sınağı təhvil verməyə əminsiniz?`,
             closeLabel: "Davam et",
-            onClose: () => overlay.classList.add('hidden'),
+            onClose: closeModal,
             confirmLabel: "Təsdiqlə və Bitir",
             onConfirm: () => submitExam()
         });
@@ -639,11 +656,14 @@ document.addEventListener("DOMContentLoaded", async () => {
             const total = result.total ?? (isAssignment ? assignmentTotalQuestions : questions.length);
             const pct = result.percentage ?? Math.round((score / total) * 100);
 
+            const incorrect = result.incorrect ?? result.incorrect_count ?? 0;
+            const empty = result.empty ?? result.empty_count ?? Math.max(0, total - score);
+
             showModal({
                 title: "Sınaq Bitdi!",
-                message: `Yekun Nəticəniz: ${score} / ${total} (${pct}%).\nDüzgün: ${score} | Səhv: ${result.incorrect ?? result.incorrect_count ?? 0} | Boş: ${result.empty ?? result.empty_count ?? (total - score)}`,
-                closeLabel: "Ana Səhifəyə Qayıt",
-                onClose: () => { window.location.href = "index.html"; }
+                message: `Yekun nəticəniz: ${score} / ${total} (${pct}%). Düzgün: ${score}, səhv: ${incorrect}, boş: ${empty}.`,
+                closeLabel: "Nəticələrə bax",
+                onClose: () => { window.location.href = `analytics.html${isAssignment ? '' : '?id=' + encodeURIComponent(examId)}`; }
             });
 
         } catch (error) {
@@ -652,7 +672,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 title: "Xəta baş verdi",
                 message: error.message,
                 closeLabel: "Yenidən cəhd et",
-                onClose: () => { overlay.classList.add('hidden'); submitExam(); }
+                onClose: () => { closeModal(); submitExam(); }
             });
         }
     };

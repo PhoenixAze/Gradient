@@ -2,6 +2,38 @@
    ANALİTİKA VƏ DİAQNOSTİKA SƏHİFƏSİ ÜÇÜN CSS
    ========================================================================== */
 
+/*
+  BUG DÜZELDİŞİ: .hidden bu faylda və style.css-də TƏYİN EDİLMƏYİBDİ.
+  HTML-də #analytics-skeleton, #analytics-empty, #analytics-content elementləri
+  .hidden sinfi ilə idarə olunurdu — qayda olmadığı üçün SKELETON və BOŞ VƏZİYYƏT
+  EYNİ ANDA görünürdü (səhifə qarışıq idi). !important bütün display qaydalarını əstələyir.
+*/
+.hidden {
+  display: none !important;
+}
+
+.analytics-header {
+  background-color: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.skeleton-line-sm {
+  width: 40%;
+}
+
+.skeleton-line-lg {
+  height: 36px;
+  width: 60%;
+}
+
+.skeleton-line-title {
+  width: 30%;
+}
+
 .analytics-container {
   max-width: 1040px;
   margin: 0 auto;
@@ -152,8 +184,15 @@
   overflow: hidden;
 }
 
+/*
+  PROGRESS: genişlik JS-dən --progress-width custom property vasitəsilə verilir
+  (inline style qadağası pozulmadan). Susmaya dəyər 0% verilir.
+*/
 .progress-fill {
+  width: var(--progress-width, 0%);
   height: 100%;
+  border-radius: inherit;
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
   border-radius: 999px;
   transition: width 0.6s ease;
 }
@@ -190,6 +229,27 @@
   border-bottom: none;
 }
 
+/* Cədvəl hüceyrə semantik sinifləri (JS artıq inline style istifadə etmir) */
+.cell-strong {
+  font-weight: 600;
+}
+
+.cell-muted {
+  color: var(--text-muted);
+}
+
+.cell-success {
+  color: var(--success);
+}
+
+.cell-warning {
+  color: var(--warning);
+}
+
+.cell-danger {
+  color: var(--danger);
+}
+
 .badge-tag {
   display: inline-block;
   padding: 3px 8px;
@@ -224,6 +284,12 @@
 }
 
 /* Boş Vəziyyət (Empty State) */
+/* Xəta vəziyyəti üçün boş vəziyyət kartı */
+.empty-box.is-error {
+  border-color: var(--danger);
+  background-color: var(--danger-soft);
+}
+
 .empty-box {
   text-align: center;
   padding: 56px 24px;

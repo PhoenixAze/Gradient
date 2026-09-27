@@ -145,10 +145,14 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
       }
 
+      // ƏVVƏL: dəqiqlik dəyəri formatlanmadan "85.5%" kimi göstərilirdi.
+      // İndi tam dəyər, fraksiyasız göstərilir.
+      const accuracy = Number(data.accuracy_pct) || 0;
+
       // Real Metrikaları Təhlükəsiz Şəkildə (textContent) Render Edirik
       contentEl.classList.remove("hidden");
 
-      valAccuracy.textContent = `${data.accuracy_pct}%`;
+      valAccuracy.textContent = `${Math.round(accuracy)}%`;
       valTotalExams.textContent = data.total_exams;
       valQuestions.textContent = `${data.correct_count} / ${data.total_questions}`;
 
@@ -187,7 +191,9 @@ document.addEventListener("DOMContentLoaded", async () => {
           else if (s.accuracy_pct >= 50) levelClass = "mid";
 
           fill.className = `progress-fill ${levelClass}`;
-          fill.style.width = `${Math.min(100, Math.max(0, s.accuracy_pct))}%`;
+          // inline style yerinə CSS custom property (təhlükəsiz: dəyər rəqəm formatında)
+          const pct = Math.min(100, Math.max(0, Number(s.accuracy_pct) || 0));
+          fill.style.setProperty("--progress-width", `${pct}%`);
 
           track.appendChild(fill);
           item.appendChild(header);
@@ -203,7 +209,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           const tr = document.createElement("tr");
 
           const tdTitle = document.createElement("td");
-          tdTitle.style.fontWeight = "500";
+          tdTitle.className = "cell-strong";
           tdTitle.textContent = h.title || "Sınaq";
 
           const tdSubject = document.createElement("td");
@@ -215,22 +221,29 @@ document.addEventListener("DOMContentLoaded", async () => {
           const tdScore = document.createElement("td");
           tdScore.textContent = `${h.score} / ${h.total_questions}`;
 
+          // ƏVVƏL: element.style.color ilə rəng verilirdi (inline style).
+          // İndi semantik siniflər — tünd rejimdə də düzgün işləyir.
           const tdPct = document.createElement("td");
-          tdPct.style.fontWeight = "600";
-          tdPct.textContent = `${h.percentage}%`;
-          if (h.percentage >= 75) tdPct.style.color = "var(--success)";
-          else if (h.percentage >= 50) tdPct.style.color = "var(--warning)";
-          else tdPct.style.color = "var(--danger)";
+          const percentage = Number(h.percentage) || 0;
+          let pctClass = "cell-danger";
+          if (percentage >= 75) pctClass = "cell-success";
+          else if (percentage >= 50) pctClass = "cell-warning";
+          tdPct.className = `cell-strong ${pctClass}`;
+          tdPct.textContent = `${percentage}%`;
 
           const tdDate = document.createElement("td");
-          tdDate.style.color = "var(--text-muted)";
+          tdDate.className = "cell-muted";
           if (h.created_at) {
             const d = new Date(h.created_at);
-            tdDate.textContent = d.toLocaleDateString("az-AZ", {
-              year: "numeric",
-              month: "short",
-              day: "numeric"
-            });
+            if (!Number.isNaN(d.getTime())) {
+              tdDate.textContent = d.toLocaleDateString("az-AZ", {
+                year: "numeric",
+                month: "short",
+                day: "numeric"
+              });
+            } else {
+              tdDate.textContent = "-";
+            }
           } else {
             tdDate.textContent = "-";
           }
@@ -246,11 +259,15 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
 
     } catch (err) {
-      console.error(err);
+      // Texniki detallar (stack trace) istifadəçiyə SIZDIRILMIR — .clinerules §1
+      console.error("Analitika yüklənmə xətası:", err);
       skeletonEl.classList.add("hidden");
       emptyEl.classList.remove("hidden");
-      emptyEl.querySelector(".empty-box-title").textContent = "Məlumat yüklənərkən xəta baş verdi";
-      emptyEl.querySelector(".empty-box-desc").textContent = "Zəhmət olmasa internet bağlantınızı yoxlayın və ya səhifəni yeniləyin.";
+      emptyEl.classList.add("is-error");
+      const title = emptyEl.querySelector(".empty-box-title");
+      const desc = emptyEl.querySelector(".empty-box-desc");
+      if (title) title.textContent = "Məlumat yüklənərkən xəta baş verdi";
+      if (desc) desc.textContent = "Zəhmət olmasa internet bağlantınızı yoxlayın və ya səhifəni yeniləyin.";
     }
   }
 
