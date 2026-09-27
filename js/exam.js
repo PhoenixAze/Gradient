@@ -42,7 +42,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Token Köməkçiləri (Third-party cookie bloklaması və Safari/Mobil brauzerlər üçün)
     function getStoredToken() {
         try {
-            return sessionStorage.getItem("gradient_access_token") || localStorage.getItem("gradient_access_token") || "";
+            // Təhlükəsizlik: access token yalnız sessionStorage-da saxlanılır
+            // (XSS ilə uzunömürlü token oğurlanmasının qarşısı alınır).
+            return sessionStorage.getItem("gradient_access_token") || "";
         } catch (_) {
             return "";
         }
@@ -60,11 +62,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         try {
             if (accessToken) {
                 sessionStorage.setItem("gradient_access_token", accessToken);
-                localStorage.setItem("gradient_access_token", accessToken);
+                localStorage.removeItem("gradient_access_token");
             }
             if (refreshToken) {
                 localStorage.setItem("gradient_refresh_token", refreshToken);
-                sessionStorage.setItem("gradient_refresh_token", refreshToken);
+                sessionStorage.removeItem("gradient_refresh_token");
             }
         } catch (_) {}
     }
@@ -252,32 +254,103 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     // --- 4. SINAQLARI YÜKLƏMƏ VƏ RENDER ETMƏ ---
+    // Skeleton Loader — yalnız təhlükəsiz DOM API-ları (createElement).
+    // .clinerules §2: innerHTML qadağandır (XSS riski).
     const renderSkeleton = (container) => {
-        container.innerHTML = ''; 
-        for(let i=0; i<2; i++) {
-            container.innerHTML += `
-                <div class="skeleton-card">
-                    <div class="exam-card-left">
-                        <div class="skeleton skeleton-icon"></div>
-                        <div class="exam-details">
-                            <div class="skeleton skeleton-text-title"></div>
-                            <div class="skeleton skeleton-text-meta"></div>
-                        </div>
-                    </div>
-                    <div class="skeleton skeleton-btn"></div>
-                </div>
-            `;
+        container.replaceChildren();
+        for (let i = 0; i < 2; i++) {
+            const card = document.createElement('div');
+            card.className = 'skeleton-card';
+
+            const left = document.createElement('div');
+            left.className = 'exam-card-left';
+
+            const icon = document.createElement('div');
+            icon.className = 'skeleton skeleton-icon';
+
+            const details = document.createElement('div');
+            details.className = 'exam-details';
+
+            const titleSk = document.createElement('div');
+            titleSk.className = 'skeleton skeleton-text-title';
+
+            const metaSk = document.createElement('div');
+            metaSk.className = 'skeleton skeleton-text-meta';
+
+            details.append(titleSk, metaSk);
+            left.append(icon, details);
+
+            const btnSk = document.createElement('div');
+            btnSk.className = 'skeleton skeleton-btn';
+
+            card.append(left, btnSk);
+            container.appendChild(card);
         }
     };
 
+    // Boş/Error vəziyyət kartı — mesaj textContent ilə təhlükəsiz şəkildə yazılır.
     const renderEmptyState = (container, message) => {
-        container.innerHTML = `
-            <div class="empty-state">
-              <span class="empty-icon">(⁠+⁠_⁠+⁠)</span>
-              <p class="empty-text">${message}</p>
-            </div>
-        `;
+        const wrap = document.createElement('div');
+        wrap.className = 'empty-state';
+
+        const icon = document.createElement('span');
+        icon.className = 'empty-icon';
+        icon.textContent = '(+_+)';
+
+        const text = document.createElement('p');
+        text.className = 'empty-text';
+        text.textContent = String(message || '');
+
+        wrap.append(icon, text);
+        container.replaceChildren(wrap);
     };
+
+    /**
+     * Təhlükəsiz SVG ikonu yaradır.
+     * Əvvəlki kod innerHTML ilə sabit SVG yazırdı — bu, .clinerules-də qadağan idi.
+     * İndi createElementNS ilə real SVG elementləri qurulur (XSS riski yoxdur).
+     */
+    const createSvgIcon = (size, pathData) => {
+        const NS = 'http://www.w3.org/2000/svg';
+        const svg = document.createElementNS(NS, 'svg');
+        svg.setAttribute('width', String(size));
+        svg.setAttribute('height', String(size));
+        svg.setAttribute('viewBox', '0 0 24 24');
+        svg.setAttribute('fill', 'none');
+        svg.setAttribute('stroke', 'currentColor');
+        svg.setAttribute('stroke-width', '2');
+        svg.setAttribute('stroke-linecap', 'round');
+        svg.setAttribute('stroke-linejoin', 'round');
+
+        pathData.forEach(([tag, attrs]) => {
+            const el = document.createElementNS(NS, tag);
+            for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+            svg.appendChild(el);
+        });
+        return svg;
+    };
+
+    const ICON_FILE = [
+        ['path', { d: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z' }],
+        ['polyline', { points: '14 2 14 8 20 8' }],
+        ['line', { x1: '16', y1: '13', x2: '8', y2: '13' }],
+        ['line', { x1: '16', y1: '17', x2: '8', y2: '17' }],
+        ['polyline', { points: '10 9 9 9 8 9' }]
+    ];
+
+    const ICON_CLOCK = [
+        ['circle', { cx: '12', cy: '12', r: '10' }],
+        ['polyline', { points: '12 6 12 12 16 14' }]
+    ];
+
+    const ICON_LIST = [
+        ['line', { x1: '8', y1: '6', x2: '21', y2: '6' }],
+        ['line', { x1: '8', y1: '12', x2: '21', y2: '12' }],
+        ['line', { x1: '8', y1: '18', x2: '21', y2: '18' }],
+        ['line', { x1: '3', y1: '6', x2: '3.01', y2: '6' }],
+        ['line', { x1: '3', y1: '12', x2: '3.01', y2: '12' }],
+        ['line', { x1: '3', y1: '18', x2: '3.01', y2: '18' }]
+    ];
 
     // Satın alma axını (Purchase Flow)
     const handleExamPurchaseAndStart = async (exam, btnElement) => {
@@ -339,7 +412,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         const iconDiv = document.createElement('div');
         iconDiv.className = 'exam-icon';
-        iconDiv.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>`;
+        iconDiv.appendChild(createSvgIcon(24, ICON_FILE));
 
         const detailsDiv = document.createElement('div');
         detailsDiv.className = 'exam-details';
@@ -357,7 +430,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         // Müddət
         const durItem = document.createElement('div');
         durItem.className = 'meta-item';
-        durItem.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>`;
+        durItem.appendChild(createSvgIcon(14, ICON_CLOCK));
         const durText = document.createElement('span');
         durText.textContent = `${duration} dəq`;
         durItem.appendChild(durText);
@@ -366,7 +439,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         // Sual sayı
         const qItem = document.createElement('div');
         qItem.className = 'meta-item';
-        qItem.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>`;
+        qItem.appendChild(createSvgIcon(14, ICON_LIST));
         const qText = document.createElement('span');
         qText.textContent = `${qCount} sual`;
         qItem.appendChild(qText);
@@ -446,7 +519,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const subjectVal = filterSubject.value;
         const priceVal = filterPrice.value;
 
-        examListContainer.innerHTML = '';
+        examListContainer.replaceChildren();
 
         const activeExams = allExams.filter(e => !e.is_completed);
         
@@ -508,7 +581,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             filterAndRenderExams();
 
             // Bitmiş sınaqları render et
-            completedExamListContainer.innerHTML = '';
+            completedExamListContainer.replaceChildren();
             const completedExams = allExams.filter(e => e.is_completed);
 
             if (completedExams.length === 0) {
@@ -521,8 +594,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         } catch (error) {
             console.error(error);
-            examListContainer.innerHTML = `<div class="empty-state"><p class="empty-text text-danger">Xəta baş verdi. Səhifəni yeniləyin.</p></div>`;
-            completedExamListContainer.innerHTML = `<div class="empty-state"><p class="empty-text text-danger">Xəta baş verdi.</p></div>`;
+            renderEmptyState(examListContainer, "Xəta baş verdi. Səhifəni yeniləyin.");
+            renderEmptyState(completedExamListContainer, "Xəta baş verdi.");
         }
     };
 

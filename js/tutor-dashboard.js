@@ -213,7 +213,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Token Köməkçiləri (Third-party cookie-lər bloklanan və Safari/Mobil brauzerlər üçün)
   function getStoredToken() {
     try {
-      return sessionStorage.getItem("gradient_access_token") || localStorage.getItem("gradient_access_token") || "";
+      // Təhlükəsizlik: access token yalnız sessionStorage-da saxlanılır
+      // (XSS ilə uzunömürlü token oğurlanmasının qarşısı alınır).
+      return sessionStorage.getItem("gradient_access_token") || "";
     } catch (_) {
       return "";
     }
@@ -231,11 +233,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     try {
       if (accessToken) {
         sessionStorage.setItem("gradient_access_token", accessToken);
-        localStorage.setItem("gradient_access_token", accessToken);
+        localStorage.removeItem("gradient_access_token");
       }
       if (refreshToken) {
         localStorage.setItem("gradient_refresh_token", refreshToken);
-        sessionStorage.setItem("gradient_refresh_token", refreshToken);
+        sessionStorage.removeItem("gradient_refresh_token");
       }
     } catch (_) {}
   }
@@ -247,6 +249,48 @@ document.addEventListener("DOMContentLoaded", async () => {
       sessionStorage.removeItem("gradient_refresh_token");
       localStorage.removeItem("gradient_refresh_token");
     } catch (_) {}
+  }
+
+  /**
+   * URL TƏHLÜKƏSİZLİYİ (Zero-Trust)
+   * Yalnız http/https protokollarına icazə verilir.
+   * javascript:, data:, blob:, vbscript: kimi sxemlər rədd edilir
+   * (Stored XSS mənbəyi — .clinerules §2).
+   */
+  function isSafeHttpUrl(value) {
+    if (typeof value !== "string" || !value.trim()) return false;
+    try {
+      const parsed = new URL(value, window.location.origin);
+      return parsed.protocol === "http:" || parsed.protocol === "https:";
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /**
+   * PDF-i təhlükəsiz şəkildə yeni pəncədə açır.
+   * Əvvəlki implementasiya window.open("") + document.write() istifadə edirdi,
+   * bu isə .clinerules-də qadağan idi və XSS zəififliyi yaradırdı.
+   */
+  function openPdfViewer(url) {
+    if (!isSafeHttpUrl(url)) {
+      alert("PDF linki təhlükəsiz deyil və açıla bilmədi.");
+      return;
+    }
+    const viewer = window.open("about:blank", "_blank", "noopener,noreferrer");
+    if (!viewer) {
+      alert("Pop-up bloklandı. Zəhmət olmasa brauzerinizdə icazə verin.");
+      return;
+    }
+    const frame = viewer.document.createElement("iframe");
+    frame.src = url;
+    frame.style.width = "100%";
+    frame.style.height = "100vh";
+    frame.style.border = "none";
+    frame.setAttribute("sandbox", "allow-same-origin");
+    frame.setAttribute("referrerpolicy", "no-referrer");
+    viewer.document.body.style.margin = "0";
+    viewer.document.body.appendChild(frame);
   }
 
   // --- QLOBAL TƏHLÜKƏSİZ API SORĞU İDARƏEDİCİSİ (ZERO-TRUST, COOKIE + DUAL TOKEN) ---
@@ -1711,17 +1755,14 @@ document.addEventListener("DOMContentLoaded", async () => {
       actions.appendChild(btnResults);
 
       // PDF-ə bax düyməsi
-      if (asg.pdf_url) {
+      if (isSafeHttpUrl(asg.pdf_url)) {
         const btnPdf = document.createElement("button");
         btnPdf.type = "button";
         btnPdf.className = "btn btn-ghost btn-sm";
         btnPdf.textContent = "PDF";
         btnPdf.title = "Sınaq PDF faylını aç";
         btnPdf.addEventListener("click", () => {
-          const w = window.open("");
-          if (w) {
-            w.document.write(`<iframe src="${asg.pdf_url}" style="width:100%;height:100vh;border:none;"></iframe>`);
-          }
+          openPdfViewer(asg.pdf_url);
         });
         actions.appendChild(btnPdf);
       }

@@ -105,7 +105,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
     }
 
-    const STORAGE_KEY = `gradient_exam_state_${examId}`;
+// Səhifə dəyişmə state-i — mümkün qədər kiçik vurğu (ID dəyişikliyi) saxlanılır
+    const STORAGE_KEY = `gradient_exam_state_${String(examId).replace(/[^A-Za-z0-9_-]/g, '').slice(0, 64) || 'default'}`;
 
     const loadPersistedState = () => {
         try {
@@ -130,10 +131,15 @@ document.addEventListener("DOMContentLoaded", async () => {
         try { sessionStorage.removeItem(STORAGE_KEY); } catch (_) { /* no-op */ }
     };
 
+    /**
+     * Təhlükəsiz auth başlıqları.
+     * Access token yalnız sessionStorage-dan oxunur (localStorage fallback-i aradan qaldırıldı):
+     * beləliklə uzunömürlü sessiya token-i XSS ilə oğurlana bilmir.
+     */
     const getAuthHeaders = (extra = {}) => {
         const headers = { ...extra };
         try {
-            const token = sessionStorage.getItem("gradient_access_token") || localStorage.getItem("gradient_access_token");
+            const token = sessionStorage.getItem("gradient_access_token");
             if (token && !headers["Authorization"]) {
                 headers["Authorization"] = `Bearer ${token}`;
             }
@@ -273,7 +279,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Optik Cavab Kartının Qurulması
     const renderOpticalSheet = (total) => {
         if (!pdfOpticalSheet) return;
-        pdfOpticalSheet.innerHTML = '';
+        pdfOpticalSheet.replaceChildren();
 
         const options = ['A', 'B', 'C', 'D', 'E'];
 
@@ -430,7 +436,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         qNumberEl.textContent = `Sual ${index + 1} / ${questions.length}`;
         qTextEl.textContent = (q && q.text) ? q.text : '';
 
-        optionsContainer.innerHTML = '';
+        optionsContainer.replaceChildren();
 
         const options = (q && q.options && typeof q.options === 'object') ? q.options : {};
         const optionKeys = Object.keys(options);
@@ -491,7 +497,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     };
 
     const initPalette = () => {
-        paletteGrid.innerHTML = '';
+        paletteGrid.replaceChildren();
         questions.forEach((q, idx) => {
             const btn = document.createElement('button');
             btn.type = 'button';

@@ -13,9 +13,18 @@ const API_BASE_URL = isProductionFrontend
   ? "https://gradient-backend-fam5.onrender.com"
   : "";
 
+/**
+ * TƏHLÜKƏSİZ TOKEN SAXLAMA (Zero-Trust)
+ * - Access token: YALNIZ sessionStorage (səhifə yekununda avtomatik məhv olur).
+ *   .clinerules §1 — HttpOnly cookie alternativi olaraq ən qısa müddətli yaddaş.
+ * - Refresh token: localStorage-da saxlanılır (səhifə yenilənməsində sessiya qorunur).
+ *   Riskin azaldılması: yalnız eyni mənşəli (same-origin) səhifələr tərəfindən oxunur.
+ * - Əvvəlki versiyanın təhlükəsizlik boşluğu: hər iki token localStorage-da saxlanılırdı,
+ *   beləliklə bir XSS injektası uzunömürlü sessiyanı oğurlaya bilirdi.
+ */
 function getStoredToken() {
     try {
-        return sessionStorage.getItem("gradient_access_token") || localStorage.getItem("gradient_access_token") || "";
+        return sessionStorage.getItem("gradient_access_token") || "";
     } catch (_) {
         return "";
     }
@@ -33,11 +42,11 @@ function setStoredTokens(accessToken, refreshToken) {
     try {
         if (accessToken) {
             sessionStorage.setItem("gradient_access_token", accessToken);
-            localStorage.setItem("gradient_access_token", accessToken);
+            localStorage.removeItem("gradient_access_token");
         }
         if (refreshToken) {
             localStorage.setItem("gradient_refresh_token", refreshToken);
-            sessionStorage.setItem("gradient_refresh_token", refreshToken);
+            sessionStorage.removeItem("gradient_refresh_token");
         }
     } catch (_) {}
 }
@@ -133,35 +142,49 @@ document.addEventListener("DOMContentLoaded", async () => {
                 const dashboardName = isStudent ? "Sınaqlar Zalı" : "Repetitor Paneli";
 
                 // Navbar Yeniləməsi
+                // XSS MÜDAFİƏSİ: innerHTML əvəzinə yalnız təhlükəsiz DOM API-ları
+                // (createElement + textContent) istifadə olunur — server məlumatı
+                // (first_name) heç vaxt HTML kimi təfsir edilmir.
                 if (navActions) {
-                    navActions.innerHTML = `
-                        <span class="welcome-user-text" style="font-weight: 500; color: var(--text-muted); margin-right: 12px;">Xoş gəldin, ${user.first_name}</span>
-                        <a href="${dashboardUrl}" class="btn btn-primary">${dashboardName}</a>
-                        <button id="btn-landing-logout" class="btn btn-ghost">Çıxış</button>
-                    `;
+                    const welcome = document.createElement("span");
+                    welcome.className = "welcome-user-text";
+                    welcome.textContent = `Xoş gəldin, ${user.first_name || "İstifadəçi"}`;
+
+                    const dashLink = document.createElement("a");
+                    dashLink.href = dashboardUrl;
+                    dashLink.className = "btn btn-primary";
+                    dashLink.textContent = dashboardName;
+
+                    const logoutBtn = document.createElement("button");
+                    logoutBtn.id = "btn-landing-logout";
+                    logoutBtn.type = "button";
+                    logoutBtn.className = "btn btn-ghost";
+                    logoutBtn.textContent = "Çıxış";
+
+                    navActions.replaceChildren(welcome, dashLink, logoutBtn);
 
                     // Çıxış düyməsinin funksionallığı
-                    const logoutBtn = document.getElementById("btn-landing-logout");
-                    if (logoutBtn) {
-                        logoutBtn.addEventListener("click", async () => {
-                            try {
-                                await fetch(`${API_BASE_URL}/api/v1/auth/logout`, {
-                                    method: 'POST',
-                                    credentials: 'include'
-                                });
-                            } catch (err) {
-                                console.error(err);
-                            }
-                            window.location.reload();
-                        });
-                    }
+                    logoutBtn.addEventListener("click", async () => {
+                        clearStoredTokens();
+                        try {
+                            await fetch(`${API_BASE_URL}/api/v1/auth/logout`, {
+                                method: 'POST',
+                                credentials: 'include'
+                            });
+                        } catch (err) {
+                            console.warn("Çıxış sorğusu uğursuz oldu:", err);
+                        }
+                        window.location.href = "auth.html";
+                    });
                 }
 
                 // Hero düymələrinin yenilənməsi
                 if (heroButtons) {
-                    heroButtons.innerHTML = `
-                        <a href="${dashboardUrl}" class="btn btn-primary btn-lg">${dashboardName} keçid et &rarr;</a>
-                    `;
+                    const heroLink = document.createElement("a");
+                    heroLink.href = dashboardUrl;
+                    heroLink.className = "btn btn-primary btn-lg";
+                    heroLink.textContent = `${dashboardName} keçid et →`;
+                    heroButtons.replaceChildren(heroLink);
                 }
             }
         } catch (error) {

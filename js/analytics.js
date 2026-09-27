@@ -24,7 +24,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   function getStoredToken() {
     try {
-      return sessionStorage.getItem("gradient_access_token") || localStorage.getItem("gradient_access_token") || "";
+      // Təhlükəsizlik: access token yalnız sessionStorage-dan oxunur (XSS riskinin azaldılması).
+      return sessionStorage.getItem("gradient_access_token") || "";
     } catch (_) {
       return "";
     }
@@ -42,11 +43,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     try {
       if (accessToken) {
         sessionStorage.setItem("gradient_access_token", accessToken);
-        localStorage.setItem("gradient_access_token", accessToken);
+        localStorage.removeItem("gradient_access_token");
       }
       if (refreshToken) {
         localStorage.setItem("gradient_refresh_token", refreshToken);
-        sessionStorage.setItem("gradient_refresh_token", refreshToken);
+        sessionStorage.removeItem("gradient_refresh_token");
       }
     } catch (_) {}
   }

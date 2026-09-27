@@ -26,7 +26,8 @@ document.addEventListener("DOMContentLoaded", () => {
     // --- SESSİYA YOXLANILMASI: Əgər istifadəçi artıq daxil olubsa dərhal yönləndir ---
     const checkActiveSession = async () => {
         try {
-            const token = sessionStorage.getItem("gradient_access_token") || localStorage.getItem("gradient_access_token");
+            // Təhlükəsizlik: access token yalnız sessionStorage-dan oxunur.
+            const token = sessionStorage.getItem("gradient_access_token");
             const headers = {};
             if (token) headers["Authorization"] = `Bearer ${token}`;
 
@@ -64,11 +65,11 @@ document.addEventListener("DOMContentLoaded", () => {
                     const refreshData = await refreshRes.json();
                     if (refreshData.access_token) {
                         sessionStorage.setItem("gradient_access_token", refreshData.access_token);
-                        localStorage.setItem("gradient_access_token", refreshData.access_token);
+                        localStorage.removeItem("gradient_access_token");
                     }
                     if (refreshData.refresh_token) {
                         localStorage.setItem("gradient_refresh_token", refreshData.refresh_token);
-                        sessionStorage.setItem("gradient_refresh_token", refreshData.refresh_token);
+                        sessionStorage.removeItem("gradient_refresh_token");
                     }
                     if (refreshData.role === 'student') {
                         window.location.href = 'exam.html';
@@ -200,11 +201,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 if (data.access_token) {
                     sessionStorage.setItem("gradient_access_token", data.access_token);
-                    localStorage.setItem("gradient_access_token", data.access_token);
+                    localStorage.removeItem("gradient_access_token");
                 }
                 if (data.refresh_token) {
                     localStorage.setItem("gradient_refresh_token", data.refresh_token);
-                    sessionStorage.setItem("gradient_refresh_token", data.refresh_token);
+                    sessionStorage.removeItem("gradient_refresh_token");
                 }
                 
                 if (data.role === 'student') {

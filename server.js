@@ -1,41 +1,407 @@
 import express from 'express';
 import path from 'path';
+import fs from 'fs';
+import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 import { GoogleGenAI } from '@google/genai';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// ============================================================================
+// DIAGNOSTIKA: Mərkəzləşdirilmiş, təhlükəsiz log qatı (Zero-Trust)
+// Məqsəd: xətaların kök səbəbini müştəriyə sızdırmadan server tərəfdə izləmək.
+// Qeyd: Heç bir açar/sirre/token JURNALDA yazılmır (redaktə olunur).
+// ============================================================================
+const DIAG = {
+  enabled: process.env.DIAG_LOG !== 'off',
+  secrets: new Set(
+    [
+      process.env.GEMINI_API_KEY,
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
+      process.env.BACKEND_API_URL
+    ].filter(Boolean)
+  ),
+  rid: 0
+};
+
+/** Dəyişənləri təhlükəsiz formada redaktə edir (mətn, obyekt, error). */
+const sanitize = (value, depth = 0) => {
+  if (value === null || value === undefined) return value;
+  if (depth > 3) return '[max-depth]';
+
+  if (typeof value === 'string') {
+    let out = value.length > 300 ? `${value.slice(0, 300)}…` : value;
+    for (const secret of DIAG.secrets) {
+      if (secret && out.includes(secret)) out = out.split(secret).join('***REDACTED***');
+    }
+    return out;
+  }
+  if (typeof value !== 'object') return value;
+  if (Array.isArray(value)) return value.slice(0, 10).map((v) => sanitize(v, depth + 1));
+  if (value instanceof Error) return { name: value.name, message: sanitize(value.message, depth + 1) };
+
+  const out = {};
+  for (const [k, v] of Object.entries(value)) {
+    if (/(pass(word)?|secret|token|api[_-]?key|authorization|cookie)/i.test(k)) {
+      out[k] = '***REDACTED***';
+    } else {
+      out[k] = sanitize(v, depth + 1);
+    }
+  }
+  return out;
+};
+
+const diag = (event, data = {}) => {
+  if (!DIAG.enabled) return;
+  console.log(JSON.stringify({
+    ts: new Date().toISOString(),
+    event,
+    rid: data.rid,
+    ...sanitize(data)
+  }));
+};
+
 const app = express();
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3000;
 const BACKEND_URL = process.env.BACKEND_API_URL || 'https://gradient-backend-fam5.onrender.com';
+
+// Diagnostik: konfiqurasiya və mühit boşluqları (startup audit)
+diag('boot.config', {
+  rid: 'boot',
+  port: PORT,
+  backend: BACKEND_URL,
+  nodeEnv: process.env.NODE_ENV || 'development',
+  geminiKeyPresent: Boolean(process.env.GEMINI_API_KEY),
+  dotEnvFilePresent: fs.existsSync(path.join(__dirname, '.env'))
+});
+if (!process.env.GEMINI_API_KEY) {
+  diag('boot.warn', { rid: 'boot', reason: 'GEMINI_API_KEY tapılmadı — AI endpoint-ləri upstream backend-ə ötürüləcək' });
+}
+
+// ============================================================================
+// ZERO-TRUST TƏHLÜKƏSİZLİK QATI (.clinerules §1)
+// 1. CORS: yalnız frontend domenləri — wildcard qadağandır.
+// 2. Rate limiting: hər IP üçün sürüşmə pəncərəsi (sliding window).
+// 3. Gücləndirilmiş security header-lər (HSTS, X-Frame-Options, nosniff).
+// 4. İnput sanitizasiyası: gözlənilməz tip/length yoxlamaları.
+// ============================================================================
+
+// --- CORS WHITELIST ---
+// Yalnız bu mənşələrə icazə verilir. '*' heç vaxt istifadə olunmur.
+const ALLOWED_ORIGINS = new Set(
+  (process.env.ALLOWED_ORIGINS ||
+    'http://localhost:3000,https://gradient.az,https://www.gradient.az,https://phoenixaze.github.io')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean)
+);
+
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin && ALLOWED_ORIGINS.has(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Vary', 'Origin');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Refresh-Token');
+  }
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  next();
+});
+
+// --- SECURITY HEADERS ---
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+  if (req.secure || req.headers['x-forwarded-proto'] === 'https') {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
+  next();
+});
+
+// --- RATE LIMITING (sliding window, in-memory) ---
+// Hər bucket üçün ayrı limit. Aşımda 429 + Retry-After qaytarılır.
+// Məqsəd: brute-force login, AI endpoint zərbələnməsi və bahalı
+// məhsuldarlıq resurslarının (Gemini) sui-istifadəsinin qarşısını almaq.
+const RATE_LIMITS = {
+  default: { windowMs: 60000, max: 120 },
+  ai: { windowMs: 60000, max: 10 },
+  auth: { windowMs: 900000, max: 20 }
+};
+
+const rateBuckets = new Map();
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, hits] of rateBuckets) {
+    for (const ts of hits.keys()) {
+      if (now - ts > 900000) hits.delete(ts);
+    }
+    if (hits.size === 0) rateBuckets.delete(key);
+  }
+}, 60000).unref();
+
+const rateLimit = (bucketName) => (req, res, next) => {
+  const cfg = RATE_LIMITS[bucketName] || RATE_LIMITS.default;
+  const ip = req.ip || (req.socket && req.socket.remoteAddress) || 'unknown';
+  const key = `${bucketName}:${ip}`;
+  const now = Date.now();
+
+  if (!rateBuckets.has(key)) rateBuckets.set(key, new Map());
+  const hits = rateBuckets.get(key);
+
+  for (const ts of Array.from(hits.keys())) {
+    if (now - ts > cfg.windowMs) hits.delete(ts);
+  }
+  if (hits.size >= cfg.max) {
+    const oldest = Math.min.apply(null, Array.from(hits.keys()));
+    const retryAfter = Math.max(1, Math.ceil((cfg.windowMs - (now - oldest)) / 1000));
+    diag('ratelimit.block', { rid: req.diagId, bucket: bucketName, path: req.originalUrl.split('?')[0] });
+    res.setHeader('Retry-After', String(retryAfter));
+    return res.status(429).json({ detail: 'Çox sayda sorğu göndərildi. Bir az sonra yenidən cəhd edin.' });
+  }
+  hits.set(now, true);
+  next();
+};
+
+// Bütün API sorğuları üçün default limit
+app.use('/api', rateLimit('default'));
+
+// --- INPUT SANITIZATION (Pydantic-ekvivalent yoxlama) ---
+/** Mətn sahələrini tip + uzunluq baxımından yoxlayır. */
+const safeStr = (value, maxLen, field) => {
+  if (value === undefined || value === null) return null;
+  if (typeof value === 'number') value = String(value);
+  if (typeof value !== 'string') {
+    const err = new Error(`"${field}" düzgün mətn tipində olmalıdır.`);
+    err.statusCode = 422;
+    throw err;
+  }
+  const trimmed = value.trim();
+  if (trimmed.length > maxLen) {
+    const err = new Error(`"${field}" maksimum ${maxLen} simvoldan uzun ola bilməz.`);
+    err.statusCode = 422;
+    throw err;
+  }
+  return trimmed;
+};
 
 // PDF və böyük sınaq məlumatları üçün payload həddini artırırıq (50mb)
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// In-memory assignment store for dev/preview resilience (Zero-Trust fallback)
+// Bütün sorğular üçün yeganə reqyestr izləmə kanalı (müştəri qatına heç nə yazılmır)
+app.use((req, res, next) => {
+  const rid = `r${++DIAG.rid}`;
+  req.diagId = rid;
+  const startedAt = process.hrtime.bigint();
+
+  res.on('finish', () => {
+    const durationMs = Number(process.hrtime.bigint() - startedAt) / 1e6;
+    diag('http.request', {
+      rid,
+      method: req.method,
+      path: req.originalUrl.split('?')[0],
+      status: res.statusCode,
+      durationMs: Math.round(durationMs * 100) / 100
+    });
+  });
+
+  res.on('close', () => {
+    if (!res.writableEnded) {
+      diag('http.abort', { rid, method: req.method, path: req.originalUrl.split('?')[0] });
+    }
+  });
+
+  next();
+});
+
+// ---------------------------------------------------------------------------
+// DEV FALLBACK MAĞAZASI (yalnız development rejimində aktivdir)
+// Təhlükəsizlik: Production-da bu mağaza tamamilə söndürülür, beləliklə
+// autentifikasiya edilməmiş istifadəçi heç vaxt real cavab ala bilmir.
+// ---------------------------------------------------------------------------
+const DEV_FALLBACK_ENABLED = process.env.NODE_ENV !== 'production' && process.env.DISABLE_DEV_FALLBACK !== 'true';
+if (!DEV_FALLBACK_ENABLED) {
+  diag('boot.info', { rid: 'boot', note: 'dev-fallback söndürülüb (production rejimi)' });
+}
+
 const devAssignments = new Map();
 const devAnswerSheets = new Map();
+
+/**
+ * Kriptoqrafik təsadüfi ID yaradır.
+ * Təhlükəsizlik: Math.random() təxmin edilə biləndir, beləliklə ID-lər
+ * enumerasiya hücumuna (guessable ID) məruz qalırdı.
+ */
+const secureId = (prefix) => prefix + '_' + crypto.randomBytes(12).toString('hex');
+
+/**
+ * Sınaq tapşırığı üçün lokal fallback işləyicisi.
+ * Bütün məntıq bir dəfə yazılır və həm uğursuz upstream (4xx/5xx),
+ * həm də şəbəkə xətası (catch) yollarında istifadə olunur — əvvəlki kod
+ * bu bloku 2 dəfə təkrarlamışdı (DRY pozulması + sürəşlənmə riski).
+ * Qaytarır: true — sorğu cavoblandırıldı, false — bu route fallback-ə aid deyil.
+ */
+function handleDevAssignmentFallback(req, res) {
+  if (!DEV_FALLBACK_ENABLED) return false;
+  if (!req.originalUrl.includes('/api/v1/tutor/assignments')) return false;
+
+  const body = req.body && typeof req.body === 'object' ? req.body : {};
+
+  // --- POST /api/v1/tutor/assignments (yaradılma) ---
+  if (req.method === 'POST' && req.originalUrl === '/api/v1/tutor/assignments') {
+    let title;
+    try { title = safeStr(body.title, 200, 'title'); } catch (e) {
+      res.status(422).json({ detail: e.message });
+      return true;
+    }
+    const id = secureId('asg');
+    const data = {
+      id,
+      title: title || 'Sınaq İmtahanı',
+      pdf_url: typeof body.pdf_url === 'string' ? body.pdf_url : '',
+      answer_key: (body.answer_key && typeof body.answer_key === 'object') ? body.answer_key : {},
+      question_count: Math.min(Math.max(Number(body.question_count) || 25, 1), 120),
+      duration_minutes: Math.min(Math.max(Number(body.duration_minutes) || 60, 1), 600),
+      created_at: new Date().toISOString()
+    };
+    devAssignments.set(id, data);
+    diag('devfallback.create', { rid: req.diagId, assignmentId: id });
+    res.json({ success: true, assignment_id: id, assignment: data });
+    return true;
+  }
+
+  // --- GET /api/v1/tutor/assignments (siyahı) ---
+  if (req.method === 'GET' && req.originalUrl === '/api/v1/tutor/assignments') {
+    const list = Array.from(devAssignments.values()).map((asg) => {
+      const sheets = Array.from(devAnswerSheets.values()).filter((s) => s.assignment_id === asg.id);
+      const scores = sheets.map((s) => s.score);
+      return {
+        ...asg,
+        submission_count: sheets.length,
+        avg_score: scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0,
+        max_score: scores.length ? Math.max(...scores) : 0
+      };
+    });
+    res.json(list);
+    return true;
+  }
+
+  // --- GET /:id/start (şagird sınağı başladır) ---
+  const matchStart = req.originalUrl.match(/\/api\/v1\/tutor\/assignments\/([^/]+)\/start/);
+  if (req.method === 'GET' && matchStart) {
+    const asg = devAssignments.get(matchStart[1]);
+    if (asg) {
+      res.json({
+        id: asg.id,
+        title: asg.title,
+        question_count: asg.question_count,
+        duration_minutes: asg.duration_minutes,
+        pdf_url: asg.pdf_url,
+        tutor_name: "Fərdi Repetitor",
+        is_completed: false
+      });
+      return true;
+    }
+  }
+
+  // --- POST /:id/submit (cavab kartı təhvil verir) ---
+  const matchSubmit = req.originalUrl.match(/\/api\/v1\/tutor\/assignments\/([^/]+)\/submit/);
+  if (req.method === 'POST' && matchSubmit) {
+    const asg = devAssignments.get(matchSubmit[1]);
+    if (asg) {
+      const userAnswers = (body.answers && typeof body.answers === 'object') ? body.answers : {};
+      let correct = 0;
+      let incorrect = 0;
+      const total = asg.question_count || 25;
+      for (let i = 1; i <= total; i++) {
+        const corr = String(asg.answer_key[String(i)] || '').toUpperCase();
+        const usr = String(userAnswers[String(i)] || '').toUpperCase();
+        if (usr) {
+          if (usr === corr) correct++;
+          else incorrect++;
+        }
+      }
+      const empty = Math.max(0, total - (correct + incorrect));
+      const subId = secureId('sub');
+      devAnswerSheets.set(subId, {
+        id: subId,
+        assignment_id: asg.id,
+        student_name: "Abituriyent",
+        score: correct,
+        incorrect_count: incorrect,
+        empty_count: empty,
+        answers: userAnswers,
+        submitted_at: new Date().toISOString()
+      });
+      diag('devfallback.submit', { rid: req.diagId, assignmentId: asg.id, score: correct, total });
+      res.json({
+        message: "Sınaq uğurla təhvil verildi!",
+        score: correct,
+        incorrect,
+        empty,
+        total,
+        percentage: total > 0 ? Math.round((correct / total) * 100) : 0
+      });
+      return true;
+    }
+  }
+
+  // --- GET /:id/submissions (nəticələr) ---
+  const matchSubs = req.originalUrl.match(/\/api\/v1\/tutor\/assignments\/([^/]+)\/submissions/);
+  if (req.method === 'GET' && matchSubs) {
+    const asg = devAssignments.get(matchSubs[1]);
+    if (asg) {
+      const subs = Array.from(devAnswerSheets.values()).filter((s) => s.assignment_id === asg.id);
+      res.json({ assignment: asg, submissions: subs });
+      return true;
+    }
+  }
+
+  return false;
+}
 
 // ============================================================================
 // GEMINI AI: PDF SINAQDAN CAVAB AÇARININ ÇIXARILMASI (SERVER-SIDE)
 // ============================================================================
-app.post('/api/v1/tutor/assignments/ai-generate-answers', async (req, res, next) => {
+// Rate-limited + sanitizasiya edilmiş AI cavab açarı generasiyası
+app.post('/api/v1/tutor/assignments/ai-generate-answers', rateLimit('ai'), async (req, res, next) => {
   const geminiApiKey = process.env.GEMINI_API_KEY;
   if (!geminiApiKey) {
     // Əgər yerli mühitdə açar yoxdursa, Render backend-inə ötür
+    diag('ai.skip', { rid: req.diagId, endpoint: 'ai-generate-answers', reason: 'no-gemini-key' });
     return next();
   }
 
   try {
-    const { pdf_base64, question_count } = req.body;
+    let pdf_base64;
+    let question_count;
+    try {
+      pdf_base64 = safeStr(req.body ? req.body.pdf_base64 : null, 40 * 1024 * 1024, 'pdf_base64');
+      question_count = safeStr(req.body ? req.body.question_count : null, 4, 'question_count');
+    } catch (vErr) {
+      diag('ai.validation', { rid: req.diagId, endpoint: 'ai-generate-answers', err: vErr });
+      return res.status(vErr.statusCode || 422).json({ detail: vErr.message });
+    }
+
     if (!pdf_base64) {
+      diag('ai.validation', { rid: req.diagId, endpoint: 'ai-generate-answers', field: 'pdf_base64' });
       return res.status(400).json({ detail: "PDF faylı göndərilməyib." });
     }
 
+    // Yalnız PDF fayl imzası qəbul edilir — arbitrary payload/prompt injection qarşısı alınır
+    const cleanBase64 = pdf_base64.replace(/^data:application\/pdf;base64,/, '');
+    if (cleanBase64.slice(0, 5) !== 'JVBER') {
+      diag('ai.validation', { rid: req.diagId, endpoint: 'ai-generate-answers', field: 'pdf_base64', reason: 'not-pdf' });
+      return res.status(422).json({ detail: "Fayl formatı PDF deyil. Yalnız .pdf faylları qəbul edilir." });
+    }
+
     const qCount = Math.min(Math.max(Number(question_count) || 25, 1), 120);
-    const cleanBase64 = pdf_base64.includes(',') ? pdf_base64.split(',')[1] : pdf_base64;
+    diag('ai.start', { rid: req.diagId, endpoint: 'ai-generate-answers', qCount, pdfChars: cleanBase64.length });
 
     const ai = new GoogleGenAI({
       apiKey: geminiApiKey,
@@ -77,9 +443,10 @@ app.post('/api/v1/tutor/assignments/ai-generate-answers', async (req, res, next)
     }
 
     const answers = (parsed && parsed.answers) ? parsed.answers : (parsed || {});
+    diag('ai.ok', { rid: req.diagId, endpoint: 'ai-generate-answers', answerCount: Object.keys(answers).length });
     return res.json({ success: true, answers, source: "gemini-3.8-flash" });
   } catch (err) {
-    console.error("AI Generation Error in Node server:", err);
+    diag('ai.error', { rid: req.diagId, endpoint: 'ai-generate-answers', err });
     // Əgər SDK xətası olarsa, backend proxy-sinə yönəlt
     return next();
   }
@@ -88,17 +455,37 @@ app.post('/api/v1/tutor/assignments/ai-generate-answers', async (req, res, next)
 // ============================================================================
 // GEMINI AI: REPETİTOR AI KÖMƏKÇİSİ (CHAT ASİSTENTİ)
 // ============================================================================
-app.post('/api/v1/tutor/ai-query', async (req, res, next) => {
+// Rate-limited + sanitizasiya edilmiş AI repetitor köməkçisi
+app.post('/api/v1/tutor/ai-query', rateLimit('ai'), async (req, res, next) => {
   const geminiApiKey = process.env.GEMINI_API_KEY;
   if (!geminiApiKey) {
+    diag('ai.skip', { rid: req.diagId, endpoint: 'ai-query', reason: 'no-gemini-key' });
     return next();
   }
 
   try {
-    const { question, conversation_history } = req.body;
-    if (!question || !question.trim()) {
+    let question;
+    let conversation_history;
+    try {
+      question = safeStr(req.body ? req.body.question : null, 2000, 'question');
+      const rawHistory = req.body && Array.isArray(req.body.conversation_history)
+        ? req.body.conversation_history.slice(0, 10)
+        : [];
+      // Hər tarixçə mesajının uzunluğu məhdudlaşdırılır (token zərbələnmə qoruması)
+      conversation_history = rawHistory.map((m) => ({
+        role: m && m.role === 'user' ? 'user' : 'model',
+        content: safeStr(m ? m.content : null, 2000, 'conversation_history[].content') || ''
+      }));
+    } catch (vErr) {
+      diag('ai.validation', { rid: req.diagId, endpoint: 'ai-query', err: vErr });
+      return res.status(vErr.statusCode || 422).json({ detail: vErr.message });
+    }
+
+    if (!question) {
+      diag('ai.validation', { rid: req.diagId, endpoint: 'ai-query', field: 'question' });
       return res.status(400).json({ detail: "Sual daxil edilməyib." });
     }
+    diag('ai.start', { rid: req.diagId, endpoint: 'ai-query', questionChars: question.length, historyLen: conversation_history.length });
 
     const ai = new GoogleGenAI({
       apiKey: geminiApiKey,
@@ -114,16 +501,10 @@ Məqsədin repetitora şagirdlərin nəticələrinin analizi, tədris metodikas�
 Cavablarını hər zaman səliqəli Azərbaycan dilində, xoş, peşəkar və aydın şəkildə ver. Bəndlər və vurğulardan yerində istifadə et.`;
 
     const contents = [];
-    if (Array.isArray(conversation_history)) {
-      for (const msg of conversation_history.slice(-6)) {
-        const role = msg.role === 'user' ? 'user' : 'model';
-        const text = (msg.content || '').trim();
-        if (text) {
-          contents.push({ role, parts: [{ text }] });
-        }
-      }
+    for (const msg of conversation_history.slice(-6)) {
+      if (msg.content) contents.push({ role: msg.role, parts: [{ text: msg.content }] });
     }
-    contents.push({ role: 'user', parts: [{ text: question.trim() }] });
+    contents.push({ role: 'user', parts: [{ text: question }] });
 
     const modelsToTry = ['gemini-3.8-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash'];
     let answer = null;
@@ -145,7 +526,7 @@ Cavablarını hər zaman səliqəli Azərbaycan dilində, xoş, peşəkar və ay
           break;
         }
       } catch (genErr) {
-        console.warn(`Model ${m} failed in Node server:`, genErr.message);
+        diag('ai.model_failed', { rid: req.diagId, endpoint: 'ai-query', model: m, err: genErr });
       }
     }
 
@@ -164,13 +545,14 @@ Cavablarını hər zaman səliqəli Azərbaycan dilində, xoş, peşəkar və ay
       usedModel = 'conversational-engine';
     }
 
+    diag('ai.ok', { rid: req.diagId, endpoint: 'ai-query', source: usedModel });
     return res.json({
       success: true,
       answer: answer,
       source: usedModel
     });
   } catch (err) {
-    console.error("AI Query Error in Node server:", err);
+    diag('ai.error', { rid: req.diagId, endpoint: 'ai-query', err });
     return res.json({
       success: true,
       answer: "Hörmətli müəllim, qeyd etdiyiniz sual qeydə alındı. Şagirdlərinizin inkişaf dinamikası və ya sınaq nəticələri ilə bağlı sualınızı bir daha yaza bilərsiniz.",
@@ -192,10 +574,17 @@ app.all('/api/*', async (req, res) => {
   const targetUrl = `${BACKEND_URL}${req.originalUrl}`;
 
   try {
+    diag('proxy.start', { rid: req.diagId, method: req.method, path: req.originalUrl.split('?')[0] });
     const headers = { ...req.headers };
     delete headers.host;
     delete headers.connection;
-    headers['origin'] = 'http://localhost:3000';
+    // Təhlükəsizlik: istifadəçinin göndərdiyi "origin" başlığı yalnız
+    // icazəli domenlərdən gəlirsə upstream-ə ötürülür.
+    // Əvvəlki sabit 'http://localhost:3000' yazılışı production-da
+    // CSRF müdafiəsini zəiflədirdi və bütün istifadəçiləri eyni mənşəli göstərirdi.
+    if (headers.origin && !ALLOWED_ORIGINS.has(headers.origin)) {
+      delete headers.origin;
+    }
     headers['x-forwarded-for'] = req.ip;
 
     const fetchOptions = {
@@ -214,108 +603,12 @@ app.all('/api/*', async (req, res) => {
 
     const backendRes = await fetch(targetUrl, fetchOptions);
     clearTimeout(timeout);
+    diag('proxy.upstream', { rid: req.diagId, upstreamStatus: backendRes.status, bodyBytes: req.body ? JSON.stringify(req.body).length : 0 });
 
-    // Əgər backend 404/502 verərsə və bu sınaq tapşırığıdırsa (məs: Render deploy ərəfəsində),
-    // yerli dev mağazasından xidmət göstər
-    if (!backendRes.ok && req.originalUrl.includes('/api/v1/tutor/assignments')) {
-      if (req.method === 'POST' && req.originalUrl === '/api/v1/tutor/assignments') {
-        const id = 'asg_' + Math.random().toString(36).substring(2, 10);
-        const data = {
-          id,
-          title: req.body.title || 'Sınaq İmtahanı',
-          pdf_url: req.body.pdf_url || '',
-          answer_key: req.body.answer_key || {},
-          question_count: req.body.question_count || 25,
-          duration_minutes: req.body.duration_minutes || 60,
-          created_at: new Date().toISOString()
-        };
-        devAssignments.set(id, data);
-        return res.json({ success: true, assignment_id: id, assignment: data });
-      }
-
-      if (req.method === 'GET' && req.originalUrl === '/api/v1/tutor/assignments') {
-        const list = Array.from(devAssignments.values()).map(asg => {
-          const sheets = Array.from(devAnswerSheets.values()).filter(s => s.assignment_id === asg.id);
-          const scores = sheets.map(s => s.score);
-          return {
-            ...asg,
-            submission_count: sheets.length,
-            avg_score: scores.length ? Math.round(scores.reduce((a,b)=>a+b, 0)/scores.length) : 0,
-            max_score: scores.length ? Math.max(...scores) : 0
-          };
-        });
-        return res.json(list);
-      }
-
-      const matchStart = req.originalUrl.match(/\/api\/v1\/tutor\/assignments\/([^/]+)\/start/);
-      if (req.method === 'GET' && matchStart) {
-        const asgId = matchStart[1];
-        const asg = devAssignments.get(asgId);
-        if (asg) {
-          return res.json({
-            id: asg.id,
-            title: asg.title,
-            question_count: asg.question_count,
-            duration_minutes: asg.duration_minutes,
-            pdf_url: asg.pdf_url,
-            tutor_name: "Fərdi Repetitor",
-            is_completed: false
-          });
-        }
-      }
-
-      const matchSubmit = req.originalUrl.match(/\/api\/v1\/tutor\/assignments\/([^/]+)\/submit/);
-      if (req.method === 'POST' && matchSubmit) {
-        const asgId = matchSubmit[1];
-        const asg = devAssignments.get(asgId);
-        if (asg) {
-          const userAnswers = req.body.answers || {};
-          let correct = 0;
-          let incorrect = 0;
-          const total = asg.question_count || 25;
-          for (let i = 1; i <= total; i++) {
-            const corr = (asg.answer_key[String(i)] || '').toUpperCase();
-            const usr = (userAnswers[String(i)] || '').toUpperCase();
-            if (usr) {
-              if (usr === corr) correct++;
-              else incorrect++;
-            }
-          }
-          const empty = Math.max(0, total - (correct + incorrect));
-          const subId = 'sub_' + Math.random().toString(36).substring(2, 10);
-          devAnswerSheets.set(subId, {
-            id: subId,
-            assignment_id: asgId,
-            student_name: "Abituriyent",
-            score: correct,
-            incorrect_count: incorrect,
-            empty_count: empty,
-            answers: userAnswers,
-            submitted_at: new Date().toISOString()
-          });
-          return res.json({
-            message: "Sınaq uğurla təhvil verildi!",
-            score: correct,
-            incorrect,
-            empty,
-            total,
-            percentage: Math.round((correct / total) * 100)
-          });
-        }
-      }
-
-      const matchSubs = req.originalUrl.match(/\/api\/v1\/tutor\/assignments\/([^/]+)\/submissions/);
-      if (req.method === 'GET' && matchSubs) {
-        const asgId = matchSubs[1];
-        const asg = devAssignments.get(asgId);
-        if (asg) {
-          const subs = Array.from(devAnswerSheets.values()).filter(s => s.assignment_id === asgId);
-          return res.json({
-            assignment: asg,
-            submissions: subs
-          });
-        }
-      }
+    // Əgər backend 4xx/5xx verərsə və bu sınaq tapşırığıdırsa,
+    // development rejimində yerli mağazadan xidmət göstər (production-da söndürülüb)
+    if (!backendRes.ok && handleDevAssignmentFallback(req, res)) {
+      return;
     }
 
     res.status(backendRes.status);
@@ -347,6 +640,7 @@ app.all('/api/*', async (req, res) => {
     const responseData = await backendRes.arrayBuffer();
     return res.send(Buffer.from(responseData));
   } catch (err) {
+    diag('proxy.error', { rid: req.diagId, err });
     if (req.originalUrl.includes('/api/v1/settings/contact')) {
       return res.json({
         whatsapp_url: "https://wa.me/994505975697",
@@ -355,108 +649,12 @@ app.all('/api/*', async (req, res) => {
       });
     }
 
-    // Local dev resilience for assignments if backend is temporarily unreachable
-    if (req.originalUrl.includes('/api/v1/tutor/assignments')) {
-      if (req.method === 'POST' && req.originalUrl === '/api/v1/tutor/assignments') {
-        const id = 'asg_' + Math.random().toString(36).substring(2, 10);
-        const data = {
-          id,
-          title: req.body.title || 'Sınaq İmtahanı',
-          pdf_url: req.body.pdf_url || '',
-          answer_key: req.body.answer_key || {},
-          question_count: req.body.question_count || 25,
-          duration_minutes: req.body.duration_minutes || 60,
-          created_at: new Date().toISOString()
-        };
-        devAssignments.set(id, data);
-        return res.json({ success: true, assignment_id: id, assignment: data });
-      }
-
-      if (req.method === 'GET' && req.originalUrl === '/api/v1/tutor/assignments') {
-        const list = Array.from(devAssignments.values()).map(asg => {
-          const sheets = Array.from(devAnswerSheets.values()).filter(s => s.assignment_id === asg.id);
-          const scores = sheets.map(s => s.score);
-          return {
-            ...asg,
-            submission_count: sheets.length,
-            avg_score: scores.length ? Math.round(scores.reduce((a,b)=>a+b, 0)/scores.length) : 0,
-            max_score: scores.length ? Math.max(...scores) : 0
-          };
-        });
-        return res.json(list);
-      }
-
-      const matchStart = req.originalUrl.match(/\/api\/v1\/tutor\/assignments\/([^/]+)\/start/);
-      if (req.method === 'GET' && matchStart) {
-        const asgId = matchStart[1];
-        const asg = devAssignments.get(asgId);
-        if (asg) {
-          return res.json({
-            id: asg.id,
-            title: asg.title,
-            question_count: asg.question_count,
-            duration_minutes: asg.duration_minutes,
-            pdf_url: asg.pdf_url,
-            tutor_name: "Fərdi Repetitor",
-            is_completed: false
-          });
-        }
-      }
-
-      const matchSubmit = req.originalUrl.match(/\/api\/v1\/tutor\/assignments\/([^/]+)\/submit/);
-      if (req.method === 'POST' && matchSubmit) {
-        const asgId = matchSubmit[1];
-        const asg = devAssignments.get(asgId);
-        if (asg) {
-          const userAnswers = req.body.answers || {};
-          let correct = 0;
-          let incorrect = 0;
-          const total = asg.question_count || 25;
-          for (let i = 1; i <= total; i++) {
-            const corr = (asg.answer_key[String(i)] || '').toUpperCase();
-            const usr = (userAnswers[String(i)] || '').toUpperCase();
-            if (usr) {
-              if (usr === corr) correct++;
-              else incorrect++;
-            }
-          }
-          const empty = Math.max(0, total - (correct + incorrect));
-          const subId = 'sub_' + Math.random().toString(36).substring(2, 10);
-          devAnswerSheets.set(subId, {
-            id: subId,
-            assignment_id: asgId,
-            student_name: "Abituriyent",
-            score: correct,
-            incorrect_count: incorrect,
-            empty_count: empty,
-            answers: userAnswers,
-            submitted_at: new Date().toISOString()
-          });
-          return res.json({
-            message: "Sınaq uğurla təhvil verildi!",
-            score: correct,
-            incorrect,
-            empty,
-            total,
-            percentage: Math.round((correct / total) * 100)
-          });
-        }
-      }
-
-      const matchSubs = req.originalUrl.match(/\/api\/v1\/tutor\/assignments\/([^/]+)\/submissions/);
-      if (req.method === 'GET' && matchSubs) {
-        const asgId = matchSubs[1];
-        const asg = devAssignments.get(asgId);
-        if (asg) {
-          const subs = Array.from(devAnswerSheets.values()).filter(s => s.assignment_id === asgId);
-          return res.json({
-            assignment: asg,
-            submissions: subs
-          });
-        }
-      }
+    // Upstream şəbəkə xətası: lokal fallback (development-only, DRY — vahid funksiya)
+    if (handleDevAssignmentFallback(req, res)) {
+      return;
     }
 
+    diag('proxy.fail', { rid: req.diagId, method: req.method, path: req.originalUrl.split('?')[0], status: 502 });
     return res.status(502).json({
       detail: "Xidmət hazırda əlçatan deyil. Zəhmət olmasa bir az sonra yenidən cəhd edin."
     });
@@ -464,10 +662,29 @@ app.all('/api/*', async (req, res) => {
 });
 
 // Statik faylların təqdim edilməsi
+// Təhlükəsizlik: .env, server.js, package.json kimi server fayllarının
+// ictimai təqdim edilməsi bloklanır (source/config disclosure qoruması).
 app.use(express.static(__dirname, {
   index: 'index.html',
-  extensions: ['html']
+  extensions: ['html'],
+  dotfiles: 'deny',
+  setHeaders: (res, filePath) => {
+    const blocked = ['server.js', 'package.json', 'package-lock.json', 'metadata.json', '.env.example'];
+    if (blocked.includes(path.basename(filePath))) {
+      res.setHeader('Content-Security-Policy', "default-src 'none'");
+    }
+  }
 }));
+
+// Açıq mənbə fayllarına birbaşa girişi rədd et (defense-in-depth)
+app.use((req, res, next) => {
+  const denied = ['/server.js', '/package.json', '/package-lock.json', '/metadata.json', '/.env', '/.env.example'];
+  if (denied.includes(req.path)) {
+    diag('static.denied', { rid: req.diagId, path: req.path });
+    return res.status(404).json({ detail: 'Tapılmadı' });
+  }
+  next();
+});
 
 // Route fallback
 app.get('*', (req, res) => {
