@@ -8,8 +8,12 @@
   <meta property="og:title" content="Gradient — DİM İmtahanlarına Hədəfli Hazırlıq və Mövzu Diaqnostikası">
   <meta property="og:description" content="Sınaq işlə, zəif nöqtələrini kəşf et, nəticəni ən qısa yolla artır. DİM standartı ilə analitik təhsil platforması.">
   
-  <!-- TƏHLÜKƏSİZLİK: Strict Content Security Policy -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://gradient-backend-fam5.onrender.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; script-src 'self';">
+  <!--
+    TƏHLÜKƏSİZLİK: Strict CSP
+    'unsafe-inline' yalnız style üçün — səhifədəki ölçü (width) atributları
+    heç bir script üçün icazə verilmir (.clinerules §1-2).
+  -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://gradient-backend-fam5.onrender.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; script-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';">
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

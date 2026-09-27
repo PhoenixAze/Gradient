@@ -4,10 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Repetitor Paneli | Gradient</title>
-  <meta name="description" content="Tədris qrupunuzun və şagirdlərinizin real sınaq nəticələrinin idarəetmə paneli.">
+  <meta name="description" content="Tədris qrupunuzun və şagirdlərinizin sınaq nəticələrinin idarəetmə paneli.">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
 
-  <!-- TƏHLÜKƏSİZLİK: Strict Content Security Policy -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://gradient-backend-fam5.onrender.com blob: data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; frame-src 'self' blob: data: https:; script-src 'self';">
+  <!-- TƏHLÜKƏSİZLİK: Strict Content Security Policy (.clinerules §1-2) -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://gradient-backend-fam5.onrender.com blob: data:; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; frame-src 'self' blob: data: https:; script-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -20,20 +21,22 @@
 </head>
 <body class="tutor-layout">
 
-  <!-- OVERLAY VƏ SAĞ PROFİL MENYUSU -->
-  <div class="overlay" id="tutor-drawer-overlay"></div>
+  <a class="skip-link" href="#tutor-main">Əsas məzmuna keç</a>
 
-  <aside class="drawer drawer-right" id="tutor-profile-drawer">
+  <!-- OVERLAY + SAĞ PROFIL MENYUSU (DRAWER) -->
+  <div class="overlay" id="tutor-drawer-overlay" aria-hidden="true"></div>
+
+  <aside class="drawer drawer-right" id="tutor-profile-drawer" aria-label="Repetitor profili">
     <div class="drawer-header">
       <h2 class="drawer-title">Repetitor Profili</h2>
-      <button class="icon-btn close-drawer" id="btn-close-tutor-drawer" aria-label="Bağla">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      <button class="icon-btn" id="btn-close-tutor-drawer" type="button" aria-label="Menyunu bağla">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
       </button>
     </div>
-    
+
     <div class="profile-card">
-      <div class="profile-avatar">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+      <div class="profile-avatar" aria-hidden="true">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
       </div>
       <div class="profile-details">
         <h3 class="profile-name" id="drawer-tutor-name">Yüklənir...</h3>
@@ -42,48 +45,48 @@
       </div>
     </div>
 
-    <!-- 4 RƏQƏMLİ KOD KARTI -->
+    <!-- 4 RƏQƏMLİ SİSTEM KODU -->
     <div class="tutor-code-profile-box">
       <div class="code-box-header">
-        <span>4 Rəqəmli Repetitor Kodu:</span>
+        <span>4 Rəqəmli Repetitor Kodu</span>
         <span class="code-badge-pill">Sistem Kodu</span>
       </div>
       <div class="code-big-display">
         <span id="drawer-tutor-code" class="code-digits">----</span>
-        <button class="btn btn-primary btn-sm" id="btn-drawer-copy-code">Kopyala</button>
+        <button class="btn btn-outline btn-sm" id="btn-drawer-copy-code" type="button">Kopyala</button>
       </div>
-      <p class="code-hint">Şagirdləriniz saytda bu 4 rəqəmli kodu daxil edərək qrupunuza qoşulma istəyi göndərə bilərlər.</p>
+      <p class="code-hint">Şagirdləriniz bu 4 rəqəmli kodu daxil edərək qrupunuza qoşulma istəyi göndərə bilərlər.</p>
     </div>
 
-    <!-- PROFİL TƏNZİMLƏMƏLƏRİ FORMASI -->
+    <!-- PROFİL TƏNZİMLƏMƏLƏRİ -->
     <div class="tutor-profile-form-wrap">
-      <h4 style="font-size: 0.95rem; margin-bottom: 12px; font-weight: 600;">Məlumatları Yenilə</h4>
-      <form id="tutor-profile-edit-form">
-        <div class="form-group mb-2">
-          <label class="form-label" style="font-size: 0.8rem;">Ad</label>
-          <input type="text" id="edit-tutor-name" class="input-field input-sm" required>
+      <h4 class="drawer-subtitle">Məlumatları Yenilə</h4>
+      <form id="tutor-profile-edit-form" novalidate>
+        <div class="form-group">
+          <label class="form-label" for="edit-tutor-name">Ad</label>
+          <input type="text" id="edit-tutor-name" class="input-field" maxlength="60" autocomplete="given-name" required>
         </div>
-        <div class="form-group mb-2">
-          <label class="form-label" style="font-size: 0.8rem;">Soyad</label>
-          <input type="text" id="edit-tutor-surname" class="input-field input-sm" required>
+        <div class="form-group">
+          <label class="form-label" for="edit-tutor-surname">Soyad</label>
+          <input type="text" id="edit-tutor-surname" class="input-field" maxlength="60" autocomplete="family-name" required>
         </div>
-        <div class="form-group mb-3">
-          <label class="form-label" style="font-size: 0.8rem;">Tədris Fənni</label>
-          <input type="text" id="edit-tutor-subject" class="input-field input-sm" required>
+        <div class="form-group">
+          <label class="form-label" for="edit-tutor-subject">Tədris Fənni</label>
+          <input type="text" id="edit-tutor-subject" class="input-field" maxlength="80" autocomplete="off" required>
         </div>
-        <div id="profile-edit-feedback" class="auth-alert hidden mb-2" style="font-size: 0.85rem; padding: 8px;"></div>
-        <button type="submit" id="btn-save-tutor-profile" class="btn btn-secondary btn-sm" style="width: 100%;">Məlumatları Saxla</button>
+        <div id="profile-edit-feedback" class="auth-alert hidden mb-2" role="status"></div>
+        <button type="submit" id="btn-save-tutor-profile" class="btn btn-secondary btn-sm btn-full">Məlumatları Saxla</button>
       </form>
     </div>
 
-    <nav class="drawer-nav mt-auto">
-      <button class="drawer-link" id="drawer-nav-students">Şagirdlərim</button>
-      <button class="drawer-link" id="drawer-nav-requests">Şagird İstəkləri</button>
-      <button class="drawer-link" id="drawer-nav-assignments">Fərdi Sınaqlar</button>
-      <button class="drawer-link" id="drawer-nav-ai">AI Köməkçi</button>
-      <button class="drawer-link" id="drawer-nav-profile">Profil və Ayarlar</button>
+    <nav class="drawer-nav" aria-label="Panel bölmələri">
+      <button class="drawer-link" id="drawer-nav-students" type="button">Şagirdlərim</button>
+      <button class="drawer-link" id="drawer-nav-requests" type="button">Şagird İstəkləri</button>
+      <button class="drawer-link" id="drawer-nav-assignments" type="button">Fərdi Sınaqlar</button>
+      <button class="drawer-link" id="drawer-nav-ai" type="button">AI Köməkçi</button>
+      <button class="drawer-link" id="drawer-nav-profile" type="button">Profil və Ayarlar</button>
       <div class="drawer-divider"></div>
-      <button class="drawer-link text-danger" id="btn-drawer-logout">Çıxış et</button>
+      <button class="drawer-link text-danger" id="btn-drawer-logout" type="button">Çıxış et</button>
     </nav>
   </aside>
 
@@ -91,9 +94,9 @@
   <header class="tutor-header">
     <div class="tutor-header-container">
       <div class="tutor-brand-area">
-        <a href="index.html" class="brand" aria-label="Ana Səhifə">
+        <a href="index.html" class="brand" aria-label="Ana səhifə">
           <div class="logo-icon">
-            <svg viewBox="0 0 512 512" width="32" height="32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg viewBox="0 0 512 512" width="32" height="32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
               <rect width="512" height="512" rx="112" fill="#0F172A" />
               <path d="M 155 365 L 225 275 C 242 255, 260 290, 280 275 L 360 150" fill="none" stroke="#3B82F6" stroke-width="32" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
@@ -106,23 +109,23 @@
       </div>
 
       <div class="tutor-user-info">
-        <div class="tutor-profile-pill" id="header-profile-pill" style="cursor: pointer;" title="Profili Aç">
+        <div class="tutor-profile-pill" id="header-profile-pill" role="button" tabindex="0" title="Profili Aç">
           <span id="tutor-name">Yüklənir...</span>
-          <span style="color: var(--text-sub);">&bull;</span>
-          <span id="tutor-subject" style="color: var(--accent);">Fənn</span>
+          <span aria-hidden="true">&bull;</span>
+          <span id="tutor-subject" class="pill-subject">Fənn</span>
         </div>
-        <button class="icon-btn" id="btn-toggle-tutor-profile" aria-label="Profil Menyusu" title="Profil və Tənzimləmələr">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+        <button class="icon-btn" id="btn-toggle-tutor-profile" type="button" aria-label="Profil menyusu" title="Profil və Tənzimləmələr">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
         </button>
-        <button id="btn-tutor-logout" class="btn btn-ghost btn-sm">Çıxış</button>
+        <button id="btn-tutor-logout" class="btn btn-ghost btn-sm" type="button">Çıxış</button>
       </div>
     </div>
   </header>
 
   <!-- ƏSAS MƏZMUN -->
-  <main class="tutor-main">
-    
-    <!-- YUXARI QARŞILAMA VƏ ŞAGİRD ƏLAVƏ ETMƏ -->
+  <main class="tutor-main" id="tutor-main">
+
+    <!-- QARŞILAMA BLOKU -->
     <div class="tutor-hero-card">
       <div class="tutor-welcome-text">
         <h1 id="welcome-heading">Tədris Qrupu İdarəetməsi</h1>
@@ -130,32 +133,37 @@
       </div>
 
       <div class="tutor-actions-group">
-        <div class="invite-code-box" title="Şagirdləriniz saytda bu 4 rəqəmli kodu daxil edərək qrupunuza istək göndərə bilərlər">
-          <span style="color: var(--text-muted); font-size: 0.8rem; font-weight: 600;">4 Rəqəmli Kod:</span>
-          <span class="invite-code-val" id="invite-code-display" style="letter-spacing: 2px; font-weight: 800; font-size: 1.15rem;">----</span>
-          <button id="btn-copy-code" class="btn btn-ghost btn-sm" style="padding: 2px 8px;">Kopyala</button>
+        <div class="invite-code-box" title="Şagirdləriniz bu kodu daxil edərək qrupunuza qoşulma istəyi göndərə bilər">
+          <span>4 Rəqəmli Kod:</span>
+          <span class="invite-code-val" id="invite-code-display">----</span>
+          <button id="btn-copy-code" class="btn btn-ghost btn-sm" type="button">Kopyala</button>
         </div>
-        <button id="btn-hero-create-asg" class="btn btn-primary btn-sm">+ PDF Sınaq Yarat</button>
-        <button id="btn-open-add-student" class="btn btn-secondary btn-sm">+ Şagird Əlavə Et</button>
+        <button id="btn-hero-create-asg" class="btn btn-primary btn-sm" type="button">PDF Sınaq Yarat</button>
+        <button id="btn-open-add-student" class="btn btn-secondary btn-sm" type="button">Şagird Əlavə Et</button>
       </div>
     </div>
 
-    <!-- SKELETON LOADER -->
-    <div id="tutor-skeleton">
+    <!-- SKELETON LOADER (.clinerules §4) -->
+    <div id="tutor-skeleton" aria-hidden="true">
       <div class="tutor-metrics-grid">
-        <div class="metric-card"><div class="skeleton-line" style="width: 50%;"></div><div class="skeleton-line" style="height: 36px; width: 40%;"></div></div>
-        <div class="metric-card"><div class="skeleton-line" style="width: 50%;"></div><div class="skeleton-line" style="height: 36px; width: 40%;"></div></div>
-        <div class="metric-card"><div class="skeleton-line" style="width: 50%;"></div><div class="skeleton-line" style="height: 36px; width: 40%;"></div></div>
+        <div class="metric-card"><div class="skeleton skeleton-line-sm"></div><div class="skeleton skeleton-line-lg"></div><div class="skeleton skeleton-line-sm"></div></div>
+        <div class="metric-card"><div class="skeleton skeleton-line-sm"></div><div class="skeleton skeleton-line-lg"></div><div class="skeleton skeleton-line-sm"></div></div>
+        <div class="metric-card"><div class="skeleton skeleton-line-sm"></div><div class="skeleton skeleton-line-lg"></div><div class="skeleton skeleton-line-sm"></div></div>
+        <div class="metric-card"><div class="skeleton skeleton-line-sm"></div><div class="skeleton skeleton-line-lg"></div><div class="skeleton skeleton-line-sm"></div></div>
+        <div class="metric-card"><div class="skeleton skeleton-line-sm"></div><div class="skeleton skeleton-line-lg"></div><div class="skeleton skeleton-line-sm"></div></div>
       </div>
-      <div class="tutor-section"><div class="skeleton-line" style="width: 25%;"></div><div class="skeleton-box"></div></div>
+      <div class="tutor-section">
+        <div class="skeleton skeleton-line-title"></div>
+        <div class="skeleton skeleton-box"></div>
+      </div>
     </div>
 
     <!-- ƏSAS PANEL MƏZMUNU -->
     <div id="tutor-content" class="hidden">
-      
-      <!-- 1. Qrup Metrikaları (Ətraflı 5 Kart) -->
+
+      <!-- 1. QRUPUP METRİKALARI -->
       <div class="tutor-metrics-grid">
-        <div class="metric-card">
+        <div class="metric-card is-accent">
           <div class="metric-label">Qrupdakı Şagirdlər</div>
           <div class="metric-value" id="stat-total-students">0</div>
           <div class="metric-sub" id="stat-students-sub">0 aktiv sınaq işləyən</div>
@@ -165,54 +173,54 @@
           <div class="metric-value" id="stat-total-exams">0</div>
           <div class="metric-sub">Təhvil verilmiş sınaqlar</div>
         </div>
-        <div class="metric-card">
+        <div class="metric-card is-success">
           <div class="metric-label">Qrupun Orta Göstəricisi</div>
           <div class="metric-value" id="stat-group-avg">0%</div>
           <div class="metric-sub">Ümumi dəqiqlik faizi</div>
         </div>
-        <div class="metric-card">
+        <div class="metric-card is-success">
           <div class="metric-label">Ən Yüksək Nəticə</div>
-          <div class="metric-value metric-value-sm" id="stat-top-student">-</div>
+          <div class="metric-value metric-value-sm" id="stat-top-student">—</div>
           <div class="metric-sub">Qrupun lider şagirdi</div>
         </div>
-        <div class="metric-card">
+        <div class="metric-card is-warning">
           <div class="metric-label">Dəstəyə Ehtiyacı Olan</div>
-          <div class="metric-value metric-value-sm" id="stat-lowest-student">-</div>
+          <div class="metric-value metric-value-sm" id="stat-lowest-student">—</div>
           <div class="metric-sub">Fərdi diqqət tələb edən</div>
         </div>
       </div>
 
-      <!-- 2. Naviqasiya Tabları -->
+      <!-- 2. NAVİQASİYA TABLARI -->
       <div class="tutor-tabs-container">
-        <div class="tutor-tabs">
-          <button class="tutor-tab-btn active" data-tab="students" id="tab-btn-students">
+        <div class="tutor-tabs" role="tablist" aria-label="Panel bölmələri">
+          <button class="tutor-tab-btn active" type="button" role="tab" data-tab="students" id="tab-btn-students" aria-selected="true" aria-controls="pane-students">
             <span>Şagirdlərim</span>
             <span class="tab-badge" id="tab-students-count">0</span>
           </button>
-          <button class="tutor-tab-btn" data-tab="requests" id="tab-btn-requests">
+          <button class="tutor-tab-btn" type="button" role="tab" data-tab="requests" id="tab-btn-requests" aria-selected="false" aria-controls="pane-requests">
             <span>Şagird İstəkləri</span>
             <span class="tab-badge" id="tab-requests-count">0</span>
           </button>
-          <button class="tutor-tab-btn" data-tab="assignments" id="tab-btn-assignments">
+          <button class="tutor-tab-btn" type="button" role="tab" data-tab="assignments" id="tab-btn-assignments" aria-selected="false" aria-controls="pane-assignments">
             <span>Fərdi Sınaqlar (PDF)</span>
             <span class="tab-badge" id="tab-assignments-count">0</span>
           </button>
-          <button class="tutor-tab-btn" data-tab="exams" id="tab-btn-exams">
+          <button class="tutor-tab-btn" type="button" role="tab" data-tab="exams" id="tab-btn-exams" aria-selected="false" aria-controls="pane-exams">
             <span>Platforma Sınaqları</span>
             <span class="tab-badge" id="tab-submissions-count">0</span>
           </button>
-          <button class="tutor-tab-btn tutor-tab-ai" data-tab="ai" id="tab-btn-ai">
-            <span>Tutor AI Köməkçi</span>
-            <span class="ai-pill-tag">Gemini AI</span>
+          <button class="tutor-tab-btn" type="button" role="tab" data-tab="ai" id="tab-btn-ai" aria-selected="false" aria-controls="pane-ai">
+            <span>AI Köməkçi</span>
+            <span class="ai-pill-tag">Analitika</span>
           </button>
-          <button class="tutor-tab-btn" data-tab="profile" id="tab-btn-profile">
+          <button class="tutor-tab-btn" type="button" role="tab" data-tab="profile" id="tab-btn-profile" aria-selected="false" aria-controls="pane-profile">
             <span>Profil</span>
           </button>
         </div>
       </div>
 
       <!-- TAB 1: ŞAGİRDLƏR SİYAHISI -->
-      <div class="tutor-tab-pane active" id="pane-students">
+      <div class="tutor-tab-pane" id="pane-students" role="tabpanel" aria-labelledby="tab-btn-students">
         <div class="tutor-section">
           <div class="tutor-section-header">
             <div>
@@ -220,106 +228,125 @@
               <p class="tutor-section-sub">Şagirdin üzərinə və ya "Analizə bax" düyməsinə klikləyərək onun bütün sınaq tarixçəsini nəzərdən keçirin.</p>
             </div>
             <div class="tutor-filter-group">
-              <input 
-                type="text" 
-                id="student-search-input" 
-                class="input-field input-sm" 
-                placeholder="Ad, soyad və ya nömrə ilə axtar..." 
+              <input
+                type="text"
+                id="student-search-input"
+                class="input-field input-sm"
+                placeholder="Ad, soyad və ya nömrə ilə axtar..."
                 autocomplete="off"
+                maxlength="80"
+                aria-label="Şagird axtarışı"
               >
-              <select id="student-status-filter" class="input-field input-sm" style="width: auto;">
+              <select id="student-status-filter" class="input-field input-sm" aria-label="Vəziyyət filtri">
                 <option value="all">Bütün vəziyyətlər</option>
-                <option value="Yaxşı">Yaxşı (≥80%)</option>
+                <option value="Yaxşı">Yaxşı (80%+)</option>
                 <option value="Orta">Orta (50-79%)</option>
-                <option value="Zəif">Zəif (&lt;50%)</option>
+                <option value="Zəif">Zəif (50%-altı)</option>
                 <option value="Sınaq işləməyib">Sınaq işləməyənlər</option>
               </select>
             </div>
           </div>
 
+          <div class="filter-result-count" id="filter-result-count"></div>
+
           <div id="students-empty-state" class="empty-box hidden">
+            <div class="empty-box-icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 11h-6"></path></svg>
+            </div>
             <h3 class="empty-box-title">Qrupunuzda hələ heç bir şagird qeydiyyatda deyil</h3>
             <p class="empty-box-desc">
-              Yuxarıdakı "Şagird Əlavə Et" düyməsi ilə şagirdlərinizi E-poçt və ya mobil nömrə vasitəsilə qrupunuza daxil edə bilərsiniz.
+              "Şagird Əlavə Et" düyməsi ilə şagirdlərinizi E-poçt və ya mobil nömrə vasitəsilə qrupunuza daxil edə bilərsiniz.
             </p>
           </div>
 
-          <div class="table-responsive" id="students-table-wrap">
+          <div id="students-no-result-state" class="empty-box hidden">
+            <div class="empty-box-icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><path d="M21 21l-4.35-4.35"></path></svg>
+            </div>
+            <h3 class="empty-box-title">Axtarış və filtrə uyğun şagird tapılmadı</h3>
+            <p class="empty-box-desc">Axtarış mətnini və ya seçilmiş vəziyyət filtrini dəyişib yenidən cəhd edin.</p>
+            <div class="mt-2">
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-reset-student-filters">Filtri təmizlə</button>
+            </div>
+          </div>
+
+          <div class="table-responsive hidden" id="students-table-wrap">
             <table class="tutor-table">
+              <caption class="sr-only">Qrupdakı şagirdlərin siyahısı</caption>
               <thead>
                 <tr>
-                  <th>Ad, Soyad</th>
-                  <th>Əlaqə</th>
-                  <th>Sinif</th>
-                  <th>İşlənmiş Sınaqlar</th>
-                  <th>Dəqiqlik</th>
-                  <th>Son Nəticə</th>
-                  <th>Vəziyyət</th>
-                  <th>Əməliyyatlar</th>
+                  <th scope="col">Ad, Soyad</th>
+                  <th scope="col">Əlaqə</th>
+                  <th scope="col">Sinif</th>
+                  <th scope="col">Sınaqlar</th>
+                  <th scope="col">Dəqiqlik</th>
+                  <th scope="col">Son Nəticə</th>
+                  <th scope="col">Vəziyyət</th>
+                  <th scope="col">Əməliyyatlar</th>
                 </tr>
               </thead>
-              <tbody id="students-table-body">
-                <!-- Dinamik doldurulacaq -->
-              </tbody>
+              <tbody id="students-table-body"></tbody>
             </table>
           </div>
         </div>
       </div>
 
-      <!-- TAB: ŞAGİRD İSTƏKLƏRİ (JOIN REQUESTS) -->
-      <div class="tutor-tab-pane hidden" id="pane-requests">
+      <!-- TAB: ŞAGİRD İSTƏKLƏRİ -->
+      <div class="tutor-tab-pane hidden" id="pane-requests" role="tabpanel" aria-labelledby="tab-btn-requests">
         <div class="tutor-section">
           <div class="tutor-section-header">
             <div>
               <h2 class="tutor-section-title">Şagirdlərin Qrupa Qoşulma İstəkləri</h2>
-              <p class="tutor-section-sub">Şagirdlər sizin 4 rəqəmli kodunuzu daxil edərək qrupa qoşulma sorğusu göndərdikdə burada görünür. Təsdiq etdikdən sonra şagird avtomatik qrupunuza daxil olur.</p>
+              <p class="tutor-section-sub">Şagirdlər 4 rəqəmli kodunuzu daxil edərək qrupa qoşulma sorğusu göndərdikdə burada görünür. Təsdiq etdikdən sonra şagird avtomatik qrupunuza daxil olur.</p>
             </div>
-            <button class="btn btn-secondary btn-sm" id="btn-refresh-requests">Yenilə</button>
+            <button class="btn btn-secondary btn-sm" id="btn-refresh-requests" type="button">Yenilə</button>
           </div>
 
           <div id="requests-empty-state" class="empty-box hidden">
+            <div class="empty-box-icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+            </div>
             <h3 class="empty-box-title">Gözləyən yeni qoşulma istəyi yoxdur</h3>
             <p class="empty-box-desc">
-              Şagirdləriniz saytda sizin 4 rəqəmli repetitor kodunuzu daxil etdikdə istəklər burada görünəcək və bir kliklə qəbul edə biləcəksiniz.
+              Şagirdləriniz sizin 4 rəqəmli repetitor kodunuzu daxil etdikdə istəklər burada görünəcək və bir kliklə qəbul edə biləcəksiniz.
             </p>
           </div>
 
-          <div class="requests-grid" id="requests-grid">
-            <!-- Dinamik olaraq doldurulacaq -->
-          </div>
+          <div class="requests-grid" id="requests-grid"></div>
         </div>
       </div>
 
-      <!-- TAB 2: FƏRDİ SINAQLAR VƏ CAVAB KARTLARI -->
-      <div class="tutor-tab-pane hidden" id="pane-assignments">
+      <!-- TAB: FƏRDİ SINAQLAR (PDF) -->
+      <div class="tutor-tab-pane hidden" id="pane-assignments" role="tabpanel" aria-labelledby="tab-btn-assignments">
         <div class="tutor-section">
           <div class="tutor-section-header">
             <div>
               <h2 class="tutor-section-title">Fərdi PDF Sınaqlar və Rəqəmsal Cavab Kartları</h2>
-              <p class="tutor-section-sub">Şagirdləriniz üçün öz PDF sınağınızı yükləyin, AI və ya əl ilə doğru cavab kartını qeyd edin və imtahan linkini paylaşın.</p>
+              <p class="tutor-section-sub">Şagirdləriniz üçün PDF sınağınızı yükləyin, doğru cavab kartını təyin edin və imtahan linkini paylaşın.</p>
             </div>
-            <button id="btn-open-create-asg" class="btn btn-primary btn-sm">+ Yeni Sınaq Yarat (PDF)</button>
+            <button id="btn-open-create-asg" class="btn btn-primary btn-sm" type="button">Yeni Sınaq Yarat (PDF)</button>
           </div>
 
           <div id="assignments-empty-state" class="empty-box hidden">
+            <div class="empty-box-icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+            </div>
             <h3 class="empty-box-title">Hələ heç bir fərdi PDF sınaq yaratmamısınız</h3>
             <p class="empty-box-desc">
               Öz sınaq PDF-inizi yükləyin, sual sayını və vaxtı qeyd edin, doğru cavab açarını təyin edərək şagirdləriniz üçün dərhal sınaq linki əldə edin.
             </p>
-            <div style="margin-top: 16px;">
-              <button id="btn-empty-create-asg" class="btn btn-primary btn-sm">+ İlk PDF Sınağını Yarat</button>
+            <div class="mt-2">
+              <button id="btn-empty-create-asg" class="btn btn-primary btn-sm" type="button">İlk PDF Sınağını Yarat</button>
             </div>
           </div>
 
-          <div class="assignments-grid" id="assignments-grid">
-            <!-- Dinamik doldurulacaq -->
-          </div>
+          <div class="assignments-grid" id="assignments-grid"></div>
         </div>
       </div>
 
-      <!-- TAB 3: SINAQLAR VƏ İMTİHAN NƏTİCƏLƏRİ -->
-      <div class="tutor-tab-pane hidden" id="pane-exams">
-        <!-- Sınaq Xülasələri -->
+      <!-- TAB: PLATFORMA SINAQLARI -->
+      <div class="tutor-tab-pane hidden" id="pane-exams" role="tabpanel" aria-labelledby="tab-btn-exams">
+
         <div class="tutor-section">
           <div class="tutor-section-header">
             <div>
@@ -329,30 +356,31 @@
           </div>
 
           <div id="exams-summary-empty" class="empty-box hidden">
-            <p class="empty-box-desc">Şagirdlər sınaq işlədikcə sınaq statistikası burada görünəcək.</p>
+            <div class="empty-box-icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+            </div>
+            <h3 class="empty-box-title">Hələ sınaq statistikası yoxdur</h3>
+            <p class="empty-box-desc">Şagirdlər platforma sınaqlarını işlədikcə toplu göstəricilər burada görünəcək.</p>
           </div>
 
-          <div class="table-responsive" id="exams-summary-table-wrap">
+          <div class="table-responsive hidden" id="exams-summary-table-wrap">
             <table class="tutor-table">
               <thead>
                 <tr>
-                  <th>Sınaq Adı</th>
-                  <th>Fənn</th>
-                  <th>Sual Sayı</th>
-                  <th>İştirakçı Sayı</th>
-                  <th>Orta Bal</th>
-                  <th>Ən Yüksək Bal</th>
-                  <th>Ən Aşağı Bal</th>
+                  <th scope="col">Sınaq Adı</th>
+                  <th scope="col">Fənn</th>
+                  <th scope="col">Sual Sayı</th>
+                  <th scope="col">İştirakçı</th>
+                  <th scope="col">Orta Bal</th>
+                  <th scope="col">Ən Yüksək</th>
+                  <th scope="col">Ən Aşağı</th>
                 </tr>
               </thead>
-              <tbody id="exams-summary-table-body">
-                <!-- Dinamik doldurulacaq -->
-              </tbody>
+              <tbody id="exams-summary-table-body"></tbody>
             </table>
           </div>
         </div>
 
-        <!-- Canlı Nəticələr (Son təqdimatlar) -->
         <div class="tutor-section">
           <div class="tutor-section-header">
             <div>
@@ -362,121 +390,116 @@
           </div>
 
           <div id="submissions-empty" class="empty-box hidden">
+            <div class="empty-box-icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12h4l3 8 4-16 3 8h8"></path></svg>
+            </div>
+            <h3 class="empty-box-title">Hələ təqdimat yoxdur</h3>
             <p class="empty-box-desc">Şagirdləriniz sınaq işlədikcə real nəticələr burada əks olunacaq.</p>
           </div>
 
-          <div class="table-responsive" id="submissions-table-wrap">
+          <div class="table-responsive hidden" id="submissions-table-wrap">
             <table class="tutor-table">
               <thead>
                 <tr>
-                  <th>Şagird</th>
-                  <th>Sınaq Adı</th>
-                  <th>Fənn</th>
-                  <th>Düzgün / Ümumi</th>
-                  <th>Səhv / Boş</th>
-                  <th>Dəqiqlik</th>
-                  <th>Tarix</th>
+                  <th scope="col">Şagird</th>
+                  <th scope="col">Sınaq Adı</th>
+                  <th scope="col">Fənn</th>
+                  <th scope="col">Düzgün / Ümumi</th>
+                  <th scope="col">Səhv / Boş</th>
+                  <th scope="col">Dəqiqlik</th>
+                  <th scope="col">Tarix</th>
                 </tr>
               </thead>
-              <tbody id="submissions-table-body">
-                <!-- Dinamik doldurulacaq -->
-              </tbody>
+              <tbody id="submissions-table-body"></tbody>
             </table>
           </div>
         </div>
       </div>
 
-      <!-- TAB 3: TUTOR AI KÖMƏKÇİ (GEMINI AI) -->
-      <div class="tutor-tab-pane hidden" id="pane-ai">
+      <!-- TAB: AI KÖMƏKÇİ (Qrup Analitikası) -->
+      <div class="tutor-tab-pane hidden" id="pane-ai" role="tabpanel" aria-labelledby="tab-btn-ai">
         <div class="tutor-ai-wrapper">
-          
-          <!-- AI Məlumat Başlığı -->
+
           <div class="tutor-ai-header-card">
             <div class="tutor-ai-header-content">
               <div class="ai-header-badge">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
-                </svg>
-                <span>Tutor AI Köməkçi &bull; Gemini Powered</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+                <span>AI Analitika Köməkçisi</span>
               </div>
               <h2 class="tutor-ai-title">Qrupunuz və Şagirdləriniz Üzrə Ağıllı Analitika</h2>
               <p class="tutor-ai-desc">
-                Süni intellekt köməkçiniz şagirdlərinizin bütün sınaq nəticələrini təhlil edir. Kimin ən az bal topladığını, 
-                ən çox səhv edilən sualları, fərdi çatışmazlıqları və ya tətbiq haqqında istədiyiniz sualı soruşun.
+                Köməkçi şagirdlərinizin sınaq nəticələrini təhlil edir. Kimin ən az bal topladığını, ən çox səhv edilən
+                sualları, fərdi çatışmazlıqları və ya tətbiq haqqında istədiyiniz sualı soruşun.
               </p>
             </div>
-            <button id="btn-clear-ai-chat" class="btn btn-outline btn-sm" title="Söhbəti təmizlə">Söhbəti təmizlə</button>
+            <button id="btn-clear-ai-chat" class="btn btn-outline btn-sm" type="button">Söhbəti təmizlə</button>
           </div>
 
-          <!-- Sürətli Sual Çipləri (Quick Prompt Chips) -->
           <div class="tutor-ai-chips-area">
-            <span class="chips-label">Tövsiyə olunan suallar:</span>
-            <div class="chips-grid">
-              <button class="ai-chip-btn" data-query="Ən son sınaqda ən az bal toplayan kim oldu?">
-                📊 Ən son sınaqda ən az bal toplayan kim oldu?
+            <span class="chips-label" id="chips-label">Tövsiyə olunan suallar</span>
+            <div class="chips-grid" role="group" aria-labelledby="chips-label">
+              <button class="ai-chip-btn" type="button" data-query="Ən son sınaqda ən az bal toplayan kim oldu?">
+                <span class="chip-index">1</span> Ən az bal toplayan şagird
               </button>
-              <button class="ai-chip-btn" data-query="Son sınaqda ən çox hansı suallarda və mövzularda səhv edilib?">
-                🔍 Ən çox səhv edilən suallar və mövzular
+              <button class="ai-chip-btn" type="button" data-query="Son sınaqda ən çox hansı suallarda və mövzularda səhv edilib?">
+                <span class="chip-index">2</span> Ən çox səhv edilən mövzular
               </button>
-              <button class="ai-chip-btn" data-query="Qrupda hansı şagirdlərin nəticəsi zəifdir və fərdi dəstəyə ehtiyacı var?">
-                ⚠️ Zəif nəticə göstərən şagirdlər
+              <button class="ai-chip-btn" type="button" data-query="Qrupda hansı şagirdlərin nəticəsi zəifdir və fərdi dəstəyə ehtiyacı var?">
+                <span class="chip-index">3</span> Dəstəyə ehtiyacı olan şagirdlər
               </button>
-              <button class="ai-chip-btn" data-query="Gradient platformasında repetitor sınaqları və cavab kağızı necə işləyir?">
-                💡 Sınaq və cavab kağızı sistemi necə işləyir?
+              <button class="ai-chip-btn" type="button" data-query="Gradient platformasında repetitor sınaqları və cavab kağızı necə işləyir?">
+                <span class="chip-index">4</span> Sınaq və cavab kağızı sistemi
               </button>
             </div>
           </div>
 
-          <!-- AI Dialoq Pəncərəsi -->
           <div class="tutor-ai-chat-box">
-            <div id="ai-chat-messages" class="ai-chat-messages-container">
-              <!-- İlkin qarşılama mesajı -->
-              <div class="ai-message ai-message-assistant">
-                <div class="ai-message-avatar">AI</div>
-                <div class="ai-message-bubble">
-                  <div class="ai-message-author">Tutor AI Köməkçi</div>
-                  <div class="ai-message-text">
-                    Salam, hörmətli müəllim! Mən qrupunuzun sınaq nəticələrini və tədris göstəricilərini təhlil etmək üçün buradayam. 
-                    Şagirdlərinizin balları, ən son sınağın nəticələri və ya platformanın iş prinsipləri barədə istənilən sualınızı verə bilərsiniz.
-                  </div>
+            <div class="chat-toolbar">
+              <div class="chat-toolbar-left">
+                <span class="chat-status-dot" id="chat-status-dot" aria-hidden="true"></span>
+                <div>
+                  <div class="chat-title">Qrup Analitikası</div>
+                  <div class="chat-subtitle" id="chat-subtitle">AI Köməkçi hazırdır</div>
                 </div>
               </div>
+              <span class="char-counter" id="ai-char-counter" aria-live="polite">0 / 500</span>
             </div>
 
-            <!-- AI Sual Göndərmə Forması -->
-            <form id="ai-chat-form" class="ai-chat-form">
-              <div class="ai-input-wrap">
-                <input 
-                  type="text" 
-                  id="ai-query-input" 
-                  class="ai-input-field" 
-                  placeholder="Məsələn: Ən son sınaqda ən az bal toplayan kim oldu? və ya zəif şagirdlər kimlərdir?" 
-                  required 
-                  autocomplete="off"
-                >
-                <button type="submit" id="btn-submit-ai" class="btn btn-primary btn-sm ai-send-btn">
-                  <span class="btn-text">Göndər</span>
-                  <span class="loader hidden"></span>
-                </button>
-              </div>
-            </form>
+            <div class="chat-shell">
+              <div id="ai-chat-messages" class="ai-chat-messages-container" role="log" aria-live="polite" aria-relevant="additions"></div>
+
+              <form id="ai-chat-form" class="ai-chat-form" novalidate>
+                <div class="ai-input-wrap">
+                  <label class="sr-only" for="ai-query-input">Sualınızı yazın</label>
+                  <textarea
+                    id="ai-query-input"
+                    class="ai-input-field"
+                    rows="1"
+                    maxlength="500"
+                    placeholder="Məsələn: ən son sınaqda ən az bal toplayan kim oldu?"
+                    autocomplete="off"
+                  ></textarea>
+                  <button type="submit" id="btn-submit-ai" class="btn btn-accent ai-send-btn">
+                    <span class="btn-text">Göndər</span>
+                    <span class="loader hidden" aria-hidden="true"></span>
+                  </button>
+                </div>
+                <p class="chat-hint">Enter ilə göndərin, Shift+Enter ilə sətir sırın.</p>
+              </form>
+            </div>
           </div>
 
         </div>
       </div>
 
-      <!-- TAB 5: REPETİTOR PROFİLİ VƏ AYARLAR -->
-      <div class="tutor-tab-pane hidden" id="pane-profile">
+      <!-- TAB: REPETİTOR PROFİLİ -->
+      <div class="tutor-tab-pane hidden" id="pane-profile" role="tabpanel" aria-labelledby="tab-btn-profile">
         <div class="tutor-profile-page-grid">
-          
-          <!-- Kart 1: Repetitor Kimliyi və 4 Rəqəmli Sistem Kodu -->
+
           <div class="tutor-section profile-card-hero">
             <div class="profile-hero-top">
-              <div class="profile-avatar-large">
-                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                  <circle cx="12" cy="7" r="4"></circle>
-                </svg>
+              <div class="profile-avatar-large" aria-hidden="true">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
               </div>
               <div class="profile-hero-info">
                 <div class="profile-badge-row">
@@ -484,31 +507,30 @@
                   <span class="subject-badge" id="profile-pane-subject-pill">Fənn: Ümumi</span>
                 </div>
                 <h2 class="profile-hero-name" id="profile-pane-fullname">Yüklənir...</h2>
-                <div class="profile-hero-email" id="profile-pane-identifier">istifadeci@gradient.az</div>
+                <div class="profile-hero-email" id="profile-pane-identifier">—</div>
               </div>
             </div>
 
-            <!-- 4 Rəqəmli Kod Ön Plan Bloku -->
             <div class="tutor-code-highlight-card">
               <div class="code-highlight-header">
                 <div>
-                  <span class="code-label-tag">Sistem Tərəfindən Təyin Edilmiş 4 Rəqəmli Kod:</span>
+                  <span class="code-label-tag">Sistem Tərəfindən Təyin Edilmiş 4 Rəqəmli Kod</span>
                   <h3 class="code-sub-title">Şagirdlərinizin qrupa qoşulması üçün rəsmi kodunuz</h3>
                 </div>
-                <button type="button" class="btn btn-primary btn-sm" id="btn-profile-pane-copy-code">
-                  Kodu Kopyala
-                </button>
+                <button type="button" class="btn btn-primary btn-sm" id="btn-profile-pane-copy-code">Kodu Kopyala</button>
               </div>
               <div class="code-number-display">
                 <span id="profile-pane-code" class="code-huge-digits">----</span>
               </div>
               <p class="code-instruction-text">
-                Bu 4 rəqəmli kodu şagirdlərinizlə bölüşün. Şagirdlər sistemə daxil olaraq "Mənim Repetitorum" bölməsində bu kodu yazıb istək göndərəcəklər. Siz gələn istəkləri <a href="#" id="link-goto-requests" style="color: var(--accent); font-weight: 600;">Şagird İstəkləri</a> bölməsindən bir kliklə təsdiq edə bilərsiniz.
+                Bu kodu şagirdlərinizlə bölüşün. Şagirdlər sistemə daxil olaraq "Mənim Repetitorum" bölməsində bu kodu
+                yazıb istək göndərəcəklər. Gələn istəkləri
+                <a href="#" id="link-goto-requests" class="code-inline-link">Şagird İstəkləri</a>
+                bölməsindən bir kliklə təsdiq edə bilərsiniz.
               </p>
             </div>
           </div>
 
-          <!-- Kart 2: Şəxsi Məlumatları Redaktə Et -->
           <div class="tutor-section">
             <div class="tutor-section-header">
               <div>
@@ -517,39 +539,38 @@
               </div>
             </div>
 
-            <form id="form-profile-pane-info" class="profile-pane-form">
+            <form id="form-profile-pane-info" class="profile-pane-form" novalidate>
               <div class="form-row-2">
                 <div class="form-group">
                   <label for="profile-input-firstname" class="form-label">Ad</label>
-                  <input type="text" id="profile-input-firstname" class="input-field" placeholder="Adınız" required>
+                  <input type="text" id="profile-input-firstname" class="input-field" maxlength="60" placeholder="Adınız" autocomplete="given-name" required>
                 </div>
                 <div class="form-group">
                   <label for="profile-input-lastname" class="form-label">Soyad</label>
-                  <input type="text" id="profile-input-lastname" class="input-field" placeholder="Soyadınız" required>
+                  <input type="text" id="profile-input-lastname" class="input-field" maxlength="60" placeholder="Soyadınız" autocomplete="family-name" required>
                 </div>
               </div>
 
               <div class="form-row-2">
                 <div class="form-group">
                   <label for="profile-input-subject" class="form-label">Tədris Fənni</label>
-                  <input type="text" id="profile-input-subject" class="input-field" placeholder="Məs: Riyaziyyat, Fizika, Azərbaycan dili" required>
+                  <input type="text" id="profile-input-subject" class="input-field" maxlength="80" placeholder="Məs: Riyaziyyat, Fizika" autocomplete="off" required>
                 </div>
                 <div class="form-group">
-                  <label for="profile-input-identifier" class="form-label">Əlaqə E-poçt / Nömrə (Sistem ID)</label>
-                  <input type="text" id="profile-input-identifier" class="input-field" disabled readonly style="background: var(--bg-muted); color: var(--text-muted); cursor: not-allowed;">
+                  <label for="profile-input-identifier" class="form-label">Əlaqə (Sistem ID)</label>
+                  <input type="text" id="profile-input-identifier" class="input-field is-locked" disabled readonly>
                 </div>
               </div>
 
-              <div id="profile-pane-feedback" class="auth-alert hidden mb-3"></div>
+              <div id="profile-pane-feedback" class="auth-alert hidden" role="status"></div>
 
               <button type="submit" id="btn-save-profile-pane" class="btn btn-primary">
                 <span class="btn-text">Məlumatları Saxla</span>
-                <span class="loader hidden"></span>
+                <span class="loader hidden" aria-hidden="true"></span>
               </button>
             </form>
           </div>
 
-          <!-- Kart 3: Təhlükəsizlik və Şifrə Dəyişdirmə -->
           <div class="tutor-section">
             <div class="tutor-section-header">
               <div>
@@ -558,40 +579,37 @@
               </div>
             </div>
 
-            <form id="form-profile-pane-password" class="profile-pane-form">
+            <form id="form-profile-pane-password" class="profile-pane-form" novalidate>
               <div class="form-row-3">
                 <div class="form-group">
                   <label for="profile-pass-current" class="form-label">Cari Şifrə</label>
-                  <input type="password" id="profile-pass-current" class="input-field" placeholder="••••••••" required>
+                  <input type="password" id="profile-pass-current" class="input-field" placeholder="Cari şifrəniz" autocomplete="current-password" required>
                 </div>
                 <div class="form-group">
                   <label for="profile-pass-new" class="form-label">Yeni Şifrə</label>
-                  <input type="password" id="profile-pass-new" class="input-field" placeholder="Ən azı 8 simvol" minlength="8" required>
+                  <input type="password" id="profile-pass-new" class="input-field" placeholder="Ən azı 8 simvol" minlength="8" autocomplete="new-password" required>
                 </div>
                 <div class="form-group">
                   <label for="profile-pass-confirm" class="form-label">Yeni Şifrə Təkrarı</label>
-                  <input type="password" id="profile-pass-confirm" class="input-field" placeholder="••••••••" minlength="8" required>
+                  <input type="password" id="profile-pass-confirm" class="input-field" placeholder="Şifrəni təkrarlayın" minlength="8" autocomplete="new-password" required>
                 </div>
               </div>
 
-              <div id="profile-pass-feedback" class="auth-alert hidden mb-3"></div>
+              <div id="profile-pass-feedback" class="auth-alert hidden" role="status"></div>
 
               <button type="submit" id="btn-save-profile-pass" class="btn btn-secondary">
                 <span class="btn-text">Şifrəni Yenilə</span>
-                <span class="loader hidden"></span>
+                <span class="loader hidden" aria-hidden="true"></span>
               </button>
             </form>
           </div>
 
-          <!-- Kart 4: Çıxış -->
-          <div class="tutor-section" style="display: flex; justify-content: space-between; align-items: center;">
+          <div class="tutor-section danger-zone">
             <div>
-              <h4 style="margin: 0 0 4px 0; font-size: 1rem;">Hesabdan Çıxış</h4>
-              <p style="margin: 0; color: var(--text-muted); font-size: 0.85rem;">Bütün aktiv sessiyanı sonlandıraraq təhlükəsiz çıxış edin.</p>
+              <h4 class="danger-zone-title">Hesabdan Çıxış</h4>
+              <p class="danger-zone-desc">Bütün aktiv sessiyanı sonlandıraraq təhlükəsiz çıxış edin.</p>
             </div>
-            <button type="button" class="btn btn-ghost btn-sm text-danger" id="btn-profile-pane-logout" style="border: 1px solid var(--border);">
-              Çıxış et
-            </button>
+            <button type="button" class="btn btn-danger btn-sm" id="btn-profile-pane-logout">Çıxış et</button>
           </div>
 
         </div>
@@ -601,15 +619,15 @@
   </main>
 
   <!-- ŞAGİRD DETALLI ANALİTİKA MODALI -->
-  <div class="tutor-modal-overlay" id="student-detail-modal">
+  <div class="tutor-modal-overlay" id="student-detail-modal" role="dialog" aria-modal="true" aria-labelledby="detail-student-name">
     <div class="tutor-modal-card tutor-modal-lg">
       <div class="tutor-modal-header">
         <div>
           <h3 class="tutor-modal-title" id="detail-student-name">Şagird Analitikası</h3>
           <p class="tutor-modal-sub" id="detail-student-meta">Yüklənir...</p>
         </div>
-        <button class="icon-btn" id="btn-close-detail-modal" aria-label="Bağla">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        <button class="icon-btn" id="btn-close-detail-modal" type="button" aria-label="Bağla">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
         </button>
       </div>
 
@@ -629,136 +647,118 @@
       </div>
 
       <div class="student-history-wrap">
-        <h4 style="font-size: 0.95rem; font-weight: 600; margin-bottom: 12px; color: var(--text-main);">Bütün Sınaq Tarixçəsi</h4>
+        <h4 class="modal-block-title">Bütün Sınaq Tarixçəsi</h4>
         <div class="table-responsive">
           <table class="tutor-table">
             <thead>
               <tr>
-                <th>Sınaq Adı</th>
-                <th>Fənn</th>
-                <th>Bal</th>
-                <th>Səhv / Boş</th>
-                <th>Dəqiqlik</th>
-                <th>Tarix</th>
+                <th scope="col">Sınaq Adı</th>
+                <th scope="col">Fənn</th>
+                <th scope="col">Bal</th>
+                <th scope="col">Səhv / Boş</th>
+                <th scope="col">Dəqiqlik</th>
+                <th scope="col">Tarix</th>
               </tr>
             </thead>
-            <tbody id="detail-student-history-body">
-              <!-- Dinamik doldurulacaq -->
-            </tbody>
+            <tbody id="detail-student-history-body"></tbody>
           </table>
         </div>
-        <div id="detail-student-empty" class="empty-box hidden" style="padding: 24px;">
+        <div id="detail-student-empty" class="empty-box hidden">
           <p class="empty-box-desc">Bu şagird hələ heç bir sınaq tamamlamayıb.</p>
         </div>
       </div>
 
-      <div style="display: flex; justify-content: flex-end; margin-top: 20px;">
+      <div class="tutor-modal-footer">
         <button type="button" class="btn btn-secondary btn-sm" id="btn-close-detail-modal-btn">Bağla</button>
       </div>
     </div>
   </div>
 
   <!-- ŞAGİRD ƏLAVƏ ETMƏ MODALI -->
-  <div class="tutor-modal-overlay" id="add-student-modal">
+  <div class="tutor-modal-overlay" id="add-student-modal" role="dialog" aria-modal="true" aria-labelledby="add-student-title">
     <div class="tutor-modal-card">
       <div class="tutor-modal-header">
-        <h3 class="tutor-modal-title">Qrupa Şagird Əlavə Et</h3>
-        <button class="icon-btn" id="btn-close-modal" aria-label="Bağla">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        <h3 class="tutor-modal-title" id="add-student-title">Qrupa Şagird Əlavə Et</h3>
+        <button class="icon-btn" id="btn-close-modal" type="button" aria-label="Bağla">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
         </button>
       </div>
 
-      <div id="modal-feedback" class="auth-alert hidden" style="margin-bottom: 16px;"></div>
+      <div id="modal-feedback" class="auth-alert hidden mb-2" role="status"></div>
 
-      <form id="add-student-form">
-        <div class="input-group" style="margin-bottom: 20px;">
+      <form id="add-student-form" novalidate>
+        <div class="input-group mb-3">
           <label for="student-identifier-input" class="input-label">Şagirdin E-poçtu və ya Mobil nömrəsi</label>
-          <input 
-            type="text" 
-            id="student-identifier-input" 
-            class="input-field" 
-            placeholder="məs: 0501234567 və ya sagird@gmail.com" 
-            required 
+          <input
+            type="text"
+            id="student-identifier-input"
+            class="input-field"
+            placeholder="0501234567 və ya sagird@mail.az"
+            maxlength="120"
+            required
             autocomplete="off"
           >
-          <span style="font-size: 0.8rem; color: var(--text-sub); margin-top: 4px; display: block;">
-            Şagird artıq Gradient sistemində qeydiyyatdan keçmiş olmalıdır.
-          </span>
+          <span class="input-hint">Şagird artıq Gradient sistemində qeydiyyatdan keçmiş olmalıdır.</span>
         </div>
 
-        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <div class="tutor-modal-footer">
           <button type="button" class="btn btn-outline btn-sm" id="btn-cancel-modal">İmtina</button>
           <button type="submit" class="btn btn-primary btn-sm" id="btn-submit-add-student">
             <span class="btn-text">Əlavə et</span>
-            <span class="loader hidden"></span>
+            <span class="loader hidden" aria-hidden="true"></span>
           </button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- YENİ SINAQ YARATMA MODALI (PDF VƏ CAVAB KARTI) -->
-  <div class="tutor-modal-overlay" id="create-assignment-modal">
+  <!-- YENİ SINAQ YARATMA MODALI -->
+  <div class="tutor-modal-overlay" id="create-assignment-modal" role="dialog" aria-modal="true" aria-labelledby="create-asg-title">
     <div class="tutor-modal-card tutor-modal-xl">
       <div class="tutor-modal-header">
         <div>
-          <h3 class="tutor-modal-title">Yeni Fərdi Sınaq Yarat (PDF ilə)</h3>
+          <h3 class="tutor-modal-title" id="create-asg-title">Yeni Fərdi Sınaq Yarat (PDF ilə)</h3>
           <p class="tutor-modal-sub">PDF sınağınızı yükləyin, sual sayını və vaxtı qeyd edin, doğru cavab kartını təyin edin.</p>
         </div>
-        <button class="icon-btn" id="btn-close-create-asg-modal" aria-label="Bağla">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        <button class="icon-btn" id="btn-close-create-asg-modal" type="button" aria-label="Bağla">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
         </button>
       </div>
 
-      <div id="create-asg-feedback" class="auth-alert hidden" style="margin-bottom: 16px;"></div>
+      <div id="create-asg-feedback" class="auth-alert hidden mb-3" role="status"></div>
 
-      <form id="create-assignment-form">
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 20px;">
+      <form id="create-assignment-form" novalidate>
+        <div class="form-grid-3 mb-3">
           <div class="input-group">
             <label for="asg-title-input" class="input-label">Sınağın Adı *</label>
-            <input 
-              type="text" 
-              id="asg-title-input" 
-              class="input-field" 
-              placeholder="Məs: Blok İmtahanı №3 (Riyaziyyat)" 
-              required 
+            <input
+              type="text"
+              id="asg-title-input"
+              class="input-field"
+              placeholder="Məs: Blok İmtahanı №3"
+              maxlength="120"
+              required
               autocomplete="off"
             >
           </div>
 
           <div class="input-group">
             <label for="asg-qcount-input" class="input-label">Sual Sayı *</label>
-            <input 
-              type="number" 
-              id="asg-qcount-input" 
-              class="input-field" 
-              min="1" 
-              max="100" 
-              value="25" 
-              required
-            >
+            <input type="number" id="asg-qcount-input" class="input-field" min="1" max="120" value="25" required>
           </div>
 
           <div class="input-group">
             <label for="asg-duration-input" class="input-label">Müddət (Dəqiqə) *</label>
-            <input 
-              type="number" 
-              id="asg-duration-input" 
-              class="input-field" 
-              min="5" 
-              max="300" 
-              value="60" 
-              required
-            >
+            <input type="number" id="asg-duration-input" class="input-field" min="5" max="300" value="60" required>
           </div>
         </div>
 
-        <!-- PDF Fayl Yükləmə Bölməsi -->
-        <div class="input-group" style="margin-bottom: 20px;">
-          <label class="input-label">Sınaq PDF Faylı *</label>
-          <div class="pdf-dropzone" id="pdf-dropzone">
-            <div class="pdf-dropzone-icon">
-              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <!-- PDF YÜKLƏMƏ -->
+        <div class="input-group mb-3">
+          <label class="input-label" for="asg-pdf-file-input">Sınaq PDF Faylı *</label>
+          <div class="pdf-dropzone" id="pdf-dropzone" role="button" tabindex="0" aria-describedby="pdf-dropzone-sub">
+            <div class="pdf-dropzone-icon" aria-hidden="true">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                 <polyline points="14 2 14 8 20 8"></polyline>
                 <line x1="12" y1="18" x2="12" y2="12"></line>
@@ -766,60 +766,54 @@
               </svg>
             </div>
             <div class="pdf-dropzone-title">PDF faylı bura sürükləyin və ya klikləyib seçin</div>
-            <div class="pdf-dropzone-sub">Yalnız .pdf faylları qəbul edilir (maks. 25MB)</div>
-            <input type="file" id="asg-pdf-file-input" accept="application/pdf" style="display: none;">
+            <div class="pdf-dropzone-sub" id="pdf-dropzone-sub">Yalnız .pdf faylları qəbul edilir (maks. 25 MB)</div>
           </div>
+          <input type="file" id="asg-pdf-file-input" accept="application/pdf,.pdf" class="hidden">
           <div id="pdf-file-info" class="pdf-file-info hidden">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <span style="color: var(--success); font-weight: bold;">✓</span>
-              <div>
-                <span class="pdf-file-name" id="pdf-file-name">fayl.pdf</span>
-                <span class="pdf-file-size" id="pdf-file-size"> (0 KB)</span>
-              </div>
+            <div class="pdf-file-meta">
+              <span class="pdf-file-name" id="pdf-file-name">fayl.pdf</span>
+              <span class="pdf-file-size" id="pdf-file-size">0 KB</span>
             </div>
-            <button type="button" id="btn-remove-pdf" class="btn btn-ghost btn-sm" style="color: var(--danger); padding: 2px 8px;">Dəyiş</button>
+            <button type="button" id="btn-remove-pdf" class="btn btn-ghost btn-sm text-danger">Dəyiş</button>
           </div>
         </div>
 
-        <!-- AI ilə Cavab Kartını Hazırlama Kartı -->
+        <!-- AI İLƏ CAVAB KARTININ HAZIRLANMASI -->
         <div class="ai-extractor-banner">
           <div class="ai-extractor-info">
-            <span class="ai-extractor-badge">Gemini AI</span>
+            <span class="ai-extractor-badge">AI</span>
             <div class="ai-extractor-desc">
-              <strong>Süni İntellekt ilə Avtomatik Cavab Kartı:</strong> Əgər yüklədiyiniz PDF sənədi oxunaqlı və təmizdirsə, sistem sualları həll edib doğru cavab kartını avtomatik doldura bilər.
+              <strong>Avtomatik cavab kartı:</strong> Əgər yüklədiyiniz PDF sənədi oxunaqlı və təmizdirsə, sistem sualları
+              həll edib doğru cavab kartını avtomatik doldura bilər.
             </div>
           </div>
-          <button type="button" id="btn-ai-extract-answers" class="btn btn-outline btn-sm" disabled style="white-space: nowrap;">
+          <button type="button" id="btn-ai-extract-answers" class="btn btn-outline btn-sm" disabled>
             <span class="btn-text">AI ilə Cavab Kartını Hazırla</span>
-            <span class="loader hidden"></span>
+            <span class="loader hidden" aria-hidden="true"></span>
           </button>
         </div>
 
-        <!-- Doğru Cavab Kartı Cədvəli (Answer Key Builder) -->
+        <!-- DOĞRU CAVAB KARTI -->
         <div class="answer-key-builder-wrap">
           <div class="answer-key-builder-header">
             <div>
-              <strong style="color: var(--text-main); font-size: 0.95rem;">Doğru Cavab Kartı (Müəllim Açar Standartı)</strong>
-              <span style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
-                Hər sual üçün doğru variantı (A, B, C, D, E) seçin.
-              </span>
+              <strong class="answer-key-title">Doğru Cavab Kartı (Müəllim Açar Standartı)</strong>
+              <span class="answer-key-sub">Hər sual üçün doğru variantı (A, B, C, D, E) seçin.</span>
             </div>
-            <div style="display: flex; align-items: center; gap: 12px;">
+            <div class="answer-key-tools">
               <span class="answer-key-counter" id="answer-key-counter">0 / 25 qeyd edilib</span>
-              <button type="button" id="btn-clear-answer-key" class="btn btn-ghost btn-sm" style="font-size: 0.8rem;">Təmizlə</button>
+              <button type="button" id="btn-clear-answer-key" class="btn btn-ghost btn-sm">Təmizlə</button>
             </div>
           </div>
 
-          <div class="answer-key-grid" id="answer-key-grid">
-            <!-- Dinamik doldurulacaq: Sual 1..N -->
-          </div>
+          <div class="answer-key-grid" id="answer-key-grid"></div>
         </div>
 
-        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
+        <div class="tutor-modal-footer">
           <button type="button" class="btn btn-outline btn-sm" id="btn-cancel-create-asg">İmtina</button>
           <button type="submit" class="btn btn-primary btn-sm" id="btn-submit-create-asg">
             <span class="btn-text">Sınağı Təsdiqlə və Yarat</span>
-            <span class="loader hidden"></span>
+            <span class="loader hidden" aria-hidden="true"></span>
           </button>
         </div>
       </form>
@@ -827,88 +821,88 @@
   </div>
 
   <!-- SINAQ PAYLAŞMA LİNKİ MODALI -->
-  <div class="tutor-modal-overlay" id="share-assignment-modal">
+  <div class="tutor-modal-overlay" id="share-assignment-modal" role="dialog" aria-modal="true" aria-labelledby="share-modal-title">
     <div class="tutor-modal-card">
       <div class="tutor-modal-header">
-        <h3 class="tutor-modal-title">Sınaq Paylaşma Linki</h3>
-        <button class="icon-btn" id="btn-close-share-modal" aria-label="Bağla">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        <h3 class="tutor-modal-title" id="share-modal-title">Sınaq Paylaşma Linki</h3>
+        <button class="icon-btn" id="btn-close-share-modal" type="button" aria-label="Bağla">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
         </button>
       </div>
 
-      <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 12px;">
-        Sınaq uğurla aktivləşdirildi! Bu linki kopyalayıb şagirdlərinizlə bölüşün. Şagirdlər linkə daxil olduqda birbaşa sınaq zalında PDF sınağı və cavab kartını görəcəklər.
+      <p class="modal-block-text">
+        Sınaq uğurla aktivləşdirildi! Bu linki kopyalayıb şagirdlərinizlə bölüşün. Şagirdlər linkə daxil olduqda birbaşa
+        sınaq zalında PDF sınağı və rəqəmsal cavab kartını görəcəklər.
       </p>
 
       <div class="share-link-box">
-        <input type="text" id="share-link-input" class="share-link-input" readonly>
-        <button type="button" id="btn-copy-share-link" class="btn btn-primary btn-sm" style="white-space: nowrap;">Linki Kopyala</button>
+        <input type="text" id="share-link-input" class="share-link-input" readonly aria-label="Sınaq paylaşma linki">
+        <button type="button" id="btn-copy-share-link" class="btn btn-primary btn-sm nowrap">Linki Kopyala</button>
       </div>
 
-      <div id="share-copy-feedback" class="auth-alert success hidden" style="margin-bottom: 12px;">Link buferə kopyalandı!</div>
+      <div id="share-copy-feedback" class="auth-alert success hidden mb-2" role="status">Link buferə kopyalandı!</div>
 
-      <div style="display: flex; justify-content: flex-end; margin-top: 18px;">
+      <div class="tutor-modal-footer">
         <button type="button" class="btn btn-secondary btn-sm" id="btn-done-share-modal">Oldu</button>
       </div>
     </div>
   </div>
 
-  <!-- SINAQ NƏTİCƏLƏRİ VƏ TƏLƏBƏ SİYAHISI MODALI -->
-  <div class="tutor-modal-overlay" id="assignment-submissions-modal">
+  <!-- SINAQ NƏTİCƏLƏRİ MODALI -->
+  <div class="tutor-modal-overlay" id="assignment-submissions-modal" role="dialog" aria-modal="true" aria-labelledby="submissions-modal-title">
     <div class="tutor-modal-card tutor-modal-xl">
       <div class="tutor-modal-header">
         <div>
           <h3 class="tutor-modal-title" id="submissions-modal-title">Sınaq Nəticələri</h3>
           <p class="tutor-modal-sub" id="submissions-modal-meta">Tələbələrin cavab vərəqələri və balları</p>
         </div>
-        <button class="icon-btn" id="btn-close-submissions-modal" aria-label="Bağla">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        <button class="icon-btn" id="btn-close-submissions-modal" type="button" aria-label="Bağla">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
         </button>
       </div>
 
-      <div class="table-responsive" style="max-height: 440px; overflow-y: auto;">
+      <div class="table-responsive modal-table-scroll">
         <table class="tutor-table">
           <thead>
             <tr>
-              <th>Şagird</th>
-              <th>Əlaqə / Kod</th>
-              <th>Bal</th>
-              <th>Düzgün / Səhv / Boş</th>
-              <th>Dəqiqlik</th>
-              <th>Tarix</th>
-              <th>Cavab Kartı</th>
+              <th scope="col">Şagird</th>
+              <th scope="col">Əlaqə / Kod</th>
+              <th scope="col">Bal</th>
+              <th scope="col">Düzgün / Səhv / Boş</th>
+              <th scope="col">Dəqiqlik</th>
+              <th scope="col">Tarix</th>
+              <th scope="col">Cavab Kartı</th>
             </tr>
           </thead>
-          <tbody id="asg-submissions-table-body">
-            <!-- Dinamik doldurulacaq -->
-          </tbody>
+          <tbody id="asg-submissions-table-body"></tbody>
         </table>
       </div>
 
-      <div id="asg-submissions-empty" class="empty-box hidden" style="padding: 24px;">
-        <p class="empty-box-desc">Hələ heç bir şagird bu sınağı təhvil verməyib.</p>
+      <div id="asg-submissions-empty" class="empty-box hidden">
+        <h3 class="empty-box-title">Hələ heç bir şagird bu sınağı təhvil verməyib</h3>
+        <p class="empty-box-desc">Sınaq linkini şagirdlərinizlə bölüşdüyünüz dəqiq nəticələr burada görünəcək.</p>
       </div>
 
-      <div style="display: flex; justify-content: flex-end; margin-top: 20px;">
+      <div class="tutor-modal-footer">
         <button type="button" class="btn btn-secondary btn-sm" id="btn-close-submissions-modal-btn">Bağla</button>
       </div>
     </div>
   </div>
 
   <!-- ŞAGİRD CAVAB KARTI İNCƏLƏMƏ MODALI -->
-  <div class="tutor-modal-overlay" id="assignment-answers-review-modal">
+  <div class="tutor-modal-overlay" id="assignment-answers-review-modal" role="dialog" aria-modal="true" aria-labelledby="review-student-name">
     <div class="tutor-modal-card tutor-modal-lg">
       <div class="tutor-modal-header">
         <div>
           <h3 class="tutor-modal-title" id="review-student-name">Cavab Kartı Təhlili</h3>
           <p class="tutor-modal-sub" id="review-student-meta">Müəllim açarı ilə şagirdin cavablarının fərqi</p>
         </div>
-        <button class="icon-btn" id="btn-close-review-modal" aria-label="Bağla">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        <button class="icon-btn" id="btn-close-review-modal" type="button" aria-label="Bağla">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
         </button>
       </div>
 
-      <div class="student-detail-stats-grid" style="margin-bottom: 16px;">
+      <div class="student-detail-stats-grid">
         <div class="mini-stat-card">
           <span class="mini-stat-label">Yekun Bal</span>
           <span class="mini-stat-val" id="review-score">0 / 0</span>
@@ -923,12 +917,27 @@
         </div>
       </div>
 
-      <div class="student-review-grid" id="student-review-grid">
-        <!-- Dinamik doldurulacaq: Hər sual üçün doğru cavab və şagirdin cavabı -->
-      </div>
+      <div class="student-review-grid" id="student-review-grid"></div>
 
-      <div style="display: flex; justify-content: flex-end; margin-top: 20px;">
+      <div class="tutor-modal-footer">
         <button type="button" class="btn btn-secondary btn-sm" id="btn-close-review-modal-btn">Bağla</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ÜMUMI TƏSDİQ DİALOQU -->
+  <div class="tutor-modal-overlay" id="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+    <div class="tutor-modal-card is-compact">
+      <div class="tutor-modal-header">
+        <h3 class="tutor-modal-title" id="confirm-title">Əməliyyatı təsdiqləyin</h3>
+        <button class="icon-btn" id="btn-confirm-x" type="button" aria-label="Bağla">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <p class="confirm-text" id="confirm-text">Bu əməliyyatı davam etmək istədiyinizə əminsiniz?</p>
+      <div class="tutor-modal-footer">
+        <button type="button" class="btn btn-outline btn-sm" id="btn-confirm-cancel">İmtina</button>
+        <button type="button" class="btn btn-danger btn-sm" id="btn-confirm-ok">Təsdiqlə</button>
       </div>
     </div>
   </div>

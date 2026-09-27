@@ -227,6 +227,12 @@ body {
   transform: none;
 }
 
+/* Düymə daxilindəki mətn və spinner üçün slot */
+.btn .btn-text {
+  display: inline-block;
+  line-height: 1.4;
+}
+
 .badge {
   display: inline-flex;
   align-items: center;
@@ -249,9 +255,252 @@ body {
   background-color: var(--accent);
 }
 
+.btn-full {
+  width: 100%;
+}
+
 /* ==========================================================================
-   3.1 PAYLAŞILAN VİZUAL PRİMİTİVLƏR (skeleton loader-lər)
-   .clinerules §4: Dinamik yüklənən bloklar üçün animasiyalı skeleton.
+   3.1 PAYLAŞILAN VİZUAL PRİMİTİVLƏR
+   Tək mənbəyə gətirildi: əvvəl bu qaydalar yalnız modul CSS-lərində
+   (exam/auth/analytics/tutor) təkrarlanırdı və MPA səhifələrində
+   .hidden / .input-field / .loader kimi primitivlər işləmirdi.
+   ========================================================================== */
+
+/* Vəziyyət idarəetməsi — bütün MPA səhifələrində məcburi qaydadır */
+.hidden {
+  display: none !important;
+}
+
+.mb-1 { margin-bottom: 8px; }
+.mb-2 { margin-bottom: 16px; }
+.mb-3 { margin-bottom: 24px; }
+.mt-auto { margin-top: auto; }
+
+/* İkon düymələri (hamısı modul səhifələrdə istifadə olunur) */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: var(--transition);
+  flex-shrink: 0;
+}
+
+.icon-btn:hover {
+  background-color: var(--bg-muted);
+  color: var(--text-main);
+  border-color: var(--border);
+}
+
+/* ==========================================================================
+   FORM PRİMİTİVLƏRİ (client-side validation vizual dəstəyi)
+   ========================================================================== */
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.input-label,
+.form-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.input-hint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.input-field {
+  width: 100%;
+  font-family: inherit;
+  font-size: 0.95rem;
+  color: var(--text-main);
+  background-color: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.input-field::placeholder {
+  color: var(--text-sub);
+}
+
+.input-field:hover:not(:disabled):not([readonly]) {
+  border-color: var(--border-focus);
+}
+
+.input-field:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.input-field:disabled,
+.input-field[readonly] {
+  background-color: var(--bg-muted);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.input-field.is-invalid {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
+}
+
+.input-field.is-valid {
+  border-color: var(--success);
+}
+
+.input-sm {
+  padding: 7px 12px;
+  font-size: 0.85rem;
+  width: auto;
+  min-width: 200px;
+}
+
+textarea.input-field {
+  resize: vertical;
+  min-height: 72px;
+}
+
+select.input-field {
+  cursor: pointer;
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--text-sub) 50%),
+                    linear-gradient(135deg, var(--text-sub) 50%, transparent 50%);
+  background-position: calc(100% - 18px) calc(50% + 2px), calc(100% - 13px) calc(50% + 2px);
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 36px;
+}
+
+/* ==========================================================================
+   BİLDİRİŞ / XƏTA ZONASI
+   ========================================================================== */
+.auth-alert {
+  display: block;
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background-color: var(--bg-muted);
+  color: var(--text-main);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.auth-alert.success,
+.auth-alert.alert-success {
+  background-color: var(--success-soft);
+  border-color: rgba(16, 185, 129, 0.32);
+  color: #047857;
+}
+
+.auth-alert.error,
+.auth-alert.alert-danger {
+  background-color: var(--danger-soft);
+  border-color: rgba(239, 68, 68, 0.32);
+  color: #B91C1C;
+}
+
+.auth-alert.info {
+  background-color: var(--accent-soft);
+  border-color: rgba(37, 99, 235, 0.28);
+  color: #1D4ED8;
+}
+
+[data-theme="dark"] .auth-alert.success,
+[data-theme="dark"] .auth-alert.alert-success { color: var(--success); }
+[data-theme="dark"] .auth-alert.error,
+[data-theme="dark"] .auth-alert.alert-danger { color: var(--danger); }
+[data-theme="dark"] .auth-alert.info { color: var(--accent); }
+
+/* Yükləmə göstəricisi (spinner) */
+.loader {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: loader-spin 0.65s linear infinite;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+@keyframes loader-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loader { animation-duration: 2s; }
+}
+
+/* ==========================================================================
+   BOŞ VƏ XƏTA VƏZİYYƏTİ KARTLARI (.clinerules §4)
+   ========================================================================== */
+.empty-box {
+  text-align: center;
+  padding: 40px 24px;
+  background: var(--bg-muted);
+  border: 1px dashed var(--border-focus);
+  border-radius: var(--radius-lg);
+}
+
+.empty-box.is-error {
+  border-style: solid;
+  border-color: rgba(239, 68, 68, 0.4);
+  background: var(--danger-soft);
+}
+
+.empty-box-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-bottom: 8px;
+}
+
+.empty-box-desc {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.empty-box-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-sub);
+  margin-bottom: 14px;
+}
+
+/* ==========================================================================
+   SKELETON LOADER-LƏR (dinamik yüklənən bloklar üçün)
    ========================================================================== */
 .skeleton {
   background: linear-gradient(110deg, var(--bg-muted) 8%, var(--border) 18%, var(--bg-muted) 33%);
@@ -264,9 +513,28 @@ body {
   height: 16px;
 }
 
+.skeleton-line {
+  display: block;
+  height: 16px;
+  width: 100%;
+  border-radius: 5px;
+  background: linear-gradient(110deg, var(--bg-muted) 8%, var(--border) 18%, var(--bg-muted) 33%);
+  background-size: 200% 100%;
+  animation: 1.5s shimmer linear infinite;
+}
+
+.skeleton-line-sm { width: 45%; height: 14px; }
+.skeleton-line-lg { width: 40%; height: 36px; }
+.skeleton-line-title { width: 30%; height: 20px; }
+
 .skeleton-box {
   display: block;
   width: 100%;
+  height: 160px;
+  border-radius: var(--radius);
+  background: linear-gradient(110deg, var(--bg-muted) 8%, var(--border) 18%, var(--bg-muted) 33%);
+  background-size: 200% 100%;
+  animation: 1.5s shimmer linear infinite;
 }
 
 @keyframes shimmer {
@@ -274,9 +542,49 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .skeleton {
+  .skeleton,
+  .skeleton-line,
+  .skeleton-box {
     animation: none;
   }
+}
+
+/* ==========================================================================
+   A11Y: klaviatura fokusu görünür olmalıdır
+   ========================================================================== */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 2000;
+  padding: 10px 16px;
+  background: var(--primary);
+  color: #FFFFFF;
+  border-radius: 0 0 var(--radius) 0;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.skip-link:focus {
+  left: 0;
+}
+
+/* Aktiv sessiya halında navbarda görünən qarşılama mətni (js/main.js) */
+.welcome-user-text {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 220px;
+  margin-right: 4px;
 }
 
 /* ==========================================================================

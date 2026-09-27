@@ -125,40 +125,60 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
+    // Rol dəyişmə məntiqi vahid funksiya kimi — həm istifadəçi seçimi,
+    // həm də URL parametri (?role=student|tutor) vasitəsilə tətbiq olunur.
+    // Əvvəlki versiya yalnız 'change' hadisəsinə bağlı idi və index.html-dən
+    // gələn ?role= linkləri rol seçimini təyin etmirdi.
+    const applyRole = (role) => {
+        const radio = document.querySelector(`input[name="user_role"][value="${role}"]`);
+        if (!radio) return;
+        if (!radio.checked) {
+            radio.checked = true;
+            radio.dispatchEvent(new Event('change', { bubbles: true }));
+            return;
+        }
+        // Artıq seçilibsə, sahələri bir dəfə də yenilə
+        if (role === 'student') {
+            fieldGrade.classList.remove('hidden');
+            gradeSelect.setAttribute('required', 'true');
+            if (fieldTutorCode) fieldTutorCode.classList.remove('hidden');
+            fieldSubject.classList.add('hidden');
+            subjectSelect.removeAttribute('required');
+        } else {
+            fieldSubject.classList.remove('hidden');
+            subjectSelect.setAttribute('required', 'true');
+            fieldGrade.classList.add('hidden');
+            gradeSelect.removeAttribute('required');
+            if (fieldTutorCode) fieldTutorCode.classList.add('hidden');
+        }
+    };
+
+    roleInputs.forEach(input => {
+        input.addEventListener('change', (e) => applyRole(e.target.value));
+    });
+
+    // URL parametrləri: ?mode=register|code və ?role=student|tutor
     const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('mode') === 'register' || urlParams.get('mode') === 'code') {
+    const urlMode = urlParams.get('mode');
+    const urlRole = urlParams.get('role');
+
+    if (urlRole === 'student' || urlRole === 'tutor') {
+        applyRole(urlRole);
+    }
+
+    if (urlMode === 'register' || urlMode === 'code' || urlRole) {
         const regTab = document.querySelector('[data-target="register-section"]');
         if (regTab) regTab.click();
 
-        if (urlParams.get('mode') === 'code' && tutorCodeInput) {
+        if (urlMode === 'code' && tutorCodeInput) {
             setTimeout(() => {
                 tutorCodeInput.focus();
-                showError("Müəlliminizin kodunu və məlumatlarınızı daxil edərək qeydiyyatdan keçin.", true);
+                showError("Müəlliminizin kodunu və məlumatlarınızı daxil edərək qeydiyyatdan keçin.");
             }, 300);
+        } else if (urlRole === 'tutor' && subjectSelect) {
+            setTimeout(() => subjectSelect.focus(), 300);
         }
     }
-
-    // 2. ROL DƏYİŞDİRMƏ MƏNTİQİ
-    roleInputs.forEach(input => {
-        input.addEventListener('change', (e) => {
-            const role = e.target.value;
-            if (role === 'student') {
-                fieldGrade.classList.remove('hidden');
-                gradeSelect.setAttribute('required', 'true');
-                if (fieldTutorCode) fieldTutorCode.classList.remove('hidden');
-                
-                fieldSubject.classList.add('hidden');
-                subjectSelect.removeAttribute('required');
-            } else if (role === 'tutor') {
-                fieldSubject.classList.remove('hidden');
-                subjectSelect.setAttribute('required', 'true');
-                
-                fieldGrade.classList.add('hidden');
-                gradeSelect.removeAttribute('required');
-                if (fieldTutorCode) fieldTutorCode.classList.add('hidden');
-            }
-        });
-    });
 
     // 4. GİRİŞ (LOGIN) FORMASININ GÖNDƏRİLMƏSİ
     const loginForm = document.getElementById('login-form');
