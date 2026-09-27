@@ -633,11 +633,14 @@ document.addEventListener("DOMContentLoaded", () => {
   function flashButtonText(btn, text) {
     if (!btn) return;
     const original = btn.textContent;
+    const wasDisabled = btn.disabled;
     btn.textContent = text;
     btn.disabled = true;
     setTimeout(() => {
       btn.textContent = original;
-      btn.disabled = false;
+      // Əgər düymə əvvəl artıq deaktiv idisə (məsələn, kod təyin edilməyib),
+      // o vəziyyətdə deaktiv qalır.
+      btn.disabled = wasDisabled;
     }, 1800);
   }
 
@@ -664,16 +667,28 @@ document.addEventListener("DOMContentLoaded", () => {
     const last = (tutor.last_name || "").trim();
     const fullName = [first, last].filter(Boolean).join(" ") || "Repetitor";
     const subject = tutor.subject || "Ümumi";
-    const code = /^\d{4}$/.test(String(tutor.tutor_code || tutor.invite_code || ""))
-      ? String(tutor.tutor_code || tutor.invite_code)
-      : "----";
+
+    // 4 rəqəmli kod yalnız server tərəfində (users.tutor_code) saxlanılır.
+    // Kod yoxdursa "----" göstərmək istifadəçini çaşırır — açıq vəziyyət
+    // göstərilir: "Təyin edilməyib".
+    const rawCode = String(tutor.tutor_code || tutor.invite_code || "");
+    const hasCode = /^\d{4}$/.test(rawCode);
+    const code = hasCode ? rawCode : "Təyin edilməyib";
 
     if (tutorNameEl) tutorNameEl.textContent = fullName;
     if (tutorSubjectEl) tutorSubjectEl.textContent = subject;
     if (welcomeHeadingEl) welcomeHeadingEl.textContent = `Xoş gəlmisiniz, ${first || "müəllim"}`;
 
-    if (inviteCodeDisplay) inviteCodeDisplay.textContent = code;
-    if (drawerTutorCode) drawerTutorCode.textContent = code;
+    [inviteCodeDisplay, drawerTutorCode, profilePaneCode].forEach((el) => {
+      if (!el) return;
+      el.textContent = code;
+      el.classList.toggle("code-missing", !hasCode);
+      el.title = hasCode ? "4 rəqəmli sistem kodunuz" : "Kod hələ təyin edilməyib";
+    });
+    [btnCopyCode, btnDrawerCopyCode, btnProfilePaneCopyCode].forEach((btn) => {
+      if (btn) btn.disabled = !hasCode;
+    });
+
     if (drawerTutorName) drawerTutorName.textContent = fullName;
     if (drawerTutorSubject) drawerTutorSubject.textContent = subject;
     if (drawerTutorIdentifier) drawerTutorIdentifier.textContent = tutor.identifier || "—";
@@ -685,7 +700,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (profilePaneFullname) profilePaneFullname.textContent = fullName;
     if (profilePaneSubjectPill) profilePaneSubjectPill.textContent = `Fənn: ${subject}`;
     if (profilePaneIdentifier) profilePaneIdentifier.textContent = tutor.identifier || "—";
-    if (profilePaneCode) profilePaneCode.textContent = code;
     if (profileInputFirstname) profileInputFirstname.value = first;
     if (profileInputLastname) profileInputLastname.value = last;
     if (profileInputSubject) profileInputSubject.value = tutor.subject || "";

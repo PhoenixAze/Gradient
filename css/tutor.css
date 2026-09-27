@@ -2029,6 +2029,15 @@
   flex-wrap: wrap;
 }
 
+/* 4 rəqəmli kod hələ təyin edilməyibsə — açıq vəziyyət göstəricisi */
+.code-missing {
+  font-family: var(--font) !important;
+  font-size: 0.85rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0 !important;
+  color: var(--text-muted) !important;
+}
+
 /* Header AI bloku — məzmun və düymə sütunları */
 .tutor-ai-header-content {
   min-width: 0;
