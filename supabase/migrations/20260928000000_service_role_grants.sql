@@ -41,10 +41,16 @@ BEGIN;
 -- exams                 → exams, analytics, tutor, tutor_group
 -- exam_results          → exams, analytics, tutor, tutor_group
 -- tutor_courses         → tutor
--- tutor_assignments     → tutor  (səhvin mənbəyi)
+-- tutor_assignments     → tutor  (42501 səhvin mənbəyi)
 -- student_answer_sheets → tutor
 -- tutor_join_requests   → tutor_group
--- tutor_requests        → tutor
+--
+-- ⚠️ `tutor_requests`: app/routers/tutor.py bu cədvələ yazmağa çalışır,
+--    lakin Supabase sxeminizdə O YOXDUR (mövcud olan: `tutor_join_requests`).
+--    Bu, kod tərəfi problemdir və SQL ilə həll olunmur — bərabər yolda
+--    `tutor.py` → `tutor_join_requests`/`tutor_group.py` axınına keçirilməlidir.
+--    Aşağıdakı blok hələ də onu qoruyur: cədvəl sonradan yaradılsa,
+--    icazə avtomatik verilmiş olacaq (bütün bloklar mövcudluq yoxlayır).
 
 DO $$
 DECLARE
@@ -122,25 +128,28 @@ END $$;
 -- Bu funksiyalar SECURITY DEFINER olaraq yaradılıb, yəni cədvəl
 -- icazələrini dəyişə bilməyən istifadəçi adından işləyirlər.
 -- ############################################################################
+-- DƏQİQ imzalar (20260101000000_tutor_group_system.sql ilə uyğunlaşdırılıb):
+--   submit_tutor_join_request(uuid, text)
+--   accept_tutor_join_request(uuid)
+--   reject_tutor_join_request(uuid)
+-- İmza AÇIQ yazılır — PostgreSQL-də GRANT-da parametr siyahısı mütləq
+-- göstərilir; imzasız yazım funksiya adının şemada unikal olmasına görə
+-- asılıdır və overload halında səhv funksiyaya icazə verə bilər.
 DO $$
 DECLARE
-  f text;
+  sig text;
 BEGIN
-  FOREACH f IN ARRAY ARRAY[
-    'submit_tutor_join_request',
-    'accept_tutor_join_request',
-    'reject_tutor_join_request'
+  FOREACH sig IN ARRAY ARRAY[
+    'submit_tutor_join_request(uuid,text)',
+    'accept_tutor_join_request(uuid)',
+    'reject_tutor_join_request(uuid)'
   ]
   LOOP
-    IF to_regprocedure('public.' || f || '(uuid,text)') IS NOT NULL
-       OR to_regprocedure('public.' || f || '(uuid)') IS NOT NULL
-       OR to_regprocedure('public.' || f || '(text)') IS NOT NULL
-    THEN
-      -- Bütün imzalar üçün icra icazəsi (PostgREST imza yoxlamır)
-      EXECUTE format('GRANT EXECUTE ON FUNCTION public.%I TO service_role', f);
-      RAISE NOTICE '✓ RPC icazəsi verildi: %', f;
+    IF to_regprocedure('public.' || sig) IS NOT NULL THEN
+      EXECUTE format('GRANT EXECUTE ON FUNCTION public.%s TO service_role', sig);
+      RAISE NOTICE 'GRANT EXECUTE verildi: public.%', sig;
     ELSE
-      RAISE WARNING 'RPC funksiyası tapılmadı: %', f;
+      RAISE WARNING 'RPC funksiyası tapılmadı (miqrasiya 20260101 icra olunmamış ola bilər): public.%', sig;
     END IF;
   END LOOP;
 END $$;
