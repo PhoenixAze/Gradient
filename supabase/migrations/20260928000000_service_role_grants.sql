@@ -105,15 +105,22 @@ END $$;
 -- ADDIM 3. Sequence icazələri
 -- (INSERT zamanı nextval() çağırılır; icazə yoxdursa sequence xətası verir)
 -- ############################################################################
+-- QEYD: information_schema.sequences cədvəlində sütun adı `sequence_schema`-dır
+-- (`table_schema` YOXDUR — əvvəlki versiya bu səhvlə 42703 atırdı).
+-- Aşağıda sabit `pg_catalog` istifadə olunur: relkind = 'S' → SEQUENCE.
 DO $$
 DECLARE
   s text;
 BEGIN
   FOR s IN
-    SELECT sequence_name FROM information_schema.sequences
-    WHERE table_schema = 'public'
+    SELECT c.relname
+    FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE n.nspname = 'public'
+      AND c.relkind = 'S'
   LOOP
     EXECUTE format('GRANT USAGE, SELECT ON SEQUENCE public.%I TO service_role', s);
+    RAISE NOTICE 'Sequence icazəsi verildi: public.%', s;
   END LOOP;
 END $$;
 
