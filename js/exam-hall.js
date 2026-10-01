@@ -1,5 +1,18 @@
 "use strict";
 
+/*
+ * DIQQƏT: Bu fayl exam-hall.html tərəfindən js/main.js İLƏ yüklənir.
+ * Əvvəlki variantda burada `const isProductionFrontend` / `const API_BASE_URL`
+ * declare edilmədiyi üçün main.js ilə eyni ada ikinci `const` yazılırdı.
+ * Klassik script-lərdə (type="module" deyil) belə təkrar deklarasiya
+ * SyntaxError verir: "Identifier 'API_BASE_URL' has already been declared".
+ * Nəticə: bütün exam-hall.js parse olunmur → səhifə sonsuz skeleton-da qalırdı.
+ * İNDİ: adlar fərqləndirilib və bütün fayl IIFE (modul) sarmalayıcısına salınıb —
+ * beləliklə bu fayl istənilən vaxtda main.js ilə birlikdə yüklənsə də
+ * heç bir global toqquşma yaranmır.
+ */
+(function () {
+
 const isProductionFrontend = typeof window !== "undefined" && (
   window.location.hostname === "phoenixaze.github.io" ||
   window.location.hostname.endsWith("github.io") ||
@@ -160,16 +173,48 @@ document.addEventListener("DOMContentLoaded", async () => {
         return headers;
     };
 
+    /**
+     * Unified sorğu icraçısı.
+     * main.js yükləndirsə, onun fetchWithAuth()-dan istifadə olunur — bu, 401
+     * cavabında access token-in refresh token ilə yenilənməsini və sorğunun
+     * təkrar göndərilməsini avtomatik edir (keçmişdə sınaq zalında bu olmadığı üçün
+     * token bitəndə istifadəçi səhifəni itirmişdi).
+     * Əgər main.js yüklənməyibsə, lokal fallback istifadə olunur.
+     * Qəbul edilən `endpoint` yalnız YOLLAR (məs. "/api/v1/exams/12/start"),
+     * çünki main.js özü API_BASE_URL-i əlavə edir — əks halda URL təkrar olur.
+     */
+    const authFetch = async (endpoint, options = {}) => {
+        const opts = { ...options };
+        opts.headers = getAuthHeaders(opts.headers || {});
+        opts.credentials = 'include';
+
+        if (typeof window.fetchWithAuth === 'function') {
+            // main.js endpoint yolunu gözləyir (API_BASE_URL onsuz da əlavə edir).
+            // redirectOnFailure = false — cəhd edərkən istifadəçi auth-a atılmasın,
+            // əvəzinə səhifə daxilində aydın xəta mesajı göstərilsin.
+            return window.fetchWithAuth(endpoint, opts, false);
+        }
+
+        try {
+            return await fetch(`${API_BASE_URL}${endpoint}`, opts);
+        } catch (err) {
+            console.error("Şəbəkə xətası:", err);
+            return null;
+        }
+    };
+
     // =========================================================================
     // 1. REPETİTOR PDF SINAĞI İDARƏETMƏSİ (ASSIGNMENT EXAM)
     // =========================================================================
     const initAssignmentExam = async (assignmentId) => {
         try {
-            const response = await fetch(`${API_BASE_URL}/api/v1/tutor/assignments/${encodeURIComponent(assignmentId)}/start`, {
-                method: 'GET',
-                headers: getAuthHeaders(),
-                credentials: 'include'
+            const response = await authFetch(`/api/v1/tutor/assignments/${encodeURIComponent(assignmentId)}/start`, {
+                method: 'GET'
             });
+
+            if (!response) {
+                throw new Error("Serverə qoşulmaq mümkün olmadı. İnternet bağlantısını yoxlayın.");
+            }
 
             if (response.status === 401) {
                 window.location.href = `auth.html?redirect=${encodeURIComponent(window.location.href)}`;
@@ -373,11 +418,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     // =========================================================================
     const fetchExamData = async () => {
         try {
-            const response = await fetch(`${API_BASE_URL}/api/v1/exams/${encodeURIComponent(examId)}/start`, {
-                method: 'GET',
-                headers: getAuthHeaders(),
-                credentials: 'include'
+            const response = await authFetch(`/api/v1/exams/${encodeURIComponent(examId)}/start`, {
+                method: 'GET'
             });
+
+            if (!response) {
+                throw new Error("Serverə qoşulmaq mümkün olmadı. İnternet bağlantısını yoxlayın.");
+            }
 
             if (response.status === 401) {
                 window.location.href = `auth.html?redirect=${encodeURIComponent(window.location.href)}`;
@@ -628,15 +675,18 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         try {
             const submitUrl = isAssignment
-                ? `${API_BASE_URL}/api/v1/tutor/assignments/${encodeURIComponent(examId)}/submit`
-                : `${API_BASE_URL}/api/v1/exams/${encodeURIComponent(examId)}/submit`;
+                ? `/api/v1/tutor/assignments/${encodeURIComponent(examId)}/submit`
+                : `/api/v1/exams/${encodeURIComponent(examId)}/submit`;
 
-            const response = await fetch(submitUrl, {
+            const response = await authFetch(submitUrl, {
                 method: 'POST',
-                headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
-                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ answers: userAnswers })
             });
+
+            if (!response) {
+                throw new Error("Serverə qoşulmaq mümkün olmadı. Cavablarınız göndərilmədi.");
+            }
 
             if (!response.ok) {
                 let message = "Nəticəni göndərmək mümkün olmadı.";
@@ -690,3 +740,5 @@ document.addEventListener("DOMContentLoaded", async () => {
         fetchExamData();
     }
 });
+
+})();
