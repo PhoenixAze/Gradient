@@ -709,10 +709,27 @@ document.addEventListener("DOMContentLoaded", async () => {
             const incorrect = result.incorrect ?? result.incorrect_count ?? 0;
             const empty = result.empty ?? result.empty_count ?? Math.max(0, total - score);
 
+            // TƏKRAR CƏHD MƏLUMATI: statistikaya təsir edib-etmədiyini
+            // istifadəçiyə AÇIQ bildiririk (mütləq məlumat — .clinerules §4).
+            const attemptNo = Number(result.attempt_no) || 1;
+            const isRetakeResult = Boolean(result.is_retake) || attemptNo > 1;
+
+            let message = `Yekun nəticəniz: ${score} / ${total} (${pct}%). Düzgün: ${score}, səhv: ${incorrect}, boş: ${empty}.`;
+
+            if (isRetakeResult) {
+                message += ` Bu ${attemptNo}-cı cəhddir — əvvəlki nəticəniz qorunur və statistika dəyişməyib.`;
+                const weakTopics = Array.isArray(result.weak_topics) ? result.weak_topics.slice(0, 3) : [];
+                if (weakTopics.length) {
+                    message += " Zəif mövzular: " + weakTopics
+                        .map(t => `${t.topic} (${t.wrong} səhv)`)
+                        .join(", ") + ".";
+                }
+            }
+
             showModal({
-                title: "Sınaq Bitdi!",
-                message: `Yekun nəticəniz: ${score} / ${total} (${pct}%). Düzgün: ${score}, səhv: ${incorrect}, boş: ${empty}.`,
-                closeLabel: "Nəticələrə bax",
+                title: isRetakeResult ? `Təkrar cəhd tamamlandı (${attemptNo}-cı)` : "Sınaq Bitdi!",
+                message: message,
+                closeLabel: "AI Analiz et",
                 onClose: () => { window.location.href = `analytics.html${isAssignment ? '' : '?id=' + encodeURIComponent(examId)}`; }
             });
 

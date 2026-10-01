@@ -111,9 +111,50 @@
         </div>
       </div>
 
+      <!-- Mövzu (q_tag) Üzrə Çətinlik -->
+      <div class="section-card" id="topic-card">
+        <h2 class="section-card-title">Mövzu Üzrə Çətinlik Analizi</h2>
+        <p class="section-card-desc">
+          Hər sıra bir mövzu teqidir (<code>q_tag</code>). Aşağıdakılar ən çətin mövzular —
+          nəticəniz necə yaxşılaşacağına görə sıralanır.
+        </p>
+        <div id="topic-list-container">
+          <!-- Dinamik olaraq JS ilə doldurulacaq -->
+        </div>
+      </div>
+
+      <!-- Ümumi AI Analiz -->
+      <div class="section-card ai-overview-card">
+        <div class="ai-overview-header">
+          <div class="ai-overview-heading">
+            <h2 class="section-card-title">Bütün Sınaqların Ümumi AI Analizi</h2>
+            <p class="section-card-desc" id="ai-overview-meta">
+              Bütün nəticələriniz birlikdə təhlil olunur: ən çətin fənn, gücləndirilməsi
+              lazım olan mövzular və prioritetli öyrənmə planı.
+            </p>
+          </div>
+          <div class="ai-overview-actions">
+            <button type="button" id="btn-overall-analysis" class="btn btn-primary">
+              AI Analiz Yarat
+            </button>
+            <button type="button" id="btn-overall-refresh" class="btn btn-ghost hidden">
+              Yenilə
+            </button>
+          </div>
+        </div>
+
+        <!-- Yüklənmə vəziyyəti -->
+        <div id="ai-overview-loading" class="ai-loading hidden" aria-live="polite">
+          <span class="spinner" aria-hidden="true"></span>
+          <span>AI analiz hazırlanır… (bu bir neçə saniyə çəkə bilər)</span>
+        </div>
+
+        <!-- Nəticə -->
+        <div id="ai-overview-result" class="ai-result hidden"></div>
+      </div>
+
       <!-- Sınaq Tarixçəsi -->
       <div class="section-card">
-        <h2 class="section-card-title">Son Sınaq Nəticələri</h2>
         <div class="table-scroll">
           <table class="history-table">
             <thead>
@@ -123,6 +164,7 @@
                 <th>Bal (Düzgün / Ümumi)</th>
                 <th>Dəqiqlik</th>
                 <th>Tarix</th>
+                <th class="col-actions">Analiz</th>
               </tr>
             </thead>
             <tbody id="history-table-body">
@@ -130,10 +172,53 @@
             </tbody>
           </table>
         </div>
+        <p class="table-hint">
+          Hər sırada <strong>AI Analiz</strong> düyməsi həmin sınağın səhv etdiyiniz
+          mövzuları süni intellektlə təhlil edir. <strong>Cəhdlər</strong> sütunu isə
+          sınağı təkrar işlətdiyinizdə əvvəlki nəticənin <strong>qorunduğunu</strong> və
+          yeni cəhdin nəticəsini ayrıca göstərir.
+        </p>
       </div>
 
     </div>
   </main>
+
+  <!-- ======================================================================
+       AI ANALİZ MODALI
+       Təhlükəsizlik: bütün mətn `textContent` ilə yazılır (innerHTML
+       qadağandır — .clinerules §2). AI mətni istifadəçi girişi ilə gəlir,
+       ona görə heç bir HTML injection mümkün deyil.
+       ====================================================================== -->
+  <div id="ai-modal" class="modal-overlay hidden" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="ai-modal-title">
+    <div class="modal-backdrop" data-close-modal="true"></div>
+    <div class="modal-panel" role="document">
+      <header class="modal-header">
+        <div class="modal-heading">
+          <h2 id="ai-modal-title" class="modal-title">AI Analiz</h2>
+          <p id="ai-modal-subtitle" class="modal-subtitle"></p>
+        </div>
+        <button type="button" id="ai-modal-close" class="modal-close" aria-label="Pencerəni bağla">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </header>
+
+      <div class="modal-body">
+        <div id="ai-modal-loading" class="ai-loading hidden" aria-live="polite">
+          <span class="spinner" aria-hidden="true"></span>
+          <span>AI analiz hazırlanır…</span>
+        </div>
+        <div id="ai-modal-content" class="ai-result"></div>
+      </div>
+
+      <footer class="modal-footer">
+        <p id="ai-modal-model" class="modal-model-note"></p>
+        <button type="button" id="ai-modal-done" class="btn btn-primary">Bağla</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Bildiriş (toast) -->
+  <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
 
 </body>
 </html>

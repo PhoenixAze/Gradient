@@ -394,14 +394,21 @@ document.addEventListener("DOMContentLoaded", async () => {
     };
 
     // Satın alma axını (Purchase Flow)
-    const handleExamPurchaseAndStart = async (exam, btnElement) => {
+    //
+    // TƏKRAR İŞLƏTMƏ QAYDASI: `opts.isRetake = true` olduqda satın alma
+    // addımı TAMAMILA keçilir — çünki backend `purchase` endpoint-i də artıq
+    // "bu sınaq alınıb" deyə cavab verir və balansı QİYAMƏTDƏ QOYMUR.
+    // Əvvəlki nəticə isə `exam_results`-də qalır, yalnız `exam_attempts`-ə
+    // yeni cəhd əlavə olunur (statistika dəyişmir).
+    const handleExamPurchaseAndStart = async (exam, btnElement, opts) => {
+        const options = opts || {};
         const originalText = btnElement.textContent;
         btnElement.textContent = "Gözləyin...";
         btnElement.disabled = true;
 
         try {
-            // Əgər sınaq pulludursa, backend-də purchase endpoint-inə müraciət edirik
-            if (parseFloat(exam.price) > 0) {
+            // Əgər sınaq pulludursa VƏ təkrar cəhd DEYİLSƏ, purchase çağırılır
+            if (!options.isRetake && parseFloat(exam.price) > 0) {
                 const res = await fetchWithAuth(`/api/v1/exams/${exam.id}/purchase`, {
                     method: 'POST'
                 });
@@ -435,7 +442,9 @@ document.addEventListener("DOMContentLoaded", async () => {
                 }
             }
             
-            // Uğurludursa və ya pulsuzdursa, sınaq zalına yönləndir
+            // Uğurludursa və ya pulsuzdursa, sınaq zalına yönləndir.
+            // Qeyd: təkrar cəhd URL-də işarələnmir — cəhd nömrəsi backend-də
+            // `exam_attempts` sayımı ilə müəyyən edilir (tək mənbə = səhvi azaldır).
             window.location.href = `exam-hall.html?id=${encodeURIComponent(exam.id)}`;
         } catch (error) {
             console.error("Satın alma xətası:", error);
@@ -533,17 +542,40 @@ document.addEventListener("DOMContentLoaded", async () => {
             const actionsDiv = document.createElement('div');
             actionsDiv.className = 'card-actions';
 
-            const retakeBtn = document.createElement('button');
-            retakeBtn.className = 'btn btn-outline';
-            retakeBtn.textContent = 'Yenidən işlə';
-            retakeBtn.addEventListener('click', () => handleExamPurchaseAndStart(exam, retakeBtn));
+            // Cəhd sayı göstəricisi (təkrar işlətmə izi)
+            const attemptCount = Number(exam.attempt_count) || 1;
+            if (attemptCount > 1) {
+                const attemptBadge = document.createElement('span');
+                attemptBadge.className = 'score-badge';
+                attemptBadge.textContent = `${attemptCount} cəhd`;
+                actionsDiv.appendChild(attemptBadge);
+            }
+
+            // TƏKRAR İŞLƏTMƏ — pulsuzdur (balans toxunulmur) və limitə uyğundur.
+            if (exam.can_retake === false) {
+                // Limit dolubsa "Yenidən işlə" düyməsi əvəzinə AÇIQ mesaj göstərilir.
+                // "Sənə təsir etməyən nəzərə alınmayan" düymə yoxdur — bu, .clinerules §4
+                // (Empty/Error State) tələbidir.
+                const limitNote = createSvgIcon(14, ICON_ALERT);
+                limitNote.setAttribute('aria-hidden', 'true');
+                const limitText = document.createElement('span');
+                limitText.textContent = 'Cəhd limiti dolub';
+                actionsDiv.appendChild(limitText);
+            } else {
+                const retakeBtn = document.createElement('button');
+                retakeBtn.className = 'btn btn-outline';
+                retakeBtn.textContent = 'Yenidən işlə';
+                retakeBtn.addEventListener('click', () =>
+                    handleExamPurchaseAndStart(exam, retakeBtn, { isRetake: true })
+                );
+                actionsDiv.appendChild(retakeBtn);
+            }
 
             const analyticsBtn = document.createElement('a');
             analyticsBtn.className = 'btn btn-accent';
             analyticsBtn.textContent = 'Analitika →';
             analyticsBtn.href = `analytics.html?id=${encodeURIComponent(exam.id)}`;
 
-            actionsDiv.appendChild(retakeBtn);
             actionsDiv.appendChild(analyticsBtn);
             rightDiv.appendChild(actionsDiv);
         } else {

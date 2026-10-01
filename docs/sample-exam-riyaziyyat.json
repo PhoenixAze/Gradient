@@ -1,0 +1,66 @@
+{
+  "title": "Riyaziyyat — Əsas Bilgi Testi",
+  "subject": "Riyaziyyat",
+  "questions": [
+    {
+      "text": "7 + 15 neçədir?",
+      "options": {
+        "A": "20",
+        "B": "21",
+        "C": "22",
+        "D": "23"
+      },
+      "correct_answer": "C",
+      "q_tag": "Tam ədədlərlə əməliyyat",
+      "explanation": "7 + 15 = 22, düzgün cavab C variantıdır."
+    },
+    {
+      "text": "36-un kvadrat kökü neçədir?",
+      "options": {
+        "A": "5",
+        "B": "6",
+        "C": "7",
+        "D": "8"
+      },
+      "correct_answer": "B",
+      "q_tag": "Kvadrat kök",
+      "explanation": "6 × 6 = 36 olduğu üçün √36 = 6, düzgün cavab B variantıdır."
+    },
+    {
+      "text": "Bir ədədin 25%-i 40-dır. Bu ədəd neçədir?",
+      "options": {
+        "A": "100",
+        "B": "120",
+        "C": "160",
+        "D": "180"
+      },
+      "correct_answer": "C",
+      "q_tag": "Faiz problemləri",
+      "explanation": "x × 25/100 = 40 → x = 40 × 4 = 160, düzgün cavab C variantıdır."
+    },
+    {
+      "text": "Ardıcıl tək ədədlərin fərq 3-dür: 4, 7, 10, ... Bu ardıcılığın 10-cu üzvü neçədir?",
+      "options": {
+        "A": "28",
+        "B": "30",
+        "C": "31",
+        "D": "34"
+      },
+      "correct_answer": "C",
+      "q_tag": "Ardıcıl ədədlər",
+      "explanation": "a₁ = 4, d = 3 → a₁₀ = 4 + 9 × 3 = 31, düzgün cavab C variantıdır."
+    },
+    {
+      "text": "Düzbucaqlı çoxbucaqlının sahəsi 48 sm², bir tərəfi 6 sm olsa, o tərəfə paralel olan digər tərəfi neçə sm-dir?",
+      "options": {
+        "A": "6",
+        "B": "7",
+        "C": "8",
+        "D": "9"
+      },
+      "correct_answer": "C",
+      "q_tag": "Sahə hesabları",
+      "explanation": "S = a × b → 48 = 6 × b → b = 8 sm, düzgün cavab C variantıdır."
+    }
+  ]
+}
