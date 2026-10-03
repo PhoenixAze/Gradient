@@ -283,7 +283,7 @@
 
 .tab-badge.has-alert {
   background: var(--danger-soft);
-  color: #B91C1C;
+  color: var(--danger);
   border-color: rgba(239, 68, 68, 0.3);
 }
 
@@ -302,7 +302,7 @@
 
 .tutor-tab-btn.active .ai-pill-tag {
   background: var(--primary);
-  color: #FFFFFF;
+  color: var(--on-primary);
   border-color: var(--primary);
 }
 
@@ -445,6 +445,7 @@
 [data-theme="dark"] .student-tag.good { color: var(--success); }
 [data-theme="dark"] .student-tag.mid  { color: var(--warning); }
 [data-theme="dark"] .student-tag.bad  { color: var(--danger); }
+[data-theme="dark"] .student-tag.none { color: var(--text-muted); }
 
 .action-btn-group {
   display: flex;
@@ -1032,7 +1033,7 @@
 
 .ai-extractor-badge {
   background: var(--primary);
-  color: #FFFFFF;
+  color: var(--on-primary);
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -1137,6 +1138,7 @@
 
 .bubble-btn.active {
   background: var(--primary);
+  color: var(--on-primary);
   border-color: var(--primary);
   color: #FFFFFF;
 }
@@ -1486,7 +1488,7 @@
 
 .ai-message-assistant .ai-message-avatar {
   background: var(--primary);
-  color: #FFFFFF;
+  color: var(--on-primary);
   border-color: var(--primary);
 }
 
@@ -2079,7 +2081,7 @@ body.modal-open {
   border-radius: 10px;
   border: 1px solid var(--border);
   background: var(--primary);
-  color: #FFFFFF;
+  color: var(--on-primary);
   font-size: 0.88rem;
   font-weight: 500;
   line-height: 1.45;
@@ -2094,9 +2096,9 @@ body.modal-open {
   transform: translate(-50%, 0);
 }
 
-.toast-success { background: #047857; border-color: #065F46; }
-.toast-error { background: #B91C1C; border-color: #991B1B; }
-.toast-info { background: var(--primary); }
+.toast-success { background: #047857; border-color: #065F46; color: #FFFFFF; }
+.toast-error { background: #B91C1C; border-color: #991B1B; color: #FFFFFF; }
+.toast-info { background: var(--primary); color: var(--on-primary); }
 
 [data-theme="dark"] .toast-success { background: var(--success-soft); color: var(--success); border-color: rgba(52, 211, 153, 0.4); }
 [data-theme="dark"] .toast-error { background: var(--danger-soft); color: var(--danger); border-color: rgba(248, 113, 113, 0.4); }

@@ -238,9 +238,9 @@ input.error, select.error {
 }
 
 .alert-danger {
-  background-color: #FEF2F2;
-  color: #991B1B;
-  border: 1px solid #F87171;
+  background-color: var(--danger-soft);
+  color: var(--danger);
+  border: 1px solid var(--danger);
 }
 
 .terms-text {

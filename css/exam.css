@@ -18,6 +18,12 @@
   --accent: #2563eb;
   --accent-hover: #1d4ed8;
   --accent-soft: #eff6ff;
+  /* Vurğu fonları üzərindəki mətn rəngi (tünd rejimdə tərs çevrilir) */
+  --on-primary: #ffffff;
+  --on-accent: #ffffff;
+  --on-danger: #ffffff;
+  --on-success: #ffffff;
+  --bg-navbar: rgba(255, 255, 255, 0.85);
   --success: #10b981;
   --success-soft: #ecfdf5;
   --warning: #f59e0b;
@@ -46,6 +52,12 @@
   --accent: #60a5fa;
   --accent-hover: #93c5fd;
   --accent-soft: #1e293b;
+  /* Tünd rejimdə --primary/--accent işıqlıdır → mətn tünd olmalıdır (WCAG AA) */
+  --on-primary: #0f172a;
+  --on-accent: #0f172a;
+  --on-danger: #450a0a;
+  --on-success: #052e16;
+  --bg-navbar: rgba(15, 23, 42, 0.85);
   --success: #34d399;
   --success-soft: #064e3b;
   --warning: #fbbf24;
@@ -103,7 +115,7 @@ body {
   left: 16px;
   z-index: 200;
   background-color: var(--primary);
-  color: #fff;
+  color: var(--on-primary);
   padding: 10px 18px;
   border-radius: var(--radius);
   font-size: 0.9rem;
@@ -529,7 +541,7 @@ body {
 
 .btn-topup:hover {
   background-color: var(--success);
-  color: #fff;
+  color: var(--on-success);
 }
 
 .drawer-nav {
@@ -746,12 +758,8 @@ body {
 
 .btn-primary {
   background-color: var(--primary);
-  color: #ffffff;
+  color: var(--on-primary);
   box-shadow: var(--shadow-sm);
-}
-
-[data-theme="dark"] .btn-primary {
-  color: #0f172a;
 }
 
 .btn-primary:hover:not(:disabled) {

@@ -178,6 +178,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     const resultsCount = document.getElementById('exam-results-count');
 
     // Tənzimləmələr və Əlaqə
+    // TEMA: bütün idarəetmə js/theme.js modulunda yerləşir (bütün səhifələrdə
+    // tətbiq olunur). Burada yalnız UI vəziyyəti oxunur — təkrar localStorage
+    // yazımı yoxdur, beləliklə tənzimləmə ilə səhifələr arasında uyğunsuzluq yaranmır.
     const themeToggleCheckbox = document.getElementById('theme-toggle-checkbox');
     const contactEmailEl = document.getElementById('contact-email');
     const contactPhoneEl = document.getElementById('contact-phone');
@@ -188,21 +191,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     let contactSettings = null;
 
     // --- 1. THEME (GECƏ/GÜNDÜZ REJİMİ) ---
-    const initTheme = () => {
-        const savedTheme = localStorage.getItem('theme') || 'light';
-        document.documentElement.setAttribute('data-theme', savedTheme);
-        if (savedTheme === 'dark') {
-            themeToggleCheckbox.checked = true;
-        }
-    };
-
-    themeToggleCheckbox.addEventListener('change', (e) => {
-        const newTheme = e.target.checked ? 'dark' : 'light';
-        document.documentElement.setAttribute('data-theme', newTheme);
-        localStorage.setItem('theme', newTheme);
-    });
-
-    initTheme();
+    // js/theme.js <head> daxilində sinxron işlədiyi üçün data-theme artıq
+    // tətbiq olunub və bu checkbox onsaya da sinxronlanıb. Yalnız ehtiyatlı
+    // fallback saxlanılır (theme.js yüklənməyibsə səhifə açıq qalmasın).
+    if (!document.documentElement.getAttribute('data-theme')) {
+        document.documentElement.setAttribute('data-theme', 'light');
+    }
+    if (themeToggleCheckbox && window.GradientTheme) {
+        themeToggleCheckbox.checked = window.GradientTheme.isDark();
+    }
 
     // --- 2. AUTH GUARD VƏ PROFİL ---
     const checkAuthAndLoadProfile = async () => {

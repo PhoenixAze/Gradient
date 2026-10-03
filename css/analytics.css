@@ -287,7 +287,7 @@
 
 .chip-ai:hover {
   background: var(--accent);
-  color: #FFFFFF;
+  color: var(--on-accent);
 }
 
 .attempt-card-score {
@@ -456,7 +456,7 @@
 
 .skeleton-line {
   height: 14px;
-  background: linear-gradient(90deg, #F1F5F9 25%, #E2E8F0 50%, #F1F5F9 75%);
+  background: linear-gradient(90deg, var(--bg-muted) 25%, var(--border) 50%, var(--bg-muted) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
   border-radius: 4px;
@@ -469,7 +469,7 @@
 
 .skeleton-box {
   height: 96px;
-  background: linear-gradient(90deg, #F1F5F9 25%, #E2E8F0 50%, #F1F5F9 75%);
+  background: linear-gradient(90deg, var(--bg-muted) 25%, var(--border) 50%, var(--bg-muted) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
   border-radius: var(--radius-lg);
