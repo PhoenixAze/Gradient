@@ -751,6 +751,15 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
       }
       if (!response.ok) {
+        // TƏHLÜKƏSİZLİK: backend `detail` mesajı xəta şablonu ola bilər —
+        // istifadəçiyə daxili məlumat (DB sütunu, SQL) sızdırılmamalıdır.
+        // Yalnız generic mesaj göstərilir, ətraflı xəta konsola yazılır.
+        let serverDetail = "";
+        try {
+          const errData = await response.json().catch(() => ({}));
+          if (errData && typeof errData.detail === "string") serverDetail = errData.detail;
+        } catch (_) {}
+        console.error("Analitika xətası:", response.status, serverDetail);
         throw new Error("Analitika məlumatlarını almaq mümkün olmadı.");
       }
 
