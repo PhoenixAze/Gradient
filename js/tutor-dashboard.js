@@ -528,6 +528,35 @@ document.addEventListener("DOMContentLoaded", () => {
     banner.classList.remove("hidden");
   }
 
+  /**
+   * Plan limiti aşıldıqda (HTTP 402) istifadəçi davranışını idarə edir.
+   *
+   * TƏHLÜKƏSİZLİK:
+   *   • Server mətnini `textContent` ilə göstərirsin (innerHTML YOXDUR).
+   *   • `upgrade_url` yalnız lokal yolda ola bilər — server tərəfdən gələn
+   *     URL istifadəçiyə ötürülmür, biz öz sabit səhifəmizə yönləndirik
+   *     (open-redirect hücumunun qarşısı).
+   *
+   * @param {object} detail — server-dən gələn `detail` obyekti
+   */
+  function handlePlanLimitError(detail) {
+    const message =
+      (detail && detail.message) || "Plan limitiniz dolub. Planınızı yüksəldin.";
+    showToast(message, "error");
+
+    // Banner-i (varsa) daha da görünən edərik
+    const banner = $("plan-upgrade-banner");
+    if (banner) {
+      banner.classList.remove("hidden");
+      banner.classList.add("is-visible");
+    }
+
+    // Sabit daxili yolla plans.html səhifəsinə keçid
+    setTimeout(() => {
+      window.location.href = "plans.html";
+    }, 2200);
+  }
+
   async function loadDashboard() {
     try {
       const response = await fetchWithAuth("/api/v1/tutor/dashboard", { method: "GET" });
@@ -570,10 +599,77 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (tabStudentsCount) tabStudentsCount.textContent = (tutorData.students || []).length;
       if (tabSubmissionsCount) tabSubmissionsCount.textContent = (tutorData.recent_submissions || []).length;
+
+      // Plan yüksəltmə banner-i paralel yüklənir (paneli bloklamır)
+      loadPlanStatus();
     } catch (err) {
       console.error("Dashboard error:", err);
       if (skeletonEl) skeletonEl.classList.add("hidden");
       showDashboardError(err.message || "Gözlənilməz xəta baş verdi.");
+    }
+  }
+
+  /* ------------------------------------------------------------------
+     7.1 PLAN STATUSU (abunə banner-i)
+     ------------------------------------------------------------------ */
+
+  /**
+   * Cari planı yoxlayır və YALNIZ Free planda yüksəltmə banner-ini göstərir.
+   *
+   * TƏHLÜKƏSİZLİK:
+   *   • Mətn `textContent` ilə qoyulur (innerHTML YOXDUR → XSS mümkün deyil).
+   *   • Endpoint `require_tutor` qoruyur; xəta halında banner GİZLİ qalır
+   *     (uğursuzluq istifadəçini bloklamır — fail-safe UI).
+   */
+  async function loadPlanStatus() {
+    const banner = $("plan-upgrade-banner");
+    if (!banner) return;
+
+    try {
+      const response = await fetchWithAuth("/api/v1/plans/me", { method: "GET" });
+      if (!response || !response.ok) {
+        banner.classList.add("hidden");
+        return;
+      }
+
+      const data = await response.json();
+      const plan = data.plan || {};
+
+      // Yalnız Free planda celb edici gösterilir
+      if (plan.id !== "free") {
+        banner.classList.add("hidden");
+        return;
+      }
+
+      // Dinamik mesaj: limit yaxınlaşdıqda daha konkret çağırış
+      const msgEl = $("plan-upgrade-msg");
+      if (msgEl) {
+        const studentsLimit = data.students_limit;
+        const examsLimit = data.exams_limit;
+        const studentsUsed = Number(data.students_used || 0);
+        const examsUsed = Number(data.exams_used || 0);
+
+        const studentFull = studentsLimit !== null && studentsUsed >= studentsLimit;
+        const examFull = examsLimit !== null && examsUsed >= examsLimit;
+
+        if (studentFull || examFull) {
+          msgEl.textContent = "Limitiniz dolub — limitsiz işləmək üçün planı yüksəldin";
+        } else if (
+          studentsLimit !== null && studentsUsed >= studentsLimit - 1
+        ) {
+          msgEl.textContent = "Qrupunuz böyüyür — limitinizə yaxınlaqsınız";
+        } else {
+          msgEl.textContent = "Qrupunuzu böyütməyə davam edin";
+        }
+      }
+
+      banner.classList.remove("hidden");
+      // Giriş animasiyası (CSS ilə) — klass sonradan əlavə olunur
+      requestAnimationFrame(() => banner.classList.add("is-visible"));
+    } catch (err) {
+      // Heç bir istifadəçi mətni göstərilmir; sadəcə gizli qalır
+      console.warn("Plan statusu yüklənmədi:", err);
+      banner.classList.add("hidden");
     }
   }
 
@@ -2173,7 +2269,15 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!res) throw new Error("Serverlə əlaqə qurmaq mümkün olmadı.");
 
         const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(data.detail || "Şagird əlavə edilərkən xəta baş verdi.");
+        if (!res.ok) {
+          // PLAN LIMITI (402) — şagird limiti dolub. İstifadəçini
+          // yüksəltmə səhifəsinə yönləndir (biznes mesajı toast-da qalır).
+          if (res.status === 402 && data.detail && data.detail.upgrade_suggested) {
+            handlePlanLimitError(data.detail);
+            return;
+          }
+          throw new Error(data.detail || "Şagird əlavə edilərkən xəta baş verdi.");
+        }
 
         setFeedback(modalFeedback, data.message || "Şagird uğurla qrupa əlavə edildi!", true);
         if (addStudentForm) addStudentForm.reset();
@@ -2332,6 +2436,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (!res || !res.ok) {
           const err = res ? await res.json().catch(() => ({})) : {};
+          // PLAN LIMITI (402) — aylıq sınaq limiti dolub.
+          if (res.status === 402 && err.detail && err.detail.upgrade_suggested) {
+            handlePlanLimitError(err.detail);
+            return;
+          }
           throw new Error(err.detail || "Sınaq yaradılarkən xəta baş verdi.");
         }
 

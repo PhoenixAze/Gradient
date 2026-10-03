@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="az" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#F8FAFC">
+  <title>Abunə Planları | Gradient</title>
+  <meta name="description" content="Repetitor paneli üçün aylıq abunə planları: Free, Standart, Pro və Pro+. Qiymətlər və limitlər.">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+
+  <!-- TƏHLÜKƏSİZLİK: Strict Content Security Policy (.clinerules §1-2) -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://gradient-backend-fam5.onrender.com blob: data:; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; frame-src 'self' blob: data: https:; script-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/plans.css">
+
+  <!-- Qlobal tema (tünd rejim bütün səhifələrdə aktiv olur) -->
+  <script src="js/theme.js"></script>
+  <script src="js/plans.js" defer></script>
+</head>
+<body class="plans-body">
+
+  <a class="skip-link" href="#plans-main">Əsas məzmuna keç</a>
+
+  <!-- HEADER -->
+  <header class="plans-header">
+    <div class="plans-header-inner">
+      <a href="index.html" class="brand" aria-label="Ana səhifə">
+        <div class="logo-icon">
+          <svg viewBox="0 0 512 512" width="32" height="32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <rect width="512" height="512" rx="112" fill="#0F172A" />
+            <path d="M 155 365 L 225 275 C 242 255, 260 290, 280 275 L 360 150" fill="none" stroke="#3B82F6" stroke-width="32" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </div>
+        <div class="brand-text">
+          <span class="brand-name">Gradient</span>
+          <span class="brand-sub">Abunə Planları</span>
+        </div>
+      </a>
+
+      <nav class="plans-header-nav" aria-label="Naviqasiya">
+        <a href="tutor-dashboard.html" class="btn btn-secondary btn-sm">Panelə qayıt</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="plans-main" id="plans-main">
+
+    <!-- SƏHİFƏ BAŞLIĞI -->
+    <div class="plans-intro">
+      <p class="plans-eyebrow" id="plans-eyebrow">Repetitor abunə planları</p>
+      <h1 class="plans-title">Qrupunuzu böyütdüncü, planınızı yüksəldin</h1>
+      <p class="plans-subtitle">
+        Aylıq abunə ilə şagird və sınaq limitlərinizi artırın, limitsiz işləyin.
+        İstədiyiniz anda dayandıra bilərsiniz.
+      </p>
+    </div>
+
+    <!-- CARİ PLAN BİLYİYİ (yalnız Free planda görünür) -->
+    <section class="current-plan-card hidden" id="current-plan-card" aria-live="polite">
+      <div class="current-plan-icon" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="M12 16v-4M12 8h.01"></path>
+        </svg>
+      </div>
+      <div class="current-plan-body">
+        <h2 class="current-plan-title" id="current-plan-title">Hazırda Free plandasınız</h2>
+        <p class="current-plan-text" id="current-plan-text">
+          Free plan limitsiz başlanğıcdır. Yüksəltmə etsəniz, qrupunuzdakı şagird
+          sayı və aylıq sınaq limiti dərhal artacaq.
+        </p>
+      </div>
+    </section>
+
+    <!-- İSTİFADƏ / HAZIRKI LIMITLƏR BLOKU -->
+    <section class="usage-card hidden" id="usage-card" aria-labelledby="usage-heading">
+      <div class="usage-header">
+        <h2 class="usage-title" id="usage-heading">Hazırkı limitləriniz</h2>
+        <span class="usage-period" id="usage-period">Bu ay</span>
+      </div>
+
+      <div class="usage-grid">
+        <!-- Şagird limiti -->
+        <div class="usage-item">
+          <div class="usage-item-top">
+            <span class="usage-item-label">Şagird sayı</span>
+            <span class="usage-item-value" id="usage-students-value">—</span>
+          </div>
+          <div class="usage-track" role="progressbar" aria-labelledby="usage-heading"
+               aria-valuemin="0" aria-valuenow="0" id="usage-students-bar-wrap">
+            <div class="usage-fill" id="usage-students-fill"></div>
+          </div>
+          <p class="usage-item-note" id="usage-students-note">—</p>
+        </div>
+
+        <!-- Sınaq limiti -->
+        <div class="usage-item">
+          <div class="usage-item-top">
+            <span class="usage-item-label">Aylıq sınaq</span>
+            <span class="usage-item-value" id="usage-exams-value">—</span>
+          </div>
+          <div class="usage-track" role="progressbar" aria-labelledby="usage-heading"
+               aria-valuemin="0" aria-valuenow="0" id="usage-exams-bar-wrap">
+            <div class="usage-fill" id="usage-exams-fill"></div>
+          </div>
+          <p class="usage-item-note" id="usage-exams-note">—</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- PLAN KARTLARI -->
+    <section aria-labelledby="plans-grid-heading">
+      <h2 class="sr-only" id="plans-grid-heading">Abunə planları</h2>
+
+      <!-- Yüklənmə zamanı Skeleton Loader (.clinerules §4) -->
+      <div class="plans-grid" id="plans-skeleton" aria-hidden="true">
+        <div class="plan-card skeleton-card">
+          <div class="skeleton skeleton-line-sm"></div>
+          <div class="skeleton skeleton-line-lg"></div>
+          <div class="skeleton skeleton-line-md"></div>
+          <div class="skeleton skeleton-box"></div>
+        </div>
+        <div class="plan-card skeleton-card">
+          <div class="skeleton skeleton-line-sm"></div>
+          <div class="skeleton skeleton-line-lg"></div>
+          <div class="skeleton skeleton-line-md"></div>
+          <div class="skeleton skeleton-box"></div>
+        </div>
+        <div class="plan-card skeleton-card">
+          <div class="skeleton skeleton-line-sm"></div>
+          <div class="skeleton skeleton-line-lg"></div>
+          <div class="skeleton skeleton-line-md"></div>
+          <div class="skeleton skeleton-box"></div>
+        </div>
+      </div>
+
+      <!-- Plan kartları buraya JS ilə qurulur (innerHTML YOXDUR) -->
+      <div class="plans-grid hidden" id="plans-grid"></div>
+
+      <!-- Error / Empty State (.clinerules §4) -->
+      <div class="plans-state hidden" id="plans-state" role="alert">
+        <div class="plans-state-icon" aria-hidden="true">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M12 8v4M12 16h.01"></path>
+          </svg>
+        </div>
+        <h3 class="plans-state-title" id="plans-state-title">Plan məlumatları yüklənmədi</h3>
+        <p class="plans-state-text" id="plans-state-text">Serverlə əlaqə yaradıla bilmədi. İnternet bağlantınızı yoxlayın.</p>
+        <button type="button" class="btn btn-secondary btn-sm" id="plans-retry">Yenidən yoxla</button>
+      </div>
+    </section>
+
+    <!-- ÖDƏNİŞ QAYDASI -->
+    <section class="plans-note" aria-label="Ödəniş qaydası">
+      <h2 class="plans-note-title">Necə işləyir?</h2>
+      <ol class="plans-note-list">
+        <li>Uyğun planı seçin və <strong>WhatsApp</strong> düyməsinə basın.</li>
+        <li>Hesabınızı bizimlə paylaşın — planınız <strong>əl ilə təsdiqlənib</strong> aktivləşdirilir.</li>
+        <li>Aktivləşdirmədən sonra yeni limitlər dərhal qüvvəyə minir.</li>
+      </ol>
+      <p class="plans-note-foot">
+        Ödəniş sistemi hələ aktiv deyil. Bu səhifədəki qiymətlər məlumatlandırma
+        məqsədilə göstərilir.
+      </p>
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="plans-footer">
+    <p class="plans-footer-text">© Gradient — Şagirdlərin interaktiv sınaqları üçün platforma</p>
+    <nav class="plans-footer-links" aria-label="Hüquqi sənədlər">
+      <a href="terms.html">İstifadə şərtləri</a>
+      <a href="privacy.html">Məxfilik siyasəti</a>
+    </nav>
+  </footer>
+
+</body>
+</html>

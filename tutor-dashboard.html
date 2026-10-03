@@ -17,6 +17,7 @@
 
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/tutor.css">
+  <link rel="stylesheet" href="css/plans.css">
 
   <!-- Qlobal tema (tünd rejim bütün səhifələrdə aktiv olur) -->
   <script src="js/theme.js"></script>
@@ -145,6 +146,25 @@
         <button id="btn-open-add-student" class="btn btn-secondary btn-sm" type="button">Şagird Əlavə Et</button>
       </div>
     </div>
+
+    <!-- ANİMASİYALI PLAN YÜKSƏLTMƏ CELBİ (.clinerules §4)
+         Yalnız Free planda göstərilir; düymə plans.html səhifəsinə yönləndirir.
+         JS idarə olunur (id = plan-upgrade-banner) — mətn inline deyil. -->
+    <aside class="plan-upgrade-banner hidden" id="plan-upgrade-banner" aria-label="Abunə planını yüksəldin">
+      <div class="plan-upgrade-glow" aria-hidden="true"></div>
+      <div class="plan-upgrade-body">
+        <div class="plan-upgrade-text">
+          <span class="plan-upgrade-tag">Free plan</span>
+          <p class="plan-upgrade-msg" id="plan-upgrade-msg">Qrupunuzu böyütməyə davam edin</p>
+        </div>
+        <a class="btn btn-primary btn-sm plan-upgrade-cta" id="btn-plan-upgrade" href="plans.html">
+          Planı Yüksəlt
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M5 12h14M13 6l6 6-6 6"></path>
+          </svg>
+        </a>
+      </div>
+    </aside>
 
     <!-- SKELETON LOADER (.clinerules §4) -->
     <div id="tutor-skeleton" aria-hidden="true">
