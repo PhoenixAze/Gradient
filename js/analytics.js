@@ -443,6 +443,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.body.style.overflow = lock ? "hidden" : "";
   }
 
+  /**
+   * Model adı göstərilmədiyi üçün alt-not elementləri həmişə boş qalır.
+   * Elementlər HTML-də saxlanılır (CSS/modal quruluşu qırılmır), sadəcə
+   * mətn yazılmır. `null` halında səhva yol verilməsin.
+   */
+  function clearModelNote() {
+    if (modalModelNote) modalModelNote.textContent = "";
+    if (detailModelNote) detailModelNote.replaceChildren();
+  }
+
   function openModal(title, subtitle) {
     if (!modal) return;
     lastFocusedEl = document.activeElement;
@@ -461,7 +471,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     modal.classList.add("hidden");
     modal.setAttribute("aria-hidden", "true");
     modalContent.replaceChildren();
-    modalModelNote.textContent = "";
+    clearModelNote();
     lockScroll(false);
     // Fokus idarəetməsi (a11y): modal bağlananda fokus əvvəlki düyməyə qayıdır
     if (lastFocusedEl && typeof lastFocusedEl.focus === "function") lastFocusedEl.focus();
@@ -474,7 +484,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     detailSubtitle.textContent = String(subtitle || "");
     detailStats.replaceChildren();
     detailQuestions.replaceChildren();
-    detailModelNote.textContent = "";
+    clearModelNote();
     detailLoading.classList.remove("hidden");
     detailModal.classList.remove("hidden");
     detailModal.setAttribute("aria-hidden", "false");
@@ -779,8 +789,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     setWrongOnly(false);
 
     // AI analiz varsa, sağ altda "bəxş etmək" mümkün olsun (AI xərci etmədən)
-    detailModelNote.textContent = "";
-    if (data.has_ai_analysis !== false && data.ai_analysis) {
+    clearModelNote();
+    if (detailModelNote && data.has_ai_analysis !== false && data.ai_analysis) {
       detailModelNote.appendChild(
         makeButton("AI analizini bəxş et", "btn btn-ghost btn-sm", () => {
           closeDetailModal();
@@ -839,7 +849,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     renderAnalysisInto(modalContent, data.analysis);
     modalSubtitle.textContent = `Saxlanmış analiz • ${formatDateTime(data.generated_at)}`;
-    modalModelNote.textContent = data.ai_model ? `Model: ${data.ai_model}` : "";
+    // MƏHSUL ƏTRAFI (məxfilik / brendinq): AI modelinin adı istifadəçiyə
+    // GÖSTƏRİLMİR — provider adı məhsul üzərində reklam təsiri yaradır və
+    // texniki detallar istifadəçi üçün vacib deyil. Sahə yalnız server logunda qalır.
+    clearModelNote();
   }
 
   async function createAnalysis(attempt, buttonEl) {
@@ -887,7 +900,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const data = await response.json();
       modalLoading.classList.add("hidden");
       renderAnalysisInto(modalContent, data.analysis);
-      modalModelNote.textContent = data.ai_model ? `Model: ${data.ai_model}` : "";
+      clearModelNote();
 
       // Siyahını yenilə: "AI analiz var" nişanı əmələ gəlir
       attempt.has_ai_analysis = true;
@@ -946,10 +959,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       overallResult.replaceChildren();
       renderAnalysisInto(overallResult, data.analysis);
 
+      // Model adı göstərilmir (bax: `clearModelNote` izahı) — yalnız tarix.
       if (overallMeta) {
-        overallMeta.textContent = data.ai_model
-          ? `Model: ${data.ai_model} • ${formatDateTime(data.updated_at)}`
-          : formatDateTime(data.updated_at);
+        overallMeta.textContent = data.updated_at ? formatDateTime(data.updated_at) : "";
       }
       if (btnOverallRefresh) btnOverallRefresh.classList.remove("hidden");
 
@@ -981,8 +993,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       overallLoading.classList.add("hidden");
       overallResult.classList.remove("hidden");
       renderAnalysisInto(overallResult, data.analysis);
-      if (overallMeta && data.ai_model) {
-        overallMeta.textContent = `Model: ${data.ai_model} • ${formatDateTime(data.updated_at)}`;
+      if (overallMeta) {
+        overallMeta.textContent = data.updated_at ? formatDateTime(data.updated_at) : "";
       }
       if (btnOverallRefresh) btnOverallRefresh.classList.remove("hidden");
     } catch (_) {
