@@ -185,7 +185,11 @@ body {
   transform: translateY(-1px);
 }
 
+/* TƏHLÜKƏSİZLİK/UI: background-color MÜTLƏQ təyin olunur — yoxsa brauzerin
+   standart `buttonface` (açıq boz) fonu tünd rejimdə açıq mətnin üstündə
+   qalır və düymə oxunmaz olur (contrast/ WCAG AA pozuntusu). */
 .btn-ghost {
+  background-color: transparent;
   color: var(--text-muted);
 }
 .btn-ghost:hover {

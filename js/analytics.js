@@ -237,6 +237,54 @@ document.addEventListener("DOMContentLoaded", async () => {
     return btn;
   }
 
+  /**
+   * `.btn-ai` düyməsinin mətn hissəsini dəyişir, SVG ikonu saxlayır.
+   * @param {HTMLElement} btn - makeAiButton() ilə yaradılmış düymə
+   * @param {string} label - yeni mətn (textContent → XSS yoxdur)
+   */
+  function setAiButtonLabel(btn, label) {
+    if (!btn) return;
+    const icon = btn.querySelector(".btn-ai-icon");
+    if (icon) {
+      btn.replaceChildren(icon, document.createTextNode(String(label || "")));
+    } else {
+      btn.textContent = String(label || "");
+    }
+  }
+
+  /**
+   * AI analiz düyməsi — `makeButton` + inline SVG nişanı.
+   * TƏHLÜKƏSİZLİK: SVG `createElementNS` ilə qurulur, heç bir dəyişən
+   * interpolasiya edilmir (innerHTML YOXDUR). .clinerules §2 (XSS).
+   */
+  function makeAiButton(label, onClick) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "btn btn-ai btn-sm";
+
+    const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    icon.setAttribute("class", "btn-ai-icon");
+    icon.setAttribute("viewBox", "0 0 24 24");
+    icon.setAttribute("width", "16");
+    icon.setAttribute("height", "16");
+    icon.setAttribute("fill", "none");
+    icon.setAttribute("stroke", "currentColor");
+    icon.setAttribute("stroke-width", "2");
+    icon.setAttribute("stroke-linecap", "round");
+    icon.setAttribute("stroke-linejoin", "round");
+    icon.setAttribute("aria-hidden", "true");
+
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    // Spark (parıltı) — emoji istifadəsi olmadan vizual nişan (.clinerules §4)
+    path.setAttribute("d", "M12 3l1.9 5.3L19 10l-5.1 1.7L12 17l-1.9-5.3L5 10l5.1-1.7L12 3z");
+    icon.appendChild(path);
+
+    btn.appendChild(icon);
+    btn.appendChild(document.createTextNode(label));
+    btn.addEventListener("click", onClick);
+    return btn;
+  }
+
   function formatDate(value) {
     if (!value) return "—";
     const d = new Date(value);
@@ -651,9 +699,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         makeButton("Nəticələr", "btn btn-outline btn-sm", () => openAttemptDetail(a.attempt_id, a))
       );
       actions.appendChild(
-        makeButton(
+        makeAiButton(
           a.has_ai_analysis ? "AI Analizi oxu" : "AI Analiz yarat",
-          "btn btn-ghost btn-sm",
           () => (a.has_ai_analysis ? viewCachedAnalysis(a) : createAnalysis(a))
         )
       );
@@ -871,7 +918,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     if (buttonEl) {
       buttonEl.disabled = true;
-      buttonEl.textContent = "Analiz gedir…";
+      // YALNIZ mətn düyəsi dəyişir — SVG ikon silinmir (textContent səhifəni
+      // təmizləyərdi). `replaceChildren` təhlükəsizdir, xarici məlumat yoxdur.
+      setAiButtonLabel(buttonEl, "Analiz gedir…");
     }
 
     try {
@@ -914,7 +963,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     } finally {
       if (buttonEl) {
         buttonEl.disabled = false;
-        buttonEl.textContent = "AI Analiz yarat";
+        setAiButtonLabel(buttonEl, "AI Analiz yarat");
       }
     }
   }

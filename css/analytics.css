@@ -333,6 +333,52 @@
   flex-wrap: wrap;
 }
 
+/* --------------------------------------------------------------------------
+   AI ANALİZ DÜYMƏSİ (.btn-ai)
+   Əvvəl `btn btn-ghost btn-sm` istifadə olunurdu: ghost düymənin fonnu
+   şəffaf olduğu üçün əməliyyat cəhəd siyahısında "Nəticələr" düyməsi ilə
+   vizual olaraq itib, konturlaşmayan zəif element kimi görünürdü.
+   İndi: sərhəd + `--accent-soft` fon → kart daxilində aydın fokuslanan,
+   hər iki temada (açıq/tünd) WCAG AA kontrastını qoruyan əməliyyat düyməsi.
+   -------------------------------------------------------------------------- */
+.btn-ai {
+  background-color: var(--accent-soft);
+  color: var(--accent);
+  border-color: transparent;
+  font-weight: 600;
+  gap: 6px;
+}
+
+.btn-ai:hover:not(:disabled) {
+  background-color: var(--accent);
+  color: var(--on-accent);
+  border-color: var(--accent);
+}
+
+.btn-ai:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn-ai:disabled {
+  opacity: 0.65;
+  cursor: progress;
+}
+
+/* AI düyməsi üçün kiçik və vizual olaraq ayrılan ikon möhürü (emoji YOXDUR —
+   .clinerules §4: neqtral, korporativ görünüş) */
+.btn-ai-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.btn-ai:hover:not(:disabled) .btn-ai-icon {
+  color: var(--on-accent);
+}
+
 /* ==========================================================================
    6. FƏNN VƏ MÖVZU İSTATİSTİKASI
    ========================================================================== */
