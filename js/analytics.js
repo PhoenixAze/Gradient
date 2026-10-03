@@ -901,6 +901,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       const badgeWrap = createElement("div", "cell-badges");
       const primaryAttempt = attempts.find((a) => a.is_primary);
 
+      // Badge yalnız cəhd məlumatı real olduqda göstərilir — yoxdursa
+      // istifadəçi "1 cəhd" görüb təkrar işlətmək imkanı olmadığını
+      // anlamaz. (SƏHV İSABİ: `badge` dəyişəni yoxdur → ReferenceError →
+      // bütün sətirlər render olunmur.)
       if (attemptsKnown) {
         badgeWrap.appendChild(
           createElement(
@@ -910,7 +914,6 @@ document.addEventListener("DOMContentLoaded", async () => {
           )
         );
       }
-      badgeWrap.appendChild(badge);
 
       // AI düyməsi — hansı cəhd analiz olunacaq?
       // MƏNBƏ NÖRDƏSİ: əvvəlcə `/exams/{id}/attempts` cavabı, yoxdursa
