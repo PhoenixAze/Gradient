@@ -1,8 +1,8 @@
--- ============================================================================
+- ============================================================================
 -- MİQRASİYA: 20261001000000_exam_attempts_ai_analysis.sql
 --
 -- MƏQSƏD (3 funksiya):
---   1) TƏKRAR CƏHD — şagird bitirdiyi sınağı yenidən işləyə biləcək, lakin
+--   1) T-ƏKRAR CƏHD — şagird bitirdiyi sınağı yenidən işləyə biləcək, lakin
 --      əvvəlki (ilk) nəticəsi QORUNACAQ və ümumi statistikaya TƏSİR ETMƏYƏCƏK.
 --   2) PER-SUAL DETALLAR — hər cəhd üçün sual/səhv/q_tag məlumatının saxlanması
 --      (AI analiz üçün real mənbə).

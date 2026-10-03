@@ -19,14 +19,43 @@
  *      qorunur, təkrar cəhd statistikaya təsir etmir).
  */
 
-const isProductionFrontend = typeof window !== "undefined" && (
-  window.location.hostname === "phoenixaze.github.io" ||
-  window.location.hostname.endsWith("github.io") ||
-  window.location.hostname === "gradient.az" ||
-  window.location.hostname === "www.gradient.az"
-);
-const API_BASE_URL = isProductionFrontend
-  ? "https://gradient-backend-fam5.onrender.com"
+const PROD_API_BASE_URL = "https://gradient-backend-fam5.onrender.com";
+
+/*
+ * API ünvanının seçilməsi.
+ *
+ * PROBLEM (düzəliş): Əvvəl lokal rejimdə `API_BASE_URL` boş idi, yəni
+ * `/api/v1/...` sorğuları heç bir serverə getmirdi → brauzer "Failed to fetch"
+ * atırdı → istifadəçi "Serverə qoşulmaq mümkün olmadı" mesajını görürdü.
+ *
+ * HƏLL: Express proxy (`server.js`) işləyirsə nisbi yol (`""`) istifadə olunur.
+ * Proxy işləmirsə (Live Server / `file://`) sorğu birbaşa production
+ * backend-ə yönləndirilir.
+ *
+ * TƏHLÜKƏSİZLİK: burada HƏR GÜN açar/CƏDVƏL ADI yoxdur — yalnız public
+ * API domeni. Həqiqi autentifikasiya və məlumat sətri həmişə FastAPI
+ * tərəfdə `.eq("student_id", current_user["id"])` ilə qorunur.
+ */
+const host = typeof window !== "undefined" ? window.location.hostname : "";
+const isLocalDev =
+  host === "" ||
+  host === "localhost" ||
+  host === "127.0.0.1" ||
+  host === "::1";
+
+const isProductionFrontend = host === "phoenixaze.github.io" ||
+  host.endsWith("github.io") ||
+  host === "gradient.az" ||
+  host === "www.gradient.az";
+
+// Proxy (`server.js`) eyni origin-dədir → nisbi yol ən təhlükəsiz seçimdir.
+// Amma `file://` və tək fayl rejimində origin yoxdur → birbaşa backend.
+const useProxy = typeof window !== "undefined" &&
+  window.location.protocol === "http:" &&
+  !isLocalDev;
+
+const API_BASE_URL = (isProductionFrontend || !useProxy)
+  ? PROD_API_BASE_URL
   : "";
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -855,28 +884,39 @@ document.addEventListener("DOMContentLoaded", async () => {
       tdTitle.appendChild(document.createTextNode(h.title || "Sınaq"));
 
       const attempts = (attemptsByExam[h.exam_id] || {}).attempts || [];
+      // `attempts_known=false` → SQL miqrasiya icra edilməyib, cədvəl yoxdur.
+      // Bu halda cəhd sayını iddiadan göstərmək aldadıcı olardı (badge gizlədilir).
+      const attemptsKnown = h.attempts_known !== false && attempts.length > 0;
       const totalAttempts = attempts.length || 1;
 
       const badgeWrap = createElement("div", "cell-badges");
       const primaryAttempt = attempts.find((a) => a.is_primary);
 
-      const badge = createElement(
-        "span",
-        totalAttempts > 1 ? "badge-attempts is-multi" : "badge-attempts",
-        totalAttempts > 1 ? `${totalAttempts} cəhd` : "1 cəhd"
-      );
+      if (attemptsKnown) {
+        badgeWrap.appendChild(
+          createElement(
+            "span",
+            totalAttempts > 1 ? "badge-attempts is-multi" : "badge-attempts",
+            totalAttempts > 1 ? `${totalAttempts} cəhd` : "1 cəhd"
+          )
+        );
+      }
       badgeWrap.appendChild(badge);
 
       // AI düyməsi — hansı cəhd analiz olunacaq?
+      // MƏNBƏ NÖRDƏSİ: əvvəlcə `/exams/{id}/attempts` cavabı, yoxdursa
+      // `/analytics/me` history sətrindəki `attempt_id` (SQL miqrasiya
+      // icra edilməyibsə bu endpoint-lər boş qaytarır).
       const aiBtn = createButton(
         "AI Analiz",
         "btn btn-outline btn-sm",
         () => {
           const target = primaryAttempt || attempts[0];
-          if (target && target.attempt_id) {
+          const attemptId = (target && target.attempt_id) || h.attempt_id || null;
+          if (attemptId) {
             runExamAnalysis(
-              target.attempt_id,
-              `${h.title || "Sınaq"} — ${target.attempt_no || 1}-ci cəhd`
+              attemptId,
+              `${h.title || "Sınaq"} — ${(target && target.attempt_no) || h.attempt_no || 1}-ci cəhd`
             );
           } else {
             showToast("Bu sınaq üçün cəhd məlumatı tapılmadı.", "warning");
@@ -911,13 +951,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       const actions = createElement("div", "row-actions");
 
-      if (totalAttempts > 1 || (attemptsByExam[h.exam_id] || {}).can_retake) {
+      if (attemptsKnown && (totalAttempts > 1 || (attemptsByExam[h.exam_id] || {}).can_retake)) {
         actions.appendChild(
           createButton("Cəhdlər", "btn btn-ghost btn-sm", () => openAttemptsModal(h.exam_id, h.title))
         );
       }
 
-      if ((attemptsByExam[h.exam_id] || {}).can_retake) {
+      if (attemptsKnown && (attemptsByExam[h.exam_id] || {}).can_retake) {
         const retake = document.createElement("a");
         retake.className = "btn btn-outline btn-sm";
         retake.href = `exam-hall.html?id=${encodeURIComponent(h.exam_id)}`;
