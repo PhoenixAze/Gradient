@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mövzu Diaqnostikası və Fərdi Analitika | Gradient</title>
-  <meta name="description" content="Real sınaq nəticələriniz əsasında fərdi analitika və zəif mövzuların təhlili.">
+  <title>Analitika | Gradient</title>
+  <meta name="description" content="Sınaq nəticələriniz, səhvləriniz və AI fərdi analizləriniz.">
 
   <meta name="referrer" content="strict-origin-when-cross-origin">
 
   <!--
-    TƏHLÜKƏSİZLİK: Strict CSP — 'unsafe-inline' YOXDUR, çünki bütün stiller
-    xarici CSS fayllarındadır (inline style atributları .clinerules §3 əsasında silindi).
+    TƏHLÜKƏSİZLİK: Strict CSP — 'unsafe-inline' YOXDUR. Inline <style>/<script>
+    yazılmır (.clinerules §3), bütün stiller xarici CSS fayllarındadır.
   -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://gradient-backend-fam5.onrender.com; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; script-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';">
 
@@ -49,13 +49,13 @@
 
   <main class="analytics-container">
     <div class="analytics-header-section">
-      <h1 class="analytics-title">Mövzu Diaqnostikası və Fərdi Trayektoriya</h1>
-      <p class="analytics-subtitle">Real imtahan cavablarınıza əsaslanan dəqiq nəticələr və inkişaf tövsiyələri.</p>
+      <h1 class="analytics-title">Analitika</h1>
     </div>
 
     <!-- SKELETON LOADER VƏZİYYƏTİ (.clinerules §4) -->
     <div id="analytics-skeleton" aria-hidden="true">
-      <div class="stats-grid">
+      <div class="stats-grid stats-grid-4">
+        <div class="stat-box"><div class="skeleton skeleton-line skeleton-line-sm"></div><div class="skeleton skeleton-line skeleton-line-lg"></div></div>
         <div class="stat-box"><div class="skeleton skeleton-line skeleton-line-sm"></div><div class="skeleton skeleton-line skeleton-line-lg"></div></div>
         <div class="stat-box"><div class="skeleton skeleton-line skeleton-line-sm"></div><div class="skeleton skeleton-line skeleton-line-lg"></div></div>
         <div class="stat-box"><div class="skeleton skeleton-line skeleton-line-sm"></div><div class="skeleton skeleton-line skeleton-line-lg"></div></div>
@@ -63,131 +63,164 @@
       <div class="section-card"><div class="skeleton skeleton-line skeleton-line-title"></div><div class="skeleton-box"></div></div>
     </div>
 
-    <!-- BOŞ VƏZİYYƏT (Hələ heç bir sınaq işlənilməyib) -->
+    <!-- BOŞ VƏZİYYƏT / XƏTA VƏZİYYƏTİ -->
     <div id="analytics-empty" class="empty-box hidden">
-      <h2 class="empty-box-title">Hələ heç bir sınaq nəticəniz qeydə alınmayıb</h2>
-      <p class="empty-box-desc">
-        Süni intellekt analitikasını və mövzular üzrə zəif nöqtələrinizi görmək üçün ilk sınağınızı işləməlisiniz.
-      </p>
-      <a href="exam.html" class="btn btn-primary">İlk Sınağa Başla &rarr;</a>
+      <h2 class="empty-box-title">Hələ heç bir sınaq nəticəniz yoxdur</h2>
+      <p class="empty-box-desc">İlk sınağınızı işləyin — analitika avtomatik yaradılacaq.</p>
+      <a href="exam.html" class="btn btn-primary">Sınaqlar Zalına Keç</a>
     </div>
 
     <!-- REAL MƏLUMATLAR PANELİ -->
     <div id="analytics-content" class="hidden">
-      
+
       <!-- Metrika Kartları -->
-      <div class="stats-grid">
+      <div class="stats-grid stats-grid-4">
         <div class="stat-box">
-          <div class="stat-box-label">Ümumi Dəqiqlik</div>
+          <div class="stat-box-label">Dəqiqlik</div>
           <div class="stat-box-value" id="val-accuracy">0%</div>
-          <div class="stat-box-desc">Bütün suallar üzrə düzgün cavab nisbəti</div>
         </div>
         <div class="stat-box">
-          <div class="stat-box-label">Tamamlanmış Sınaqlar</div>
+          <div class="stat-box-label">Sınaqlar</div>
           <div class="stat-box-value" id="val-total-exams">0</div>
-          <div class="stat-box-desc">Sistemdə bitirilmiş sınaq sayı</div>
         </div>
         <div class="stat-box">
-          <div class="stat-box-label">Cavablandırılan Suallar</div>
-          <div class="stat-box-value" id="val-questions">0 / 0</div>
-          <div class="stat-box-desc" id="val-questions-desc">Düzgün / Ümumi sual sayı</div>
+          <div class="stat-box-label">Düzgün cavab</div>
+          <div class="stat-box-value" id="val-correct">0</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-box-label">Səhv + boş</div>
+          <div class="stat-box-value is-danger" id="val-wrong">0</div>
         </div>
       </div>
 
-      <!-- AI Qradient Diaqnozu -->
-      <div class="diagnosis-panel" id="diagnosis-panel">
-        <div class="diagnosis-header">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
-          <h2 class="diagnosis-title">Gradient Diaqnozu</h2>
-        </div>
-        <p class="diagnosis-text" id="diagnosis-text" aria-live="polite">Nəticələr təhlil edilir...</p>
+      <!-- TABLAR -->
+      <div class="tabs" role="tablist" aria-label="Analitika bölmələri">
+        <button type="button" class="tab is-active" id="tab-attempts" role="tab" aria-selected="true" aria-controls="panel-attempts">Sınaqlarım</button>
+        <button type="button" class="tab" id="tab-overview" role="tab" aria-selected="false" aria-controls="panel-overview">İcmal</button>
+        <button type="button" class="tab" id="tab-topics" role="tab" aria-selected="false" aria-controls="panel-topics">Mövzular</button>
+        <button type="button" class="tab" id="tab-ai" role="tab" aria-selected="false" aria-controls="panel-ai">AI Analiz</button>
       </div>
 
-      <!-- Fənlər Üzrə Dəqiqlik -->
-      <div class="section-card">
-        <h2 class="section-card-title">Fənlər Üzrə Real Göstəricilər</h2>
-        <div id="subject-list-container">
-          <!-- Dinamik olaraq JS ilə doldurulacaq -->
+      <!-- ============ TAB 1: SINAQLARIM (əvvəlki sınaqlara bəxş + səhvlər) ============ -->
+      <section id="panel-attempts" class="tab-panel" role="tabpanel" aria-labelledby="tab-attempts">
+        <div class="toolbar">
+          <label class="toolbar-field">
+            <span class="toolbar-label">Axtarış</span>
+            <input type="search" id="attempt-search" class="input" placeholder="Sınaq adı və ya fənn" autocomplete="off" maxlength="80">
+          </label>
+          <label class="toolbar-field">
+            <span class="toolbar-label">Yalnız səhvləri olanlar</span>
+            <select id="attempt-filter" class="input">
+              <option value="all">Bütün sınaqlar</option>
+              <option value="mistakes">Səhvi olan sınaqlar</option>
+              <option value="analyzed">AI analizi olanlar</option>
+            </select>
+          </label>
         </div>
-      </div>
 
-      <!-- Mövzu (q_tag) Üzrə Çətinlik -->
-      <div class="section-card" id="topic-card">
-        <h2 class="section-card-title">Mövzu Üzrə Çətinlik Analizi</h2>
-        <p class="section-card-desc">
-          Hər sıra bir mövzu teqidir (<code>q_tag</code>). Aşağıdakılar ən çətin mövzular —
-          nəticəniz necə yaxşılaşacağına görə sıralanır.
-        </p>
-        <div id="topic-list-container">
-          <!-- Dinamik olaraq JS ilə doldurulacaq -->
+        <div id="attempts-skeleton" class="attempt-skeleton" aria-hidden="true">
+          <div class="skeleton skeleton-box"></div>
+          <div class="skeleton skeleton-box"></div>
+          <div class="skeleton skeleton-box"></div>
         </div>
-      </div>
 
-      <!-- Ümumi AI Analiz -->
-      <div class="section-card ai-overview-card">
-        <div class="ai-overview-header">
-          <div class="ai-overview-heading">
-            <h2 class="section-card-title">Bütün Sınaqların Ümumi AI Analizi</h2>
-            <p class="section-card-desc" id="ai-overview-meta">
-              Bütün nəticələriniz birlikdə təhlil olunur: ən çətin fənn, gücləndirilməsi
-              lazım olan mövzular və prioritetli öyrənmə planı.
-            </p>
+        <div id="attempts-list" class="attempt-cards"></div>
+        <p id="attempts-none" class="ai-empty hidden">Bu filtrə uyğun sınaq tapılmadı.</p>
+      </section>
+
+      <!-- ============ TAB 2: İCMAL ============ -->
+      <section id="panel-overview" class="tab-panel hidden" role="tabpanel" aria-labelledby="tab-overview">
+        <div class="diagnosis-panel">
+          <div class="diagnosis-header">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+            <h2 class="diagnosis-title">Qısa diaqnoz</h2>
           </div>
-          <div class="ai-overview-actions">
-            <button type="button" id="btn-overall-analysis" class="btn btn-primary">
-              AI Analiz Yarat
-            </button>
-            <button type="button" id="btn-overall-refresh" class="btn btn-ghost hidden">
-              Yenilə
-            </button>
+          <p class="diagnosis-text" id="diagnosis-text" aria-live="polite"></p>
+        </div>
+
+        <div class="section-card">
+          <h2 class="section-card-title">Fənnlər</h2>
+          <div id="subject-list-container"></div>
+        </div>
+      </section>
+
+      <!-- ============ TAB 3: MÖVZULAR ============ -->
+      <section id="panel-topics" class="tab-panel hidden" role="tabpanel" aria-labelledby="tab-topics">
+        <div class="section-card">
+          <h2 class="section-card-title">Ən zəif mövzular</h2>
+          <div id="topic-list-container"></div>
+        </div>
+      </section>
+
+      <!-- ============ TAB 4: AI ANALİZ ============ -->
+      <section id="panel-ai" class="tab-panel hidden" role="tabpanel" aria-labelledby="tab-ai">
+        <div class="section-card ai-overview-card">
+          <div class="ai-overview-header">
+            <h2 class="section-card-title">Ümumi analiz</h2>
+            <div class="ai-overview-actions">
+              <button type="button" id="btn-overall-analysis" class="btn btn-primary btn-sm">Yarat</button>
+              <button type="button" id="btn-overall-refresh" class="btn btn-outline btn-sm hidden">Yenilə</button>
+            </div>
           </div>
-        </div>
 
-        <!-- Yüklənmə vəziyyəti -->
-        <div id="ai-overview-loading" class="ai-loading hidden" aria-live="polite">
-          <span class="spinner" aria-hidden="true"></span>
-          <span>AI analiz hazırlanır… (bu bir neçə saniyə çəkə bilər)</span>
-        </div>
+          <p class="meta-line" id="ai-overview-meta"></p>
 
-        <!-- Nəticə -->
-        <div id="ai-overview-result" class="ai-result hidden"></div>
-      </div>
+          <div id="ai-overview-loading" class="ai-loading hidden" aria-live="polite">
+            <span class="spinner" aria-hidden="true"></span>
+            <span>Analiz hazırlanır…</span>
+          </div>
 
-      <!-- Sınaq Tarixçəsi -->
-      <div class="section-card">
-        <div class="table-scroll">
-          <table class="history-table">
-            <thead>
-              <tr>
-                <th>Sınaq Adı</th>
-                <th>Fənn</th>
-                <th>Bal (Düzgün / Ümumi)</th>
-                <th>Dəqiqlik</th>
-                <th>Tarix</th>
-                <th class="col-actions">Analiz</th>
-              </tr>
-            </thead>
-            <tbody id="history-table-body">
-              <!-- Dinamik olaraq JS ilə doldurulacaq -->
-            </tbody>
-          </table>
+          <div id="ai-overview-result" class="ai-result hidden"></div>
         </div>
-        <p class="table-hint">
-          Hər sırada <strong>AI Analiz</strong> düyməsi həmin sınağın səhv etdiyiniz
-          mövzuları süni intellektlə təhlil edir. <strong>Cəhdlər</strong> sütunu isə
-          sınağı təkrar işlətdiyinizdə əvvəlki nəticənin <strong>qorunduğunu</strong> və
-          yeni cəhdin nəticəsini ayrıca göstərir.
-        </p>
-      </div>
+      </section>
 
     </div>
   </main>
 
   <!-- ======================================================================
-       AI ANALİZ MODALI
-       Təhlükəsizlik: bütün mətn `textContent` ilə yazılır (innerHTML
-       qadağandır — .clinerules §2). AI mətni istifadəçi girişi ilə gəlir,
-       ona görə heç bir HTML injection mümkün deyil.
+       CƏHD TƏFSİLATI MODALI (səhvlər)
+       Təhlükəsizlik: bütün mətn `textContent` ilə yazılır — innerHTML
+       qadağandır (.clinerules §2). AI/sual mətni istifadəçi məlumatından
+       gəlir, ona görə HTML injection mümkün deyil.
+       ====================================================================== -->
+  <div id="detail-modal" class="modal-overlay hidden" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="detail-modal-title">
+    <div class="modal-backdrop" data-close-detail="true"></div>
+    <div class="modal-panel modal-panel-wide" role="document">
+      <header class="modal-header">
+        <div class="modal-heading">
+          <h2 id="detail-modal-title" class="modal-title">Cəhd təfsilatı</h2>
+          <p id="detail-modal-subtitle" class="modal-subtitle"></p>
+        </div>
+        <button type="button" id="detail-modal-close" class="modal-close" aria-label="Pencerəni bağla">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </header>
+
+      <div class="modal-body">
+        <div class="detail-stats" id="detail-stats"></div>
+
+        <div class="segmented" role="group" aria-label="Sual filtri">
+          <button type="button" class="seg-btn is-active" id="seg-all">Bütün suallar</button>
+          <button type="button" class="seg-btn" id="seg-wrong">Yalnız səhvlər</button>
+        </div>
+
+        <div id="detail-loading" class="ai-loading" aria-live="polite">
+          <span class="spinner" aria-hidden="true"></span>
+          <span>Yüklənir…</span>
+        </div>
+
+        <div id="detail-questions" class="q-list"></div>
+      </div>
+
+      <footer class="modal-footer">
+        <p id="detail-model-note" class="modal-model-note"></p>
+        <button type="button" id="detail-modal-done" class="btn btn-primary btn-sm">Bağla</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       AI ANALİZ MODALI (ümumi + keçmiş cəhd analizləri)
        ====================================================================== -->
   <div id="ai-modal" class="modal-overlay hidden" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="ai-modal-title">
     <div class="modal-backdrop" data-close-modal="true"></div>
@@ -205,14 +238,14 @@
       <div class="modal-body">
         <div id="ai-modal-loading" class="ai-loading hidden" aria-live="polite">
           <span class="spinner" aria-hidden="true"></span>
-          <span>AI analiz hazırlanır…</span>
+          <span>Analiz hazırlanır…</span>
         </div>
         <div id="ai-modal-content" class="ai-result"></div>
       </div>
 
       <footer class="modal-footer">
         <p id="ai-modal-model" class="modal-model-note"></p>
-        <button type="button" id="ai-modal-done" class="btn btn-primary">Bağla</button>
+        <button type="button" id="ai-modal-done" class="btn btn-primary btn-sm">Bağla</button>
       </footer>
     </div>
   </div>

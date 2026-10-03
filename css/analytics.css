@@ -1,13 +1,12 @@
 /* ==========================================================================
-   ANALİTİKA VƏ DİAQNOSTİKA SƏHİFƏSİ ÜÇÜN CSS
+   ANALİTİKA SƏHİFƏSİ — DİZAYN SİSTEMİ
+   --------------------------------------------------------------------------
+   Anti-AI estetik: neqtral Slate palitrası, 1px sərhədlər, incə kölgələr,
+   tək vurğu rəngi (--accent). Neon/liquid glass/emoji YOXDUR.
+   Göz yorucu boş mətnlər (`table-hint`, təkrarlanan izah sətirləri) SİLİNMİŞDİR.
    ========================================================================== */
 
-/*
-  BUG DÜZELDİŞİ: .hidden bu faylda və style.css-də TƏYİN EDİLMƏYİBDİ.
-  HTML-də #analytics-skeleton, #analytics-empty, #analytics-content elementləri
-  .hidden sinfi ilə idarə olunurdu — qayda olmadığı üçün SKELETON və BOŞ VƏZİYYƏT
-  EYNİ ANDA görünürdü (səhifə qarışıq idi). !important bütün display qaydalarını əstələyir.
-*/
+/* .hidden bu səhifədə real idarəetmə elementidir (skeleton/empty/panel) */
 .hidden {
   display: none !important;
 }
@@ -17,56 +16,50 @@
   border-bottom: 1px solid var(--border);
 }
 
-.table-scroll {
-  overflow-x: auto;
-}
-
-.skeleton-line-sm {
-  width: 40%;
-}
-
-.skeleton-line-lg {
-  height: 36px;
-  width: 60%;
-}
-
-.skeleton-line-title {
-  width: 30%;
-}
+/* ==========================================================================
+   1. SƏHİFƏ KARKASI
+   ========================================================================== */
 
 .analytics-container {
-  max-width: 1040px;
+  max-width: 1080px;
   margin: 0 auto;
-  padding: 32px 20px 80px;
+  padding: 28px 20px 72px;
 }
 
 .analytics-header-section {
-  margin-bottom: 32px;
+  margin-bottom: 20px;
 }
 
 .analytics-title {
-  font-size: 1.75rem;
+  font-size: 1.6rem;
   font-weight: 700;
   color: var(--text-main);
   letter-spacing: -0.02em;
-  margin-bottom: 8px;
+  margin: 0;
 }
 
-.analytics-subtitle {
-  font-size: 0.95rem;
-  color: var(--text-muted);
-}
+/* ==========================================================================
+   2. METRİKA KARTLARI
+   ========================================================================== */
 
-/* Metrika Kartları */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
-  margin-bottom: 32px;
+  gap: 14px;
+  margin-bottom: 24px;
 }
 
-@media (max-width: 768px) {
-  .stats-grid {
+.stats-grid-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+@media (max-width: 860px) {
+  .stats-grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-grid-4 {
     grid-template-columns: 1fr;
   }
 }
@@ -75,194 +68,394 @@
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 24px;
+  padding: 18px 20px;
   box-shadow: var(--shadow-sm);
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
 }
 
 .stat-box-label {
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-muted);
-  margin-bottom: 12px;
-}
-
-.stat-box-value {
-  font-size: 2.25rem;
-  font-weight: 700;
-  color: var(--text-main);
-  line-height: 1.1;
+  letter-spacing: 0.06em;
+  color: var(--text-sub);
   margin-bottom: 8px;
 }
 
-.stat-box-desc {
-  font-size: 0.85rem;
+.stat-box-value {
+  font-size: 1.9rem;
+  font-weight: 700;
+  color: var(--text-main);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.stat-box-value.is-danger {
+  color: var(--danger);
+}
+
+/* ==========================================================================
+   3. TABLAR
+   ========================================================================== */
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 20px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.tab {
+  appearance: none;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 10px 16px;
+  font-family: inherit;
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: var(--transition);
+  margin-bottom: -1px;
+}
+
+.tab:hover {
+  color: var(--text-main);
+}
+
+.tab.is-active {
+  color: var(--text-main);
+  font-weight: 600;
+  border-bottom-color: var(--accent);
+}
+
+.tab:focus-visible,
+.seg-btn:focus-visible,
+.input:focus-visible,
+.attempt-card-title:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ==========================================================================
+   4. ALƏT PANELİ (axtarış + filtr)
+   ========================================================================== */
+
+.toolbar {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.toolbar-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 1;
+  min-width: 180px;
+}
+
+.toolbar-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   color: var(--text-sub);
 }
 
-/* AI / Diaqnostika Bloku */
-.diagnosis-panel {
+.input {
+  font-family: inherit;
+  font-size: 0.9rem;
+  color: var(--text-main);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 9px 12px;
+  width: 100%;
+  transition: var(--transition);
+}
+
+.input:hover {
+  border-color: var(--border-focus);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+/* ==========================================================================
+   5. SINAQ KARTLARI ("Sınaqlarım" tabı)
+   ========================================================================== */
+
+.attempt-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.attempt-card {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 24px;
+  padding: 16px 18px;
   box-shadow: var(--shadow-sm);
-  margin-bottom: 32px;
+  transition: var(--transition);
 }
 
-.diagnosis-header {
+.attempt-card:hover {
+  border-color: var(--border-focus);
+  box-shadow: var(--shadow-md);
+}
+
+.attempt-card.is-primary {
+  border-left: 3px solid var(--accent);
+}
+
+.attempt-card-head {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 16px;
-  color: var(--primary);
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 10px;
 }
 
-.diagnosis-title {
-  font-size: 1.1rem;
+.attempt-card-title-wrap {
+  min-width: 0;
+  flex: 1;
+}
+
+/*
+  Başlıq `button` yox, `<h3>` — əlçatanlıq üçün `role="button"` HTML-də verilir.
+  JS: `tabindex` + Enter/Space ilə işə salınır.
+*/
+.attempt-card-title {
+  font-size: 0.98rem;
   font-weight: 600;
   color: var(--text-main);
+  margin: 0 0 6px;
+  line-height: 1.4;
+  cursor: pointer;
+  transition: var(--transition);
+  display: inline-block;
 }
 
-.diagnosis-text {
-  font-size: 0.95rem;
-  color: var(--text-main);
-  line-height: 1.6;
+.attempt-card-title:hover {
+  color: var(--accent);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 9px;
+  border-radius: 20px;
   background: var(--bg-muted);
-  border-left: 4px solid var(--accent);
-  padding: 16px;
-  border-radius: 4px;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  white-space: nowrap;
 }
 
-/* Fənn və Tarixçə Cədvəli */
+.chip-quiet {
+  background: transparent;
+  color: var(--text-sub);
+}
+
+/* "AI analiz var" nişanı — kliklənə bilər (pulsuz oxuma) */
+.chip-ai {
+  cursor: pointer;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: transparent;
+  transition: var(--transition);
+}
+
+.chip-ai:hover {
+  background: var(--accent);
+  color: #FFFFFF;
+}
+
+.attempt-card-score {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.score-value {
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.score-sub {
+  font-size: 0.75rem;
+  color: var(--text-sub);
+  margin-top: 2px;
+}
+
+.is-success { color: var(--success); }
+.is-warning { color: var(--warning); }
+.is-danger { color: var(--danger); }
+
+.attempt-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding-top: 10px;
+  margin-bottom: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.meta-item {
+  font-size: 0.78rem;
+  color: var(--text-sub);
+  font-weight: 500;
+}
+
+.attempt-card-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ==========================================================================
+   6. FƏNN VƏ MÖVZU İSTATİSTİKASI
+   ========================================================================== */
+
 .section-card {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 24px;
+  padding: 22px;
   box-shadow: var(--shadow-sm);
-  margin-bottom: 32px;
+  margin-bottom: 18px;
 }
 
 .section-card-title {
-  font-size: 1.15rem;
+  font-size: 1.05rem;
   font-weight: 600;
   color: var(--text-main);
-  margin-bottom: 20px;
+  margin: 0 0 18px;
 }
 
-.subject-item {
-  margin-bottom: 20px;
+.subject-item,
+.topic-item {
+  margin-bottom: 16px;
 }
 
-.subject-item:last-child {
+.subject-item:last-child,
+.topic-item:last-child {
   margin-bottom: 0;
 }
 
-.subject-header {
+.subject-header,
+.topic-head {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  font-size: 0.95rem;
-  font-weight: 500;
-  margin-bottom: 8px;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 7px;
 }
 
-.subject-meta {
-  font-size: 0.85rem;
+.subject-name,
+.topic-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.subject-meta,
+.topic-stats {
+  font-size: 0.8rem;
   color: var(--text-muted);
+  white-space: nowrap;
 }
 
 .progress-track {
-  height: 8px;
-  background: var(--border);
+  height: 7px;
+  background: var(--bg-muted);
   border-radius: 999px;
   overflow: hidden;
 }
 
+.progress-track.is-thin {
+  height: 5px;
+}
+
 /*
-  PROGRESS: genişlik JS-dən --progress-width custom property vasitəsilə verilir
-  (inline style qadağası pozulmadan). Susmaya dəyər 0% verilir.
+  PROGRESS: genişlik JS-dən `--progress-width` custom property ilə verilir
+  (inline style atributu yazılmır — .clinerules §3).
 */
 .progress-fill {
   width: var(--progress-width, 0%);
   height: 100%;
-  border-radius: inherit;
-  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
   border-radius: 999px;
-  transition: width 0.6s ease;
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .progress-fill.high { background-color: var(--success); }
 .progress-fill.mid { background-color: var(--warning); }
 .progress-fill.low { background-color: var(--danger); }
 
-/* Tarixçə Siyahısı */
-.history-table {
-  width: 100%;
-  border-collapse: collapse;
+/* ==========================================================================
+   7. QİSA DİAQNOZ
+   ========================================================================== */
+
+.diagnosis-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px 22px;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 18px;
 }
 
-.history-table th {
-  text-align: left;
-  font-size: 0.8rem;
+.diagnosis-header {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 12px;
+  color: var(--accent);
+}
+
+.diagnosis-title {
+  font-size: 0.95rem;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-sub);
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--border);
-}
-
-.history-table td {
-  padding: 14px 16px;
-  font-size: 0.9rem;
   color: var(--text-main);
-  border-bottom: 1px solid var(--border);
 }
 
-.history-table tr:last-child td {
-  border-bottom: none;
-}
-
-/* Cədvəl hüceyrə semantik sinifləri (JS artıq inline style istifadə etmir) */
-.cell-strong {
-  font-weight: 600;
-}
-
-.cell-muted {
-  color: var(--text-muted);
-}
-
-.cell-success {
-  color: var(--success);
-}
-
-.cell-warning {
-  color: var(--warning);
-}
-
-.cell-danger {
-  color: var(--danger);
-}
-
-.badge-tag {
-  display: inline-block;
-  padding: 3px 8px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  border-radius: 4px;
+.diagnosis-text {
+  font-size: 0.92rem;
+  color: var(--text-main);
+  line-height: 1.65;
   background: var(--bg-muted);
-  color: var(--text-muted);
+  border-left: 3px solid var(--accent);
+  padding: 14px 16px;
+  border-radius: 4px;
+  margin: 0;
 }
 
-/* Skeleton Loading Animasiyası */
+/* ==========================================================================
+   8. SKELETON LOADER
+   ========================================================================== */
+
 .skeleton-line {
-  height: 16px;
+  height: 14px;
   background: linear-gradient(90deg, #F1F5F9 25%, #E2E8F0 50%, #F1F5F9 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
@@ -270,12 +463,22 @@
   margin-bottom: 12px;
 }
 
+.skeleton-line-sm { width: 40%; }
+.skeleton-line-lg { height: 32px; width: 60%; }
+.skeleton-line-title { width: 30%; }
+
 .skeleton-box {
-  height: 90px;
+  height: 96px;
   background: linear-gradient(90deg, #F1F5F9 25%, #E2E8F0 50%, #F1F5F9 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
+}
+
+.attempt-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 @keyframes shimmer {
@@ -283,145 +486,9 @@
   100% { background-position: -200% 0; }
 }
 
-/* Boş Vəziyyət (Empty State) */
-/* Xəta vəziyyəti üçün boş vəziyyət kartı */
-.empty-box.is-error {
-  border-color: var(--danger);
-  background-color: var(--danger-soft);
-}
-
-.empty-box {
-  text-align: center;
-  padding: 56px 24px;
-  background: var(--bg-card);
-  border: 1px dashed var(--border);
-  border-radius: var(--radius-lg);
-}
-
-.empty-box-title {
-  font-size: 1.15rem;
-  font-weight: 600;
-  color: var(--text-main);
-  margin-bottom: 8px;
-}
-
-.empty-box-desc {
-  font-size: 0.95rem;
-  color: var(--text-muted);
-  max-width: 480px;
-  margin: 0 auto 24px;
-}
-
-/* ==========================================================================
-   MÖVZU (q_tag) ÜZRƏ ÇƏTİNLİK
-   ========================================================================== */
-
-.section-card-desc {
-  font-size: 0.875rem;
-  color: var(--text-muted);
-  margin: -6px 0 20px;
-  line-height: 1.6;
-}
-
-.section-card-desc code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.8rem;
-  background: var(--bg-muted);
-  padding: 1px 5px;
-  border-radius: 3px;
-}
-
-.topic-item {
-  padding: 12px 0;
-  border-bottom: 1px solid var(--border);
-}
-
-.topic-item:last-child {
-  border-bottom: none;
-}
-
-.topic-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 8px;
-}
-
-.topic-name {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--text-main);
-}
-
-.topic-stats {
-  font-size: 0.78rem;
-  color: var(--text-muted);
-  white-space: nowrap;
-}
-
-.progress-track.is-thin {
-  height: 6px;
-}
-
-@media (max-width: 640px) {
-  .topic-head {
-    flex-direction: column;
-    gap: 4px;
-  }
-}
-
-/* ==========================================================================
-   ÜMUMİ AI ANALİZ PANELİ
-   ========================================================================== */
-
-.ai-overview-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 20px;
-}
-
-.ai-overview-heading .section-card-title {
-  margin-bottom: 6px;
-}
-
-.ai-overview-heading .section-card-desc {
-  margin-bottom: 0;
-}
-
-.ai-overview-actions {
-  display: flex;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-@media (max-width: 640px) {
-  .ai-overview-header {
-    flex-direction: column;
-  }
-  .ai-overview-actions {
-    width: 100%;
-  }
-  .ai-overview-actions .btn {
-    flex: 1;
-  }
-}
-
-/* Yüklənmə göstəricisi — AI cavabı bir neçə saniyə çəkə bilər */
-.ai-loading {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 20px 0;
-  font-size: 0.9rem;
-  color: var(--text-muted);
-}
-
 .spinner {
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
   border: 2px solid var(--border);
   border-top-color: var(--text-main);
   border-radius: 50%;
@@ -433,8 +500,62 @@
   to { transform: rotate(360deg); }
 }
 
+.ai-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 0;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
 /* ==========================================================================
-   AI NƏTİCƏ BLOKLARI
+   9. BOŞ VƏ XƏTA VƏZİYYƏTLƏRİ
+   ========================================================================== */
+
+.empty-box {
+  text-align: center;
+  padding: 52px 24px;
+  background: var(--bg-card);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-lg);
+}
+
+.empty-box.is-error {
+  border-color: var(--danger);
+  background-color: var(--danger-soft);
+}
+
+.empty-box-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-bottom: 8px;
+}
+
+.empty-box-desc {
+  font-size: 0.92rem;
+  color: var(--text-muted);
+  max-width: 420px;
+  margin: 0 auto 22px;
+}
+
+.ai-empty {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+  padding: 14px 0;
+  margin: 0;
+}
+
+.meta-line {
+  font-size: 0.78rem;
+  color: var(--text-sub);
+  margin: 0 0 14px;
+}
+
+/* ==========================================================================
+   10. AI NƏTİCƏ BLOKLARI
    ========================================================================== */
 
 .ai-headline {
@@ -456,12 +577,16 @@
   margin-bottom: 22px;
 }
 
+.ai-block:last-child {
+  margin-bottom: 0;
+}
+
 .ai-block-title {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-muted);
+  letter-spacing: 0.06em;
+  color: var(--text-sub);
   margin: 0 0 10px;
   padding-bottom: 6px;
   border-bottom: 1px solid var(--border);
@@ -481,27 +606,21 @@
   list-style: decimal;
 }
 
-.ai-list-ordered li {
-  font-size: 0.9rem;
-  line-height: 1.6;
-}
-
 .ai-list li {
   padding-left: 12px;
   border-left: 2px solid var(--border);
 }
 
-.ai-list.is-positive li {
-  border-left-color: var(--success);
+.ai-list-ordered li {
+  font-size: 0.9rem;
+  line-height: 1.6;
+  padding-left: 4px;
+  border-left: none;
 }
 
-.ai-list.is-warning li {
-  border-left-color: var(--warning);
-}
-
-.ai-list.is-danger li {
-  border-left-color: var(--danger);
-}
+.ai-list.is-positive li { border-left-color: var(--success); }
+.ai-list.is-warning li { border-left-color: var(--warning); }
+.ai-list.is-danger li { border-left-color: var(--danger); }
 
 .ai-list-head {
   display: flex;
@@ -529,14 +648,14 @@
   font-size: 0.85rem;
   color: var(--text-main);
   line-height: 1.6;
-  margin-top: 5px;
-  padding: 6px 10px;
+  margin-top: 6px;
+  padding: 7px 10px;
   background: var(--bg-muted);
   border-radius: 4px;
 }
 
 .ai-badge {
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   font-weight: 700;
   padding: 2px 7px;
   border-radius: 3px;
@@ -546,181 +665,177 @@
   flex-shrink: 0;
 }
 
-.ai-badge.is-high {
-  background: var(--danger-soft);
-  color: var(--danger);
-}
-
-.ai-badge.is-medium {
-  background: var(--warning-soft);
-  color: var(--warning);
-}
-
-.ai-badge.is-low {
-  background: var(--bg-muted);
-  color: var(--text-muted);
-}
-
-.ai-empty {
-  font-size: 0.9rem;
-  color: var(--text-muted);
-  line-height: 1.6;
-  padding: 16px 0;
-}
-
-.ai-notice {
-  font-size: 0.82rem;
-  color: var(--text-muted);
-  background: var(--bg-muted);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 10px 12px;
-  margin: 0 0 18px;
-  line-height: 1.6;
-}
+.ai-badge.is-high { background: var(--danger-soft); color: var(--danger); }
+.ai-badge.is-medium { background: var(--warning-soft); color: var(--warning); }
+.ai-badge.is-low { background: var(--bg-muted); color: var(--text-muted); }
 
 /* ==========================================================================
-   CƏD SİYAHISI (təkrar işlətmə nəticələri)
+   11. CƏHD TƏFSİLATI — SƏHV SİYAHISI
    ========================================================================== */
 
-.attempt-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+.detail-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 18px;
 }
 
-.attempt-item {
+@media (max-width: 560px) {
+  .detail-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.detail-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 12px 8px;
+  background: var(--bg-muted);
+  border-radius: var(--radius);
+}
+
+.detail-stat-value {
+  font-size: 1.2rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.detail-stat-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-sub);
+  font-weight: 600;
+}
+
+/* "Bütün suallar / Yalnız səhvlər" filtr */
+.segmented {
+  display: inline-flex;
+  padding: 3px;
+  background: var(--bg-muted);
+  border-radius: var(--radius);
+  margin-bottom: 16px;
+}
+
+.seg-btn {
+  appearance: none;
+  background: transparent;
+  border: none;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.seg-btn:hover {
+  color: var(--text-main);
+}
+
+.seg-btn.is-active {
+  background: var(--bg-card);
+  color: var(--text-main);
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+}
+
+.q-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.q-item {
   border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 14px 16px;
+  border-left: 3px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
   background: var(--bg-card);
 }
 
-.attempt-item.is-primary {
-  border-color: var(--border);
-}
+.q-item.is-correct { border-left-color: var(--success); }
+.q-item.is-incorrect { border-left-color: var(--danger); }
+.q-item.is-empty { border-left-color: var(--warning); }
+.q-item.is-unknown { border-left-color: var(--border-focus); }
 
-.attempt-item.is-retake {
-  border-style: dashed;
-}
-
-.attempt-head {
+.q-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
   margin-bottom: 6px;
 }
 
-.attempt-label {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--text-main);
-}
-
-.attempt-score {
-  font-size: 0.9rem;
+.q-number {
+  font-size: 0.75rem;
   font-weight: 700;
-  color: var(--text-main);
-  white-space: nowrap;
+  color: var(--text-sub);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
-.attempt-meta {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  margin: 0 0 8px;
-  line-height: 1.5;
-}
-
-.attempt-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 10px;
-}
-
-.topic-chip {
+.q-status {
   font-size: 0.72rem;
-  padding: 2px 8px;
-  border-radius: 10px;
+  font-weight: 700;
+  padding: 1px 8px;
+  border-radius: 20px;
   background: var(--bg-muted);
   color: var(--text-muted);
-  border: 1px solid var(--border);
 }
 
-.attempt-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+.q-item.is-correct .q-status { background: var(--success-soft); color: var(--success); }
+.q-item.is-incorrect .q-status { background: var(--danger-soft); color: var(--danger); }
+.q-item.is-empty .q-status { background: var(--warning-soft); color: var(--warning); }
+
+.q-text {
+  font-size: 0.88rem;
+  color: var(--text-main);
+  line-height: 1.55;
+  margin: 0 0 8px;
 }
 
-.attempt-retake {
-  margin-top: 20px;
-  padding-top: 16px;
-  border-top: 1px solid var(--border);
-}
-
-.attempt-retake .btn {
-  display: inline-block;
-  margin-top: 10px;
-}
-
-/* ==========================================================================
-   TARİXÇƏ CƏDVƏLİ — ƏMƏLİYYAT SÜTUNU
-   ========================================================================== */
-
-.col-actions {
-  white-space: nowrap;
-}
-
-.cell-badges {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 6px;
-  flex-wrap: wrap;
-}
-
-.badge-attempts {
+.q-tag {
   font-size: 0.72rem;
-  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--bg-muted);
   padding: 2px 8px;
+  border-radius: 4px;
+  display: inline-block;
+  margin-bottom: 8px;
+}
+
+.q-answers {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.q-answer {
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 3px 10px;
   border-radius: 4px;
   background: var(--bg-muted);
   color: var(--text-muted);
 }
 
-.badge-attempts.is-multi {
-  background: var(--warning-soft);
-  color: var(--warning);
+.q-answer.is-ok {
+  background: var(--success-soft);
+  color: var(--success);
 }
 
-.row-actions {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.history-table tr.is-highlighted {
-  background: var(--bg-muted);
-}
-
-.table-hint {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  line-height: 1.6;
-  margin: 16px 0 0;
-}
-
-.table-hint strong {
-  color: var(--text-main);
+.q-answer.is-bad {
+  background: var(--danger-soft);
+  color: var(--danger);
 }
 
 /* ==========================================================================
-   AI ANALİZ MODALI
+   12. MODALLAR
    ========================================================================== */
 
 .modal-overlay {
@@ -753,41 +868,47 @@
   flex-direction: column;
 }
 
+/* Təfsilat paneli genişdir — sual mətni rahat oxunmalıdır */
+.modal-panel-wide {
+  max-width: 860px;
+}
+
 .modal-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  padding: 20px 24px 16px;
+  padding: 18px 24px 14px;
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
 
 .modal-title {
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   font-weight: 700;
   color: var(--text-main);
   margin: 0;
 }
 
 .modal-subtitle {
-  font-size: 0.83rem;
+  font-size: 0.8rem;
   color: var(--text-muted);
-  margin: 6px 0 0;
+  margin: 5px 0 0;
 }
 
 .modal-close {
   background: transparent;
   border: 1px solid var(--border);
   border-radius: 6px;
-  width: 34px;
-  height: 34px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--text-muted);
   cursor: pointer;
   flex-shrink: 0;
+  transition: var(--transition);
 }
 
 .modal-close:hover {
@@ -806,32 +927,54 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 14px 24px;
+  padding: 12px 24px;
   border-top: 1px solid var(--border);
   flex-shrink: 0;
 }
 
 .modal-model-note {
-  font-size: 0.76rem;
-  color: var(--text-muted);
+  font-size: 0.75rem;
+  color: var(--text-sub);
   margin: 0;
 }
 
+.ai-overview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 6px;
+}
+
+.ai-overview-header .section-card-title {
+  margin-bottom: 0;
+}
+
+.ai-overview-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
 @media (max-width: 640px) {
-  .modal-footer {
-    flex-direction: column-reverse;
-    align-items: stretch;
-  }
   .modal-header,
   .modal-body,
   .modal-footer {
     padding-left: 16px;
     padding-right: 16px;
   }
+  .modal-footer {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+  .ai-overview-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }
 
 /* ==========================================================================
-   TOAST BİLDİRİŞLƏRİ
+   13. TOAST BİLDİRİŞLƏRİ
    ========================================================================== */
 
 .toast-region {
@@ -850,8 +993,8 @@
   border: 1px solid var(--border);
   border-left: 3px solid var(--text-muted);
   border-radius: 6px;
-  padding: 12px 16px;
-  font-size: 0.87rem;
+  padding: 11px 15px;
+  font-size: 0.86rem;
   color: var(--text-main);
   box-shadow: 0 6px 20px rgba(15, 23, 42, 0.12);
   max-width: 340px;

@@ -3,38 +3,33 @@
 /*
  * ANALİTİKA SƏHİFƏSİ
  *
- * TƏHLÜKƏSİZLİK (.clinerules §2):
- *   - Bütün mətn `textContent` ilə yazılır. `innerHTML`/`outerHTML`
- *     HƏR YERDƏ qadağandır — AI cavabları istifadəçi məlumatından
- *     yaranır, ona görə bu, həm XSS, həm də render performansı baxımından
- *     vacibdir.
- *   - Heç bir açar/Supabase cədvəl adı frontend-də yoxdur.
+ * TƏHLÜKƏSİZLİK (.clinerules §1–§3):
+ *   - Bütün mətn `textContent` ilə yazılır. `innerHTML`/`outerHTML`/
+ *     `document.write` HƏR YERDƏ qadağandır — AI cavabları və sual
+ *     mətnləri istifadəçi/DB məlumatından yaranır (XSS riski).
+ *   - Heç bir açar və ya cədvəl adı frontend-də yoxdur.
  *   - Token yalnız sessionStorage-dan oxunur.
+ *   - Səhifə daxili "göz yorucu" təkrarlanan mətnlərdən azad edilmişdir;
+ *     məlumat yoxdursa istifadəçi BOŞ PANEL deyil, kompakt boş vəziyyət
+ *     kartı görür (dərs kitabı prensipi: heç vaxt "ölü" sahə yoxdur).
  *
  * FUNKSİONAL:
- *   1) `/api/v1/analytics/me` → metrikalar, fənn və mövzu (q_tag) statistikası.
- *   2) Hər bitmiş sınaq üçün "AI Analiz" → per-cəhd Gemini analizi.
- *   3) "Bütün sınaqların ümumi AI analizi" → cache-li, DB-yə yazılan analiz.
- *   4) Hər sınaq üçün "Cəhdlər" → təkrar cəhd nəticələri (əvvəlki nəticə
- *      qorunur, təkrar cəhd statistikaya təsir etmir).
+ *   1) `/api/v1/analytics/me`              → metrikalar + fənn/mövzu statistikası.
+ *   2) `/api/v1/analytics/attempts`        → şagirdin BÜTÜN cəhdləri (axtarış + filtr).
+ *   3) `/api/v1/analytics/attempts/{id}`   → cəhd təfsilatı: sual üzrə səhv/boş/düzgün.
+ *   4) `/api/v1/analytics/attempts/{id}/ai-analysis` (GET)  → SAXLANMIŞ analiz (pulsuz).
+ *   5) `/api/v1/analytics/attempts/{id}/ai-analysis` (POST) → analiz yarat/yenilə.
+ *   6) `/api/v1/analytics/overall/ai-analysis` → ümumi analiz (GET cache / POST yarat).
  */
 
 const PROD_API_BASE_URL = "https://gradient-backend-fam5.onrender.com";
 
 /*
  * API ünvanının seçilməsi.
- *
- * PROBLEM (düzəliş): Əvvəl lokal rejimdə `API_BASE_URL` boş idi, yəni
- * `/api/v1/...` sorğuları heç bir serverə getmirdi → brauzer "Failed to fetch"
- * atırdı → istifadəçi "Serverə qoşulmaq mümkün olmadı" mesajını görürdü.
- *
- * HƏLL: Express proxy (`server.js`) işləyirsə nisbi yol (`""`) istifadə olunur.
- * Proxy işləmirsə (Live Server / `file://`) sorğu birbaşa production
- * backend-ə yönləndirilir.
- *
- * TƏHLÜKƏSİZLİK: burada HƏR GÜN açar/CƏDVƏL ADI yoxdur — yalnız public
- * API domeni. Həqiqi autentifikasiya və məlumat sətri həmişə FastAPI
- * tərəfdə `.eq("student_id", current_user["id"])` ilə qorunur.
+ *  - `server.js` proxy işləyirsə (http:// + localhost deyil) nisbi yol istifadə olunur.
+ *  - Production frontend və ya `file://`/Live Server rejimlərində birbaşa backend.
+ * TƏHLÜKƏSİZLİK: burada açar/cədvəl adı YOXDUR — yalnız public API domeni.
+ * Həqiqi məlumat sətri həmişə FastAPI tərəfdə `.eq("student_id", ...)` ilə qorunur.
  */
 const host = typeof window !== "undefined" ? window.location.hostname : "";
 const isLocalDev =
@@ -43,41 +38,59 @@ const isLocalDev =
   host === "127.0.0.1" ||
   host === "::1";
 
-const isProductionFrontend = host === "phoenixaze.github.io" ||
+const isProductionFrontend =
+  host === "phoenixaze.github.io" ||
   host.endsWith("github.io") ||
   host === "gradient.az" ||
   host === "www.gradient.az";
 
-// Proxy (`server.js`) eyni origin-dədir → nisbi yol ən təhlükəsiz seçimdir.
-// Amma `file://` və tək fayl rejimində origin yoxdur → birbaşa backend.
-const useProxy = typeof window !== "undefined" &&
+const useProxy =
+  typeof window !== "undefined" &&
   window.location.protocol === "http:" &&
   !isLocalDev;
 
-const API_BASE_URL = (isProductionFrontend || !useProxy)
-  ? PROD_API_BASE_URL
-  : "";
+const API_BASE_URL = (isProductionFrontend || !useProxy) ? PROD_API_BASE_URL : "";
 
 document.addEventListener("DOMContentLoaded", async () => {
+  // ==========================================================================
+  // DOM REFERANSLARI
+  // ==========================================================================
   const skeletonEl = document.getElementById("analytics-skeleton");
   const emptyEl = document.getElementById("analytics-empty");
   const contentEl = document.getElementById("analytics-content");
 
   const valAccuracy = document.getElementById("val-accuracy");
   const valTotalExams = document.getElementById("val-total-exams");
-  const valQuestions = document.getElementById("val-questions");
+  const valCorrect = document.getElementById("val-correct");
+  const valWrong = document.getElementById("val-wrong");
+
   const diagnosisText = document.getElementById("diagnosis-text");
   const subjectListContainer = document.getElementById("subject-list-container");
-  const historyTableBody = document.getElementById("history-table-body");
-
   const topicListContainer = document.getElementById("topic-list-container");
-  const topicCard = document.getElementById("topic-card");
+
+  const attemptsList = document.getElementById("attempts-list");
+  const attemptsSkeleton = document.getElementById("attempts-skeleton");
+  const attemptsNone = document.getElementById("attempts-none");
+  const searchInput = document.getElementById("attempt-search");
+  const filterSelect = document.getElementById("attempt-filter");
 
   const btnOverall = document.getElementById("btn-overall-analysis");
   const btnOverallRefresh = document.getElementById("btn-overall-refresh");
   const overallLoading = document.getElementById("ai-overview-loading");
   const overallResult = document.getElementById("ai-overview-result");
   const overallMeta = document.getElementById("ai-overview-meta");
+
+  const detailModal = document.getElementById("detail-modal");
+  const detailTitle = document.getElementById("detail-modal-title");
+  const detailSubtitle = document.getElementById("detail-modal-subtitle");
+  const detailStats = document.getElementById("detail-stats");
+  const detailLoading = document.getElementById("detail-loading");
+  const detailQuestions = document.getElementById("detail-questions");
+  const detailModelNote = document.getElementById("detail-model-note");
+  const detailCloseBtn = document.getElementById("detail-modal-close");
+  const detailDoneBtn = document.getElementById("detail-modal-done");
+  const segAll = document.getElementById("seg-all");
+  const segWrong = document.getElementById("seg-wrong");
 
   const modal = document.getElementById("ai-modal");
   const modalTitle = document.getElementById("ai-modal-title");
@@ -87,16 +100,15 @@ document.addEventListener("DOMContentLoaded", async () => {
   const modalModelNote = document.getElementById("ai-modal-model");
   const modalCloseBtn = document.getElementById("ai-modal-close");
   const modalDoneBtn = document.getElementById("ai-modal-done");
+
   const toastRegion = document.getElementById("toast-region");
 
-  // Qeyd: AI imkanı backend-dən gəlir (GEMINI_API_KEY server ENV-dədir).
-  // Əgər yoxdursa düymələr "AI xidməti qurulmayıb" mesajı ilə sönür —
-  // heç vaxt səhvi gizlətmir, amma istifadəçini boşluqda saxlamır.
+  // AI imkanı backend-dən gəlir (açar server ENV-dədir).
   let aiAvailable = true;
 
-  // ---------------------------------------------------------------------
+  // ==========================================================================
   // TOKEN KÖMƏKÇİLƏRİ
-  // ---------------------------------------------------------------------
+  // ==========================================================================
   function getStoredToken() {
     try {
       return sessionStorage.getItem("gradient_access_token") || "";
@@ -107,7 +119,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   function getStoredRefreshToken() {
     try {
-      return localStorage.getItem("gradient_refresh_token") || sessionStorage.getItem("gradient_refresh_token") || "";
+      return localStorage.getItem("gradient_refresh_token") ||
+        sessionStorage.getItem("gradient_refresh_token") || "";
     } catch (_) {
       return "";
     }
@@ -123,7 +136,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         localStorage.setItem("gradient_refresh_token", refreshToken);
         sessionStorage.removeItem("gradient_refresh_token");
       }
-    } catch (_) {}
+    } catch (_) { /* storage bağlıdır — sessiya sürədə davam edir */ }
   }
 
   function clearStoredTokens() {
@@ -189,9 +202,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     return response;
   }
 
-  // ---------------------------------------------------------------------
-  // BİLDİRİŞ (toast) — innerHTML YOXDUR
-  // ---------------------------------------------------------------------
+  // ==========================================================================
+  // KÖMƏKÇİ UI FUNKSİYALARI
+  // ==========================================================================
+
   function showToast(message, type) {
     if (!toastRegion) return;
     const variant = ["success", "error", "warning"].includes(type) ? type : "info";
@@ -206,17 +220,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     }, 4500);
   }
 
-  // ---------------------------------------------------------------------
-  // KÖMƏKÇİ DOM YARADICI
-  // ---------------------------------------------------------------------
-  function createElement(tag, className, text) {
-    const el = document.createElement(tag);
-    if (className) el.className = className;
-    if (text !== undefined && text !== null) el.textContent = String(text);
-    return el;
+  /** TƏHLÜKƏSİZ DOM yaradıcı — mətn yalnız `textContent` ilə yazılır. */
+  function el(tag, className, text) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined && text !== null) node.textContent = String(text);
+    return node;
   }
 
-  function createButton(label, className, onClick) {
+  function makeButton(label, className, onClick) {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = className;
@@ -225,11 +237,38 @@ document.addEventListener("DOMContentLoaded", async () => {
     return btn;
   }
 
+  function formatDate(value) {
+    if (!value) return "—";
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return "—";
+    return d.toLocaleDateString("az-AZ", { year: "numeric", month: "short", day: "numeric" });
+  }
+
+  function formatDateTime(value) {
+    if (!value) return "—";
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return "—";
+    return d.toLocaleString("az-AZ", {
+      year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit"
+    });
+  }
+
+  function accuracyClass(pct) {
+    if (pct >= 75) return "is-success";
+    if (pct >= 50) return "is-warning";
+    return "is-danger";
+  }
+
+  function statusLabel(status) {
+    if (status === "correct") return "Düzgün";
+    if (status === "incorrect") return "Səhv";
+    if (status === "empty") return "Boş";
+    return "Qeyd yoxdur";
+  }
+
   /**
-   * Obyektlərdən (dict[]) siyahı yaradır. Model cavabının forması
-   * dəyişə bilər ({"topic":...} / {"text":...} / ["mətn"]), ona görə
-   * normalize edilib. Heç vaxt `item.name` kimi təhlükəli sahəyə
-   * birbaşa toxunulmur — bütün mətn textContent ilə yazılır.
+   * Model cavabının forması dəyişə bilər → normalize.
+   * Heç vaxt `item.name` kimi təhlükəli sahəyə birbaşa toxunulmur.
    */
   function normalizeItems(list) {
     if (!Array.isArray(list)) return [];
@@ -261,148 +300,148 @@ document.addEventListener("DOMContentLoaded", async () => {
     return "";
   }
 
-  // ---------------------------------------------------------------------
-  // AI NƏTİCƏNİN RENDER EDİLMƏSİ (ümumi struktur)
-  // ---------------------------------------------------------------------
-  function renderAnalysisInto(container, analysis, options) {
-    const opts = options || {};
+  // ==========================================================================
+  // AI NƏTİCƏNİN RENDER EDİLMƏSİ
+  // ==========================================================================
+  function renderAnalysisInto(container, analysis) {
     container.replaceChildren();
     if (!analysis || typeof analysis !== "object") {
-      container.appendChild(createElement("p", "ai-empty", "Analiz məlumatı boşdur."));
+      container.appendChild(el("p", "ai-empty", "Analiz məlumatı boşdur."));
       return;
     }
 
     if (analysis.headline) {
-      container.appendChild(createElement("h3", "ai-headline", analysis.headline));
+      container.appendChild(el("h3", "ai-headline", analysis.headline));
     }
-
     if (analysis.summary) {
-      container.appendChild(createElement("p", "ai-summary", analysis.summary));
+      container.appendChild(el("p", "ai-summary", analysis.summary));
     }
 
-    // --- Güclü tərəflər ---
+    // Güclü tərəflər
     const strong = normalizeItems(analysis.strong_topics);
     if (strong.length) {
-      const block = createElement("div", "ai-block");
-      block.appendChild(createElement("h4", "ai-block-title", "Güclü olduğunuz mövzular"));
-      const list = createElement("ul", "ai-list is-positive");
+      const block = el("div", "ai-block");
+      block.appendChild(el("h4", "ai-block-title", "Güclü tərəflər"));
+      const list = el("ul", "ai-list is-positive");
       strong.forEach((item) => {
         const li = document.createElement("li");
-        li.appendChild(createElement("span", "ai-list-title", itemTitle(item)));
+        li.appendChild(el("span", "ai-list-title", itemTitle(item)));
         const note = itemNote(item);
-        if (note) li.appendChild(createElement("span", "ai-list-note", note));
+        if (note) li.appendChild(el("span", "ai-list-note", note));
         list.appendChild(li);
       });
       block.appendChild(list);
       container.appendChild(block);
     }
 
-    // --- Zəif mövzular / fənnlər ---
+    // Gücləndirilməsi lazım olan mövzular
     const focusTopics = normalizeItems(analysis.focus_topics || analysis.weak_topics);
     if (focusTopics.length) {
-      const block = createElement("div", "ai-block");
-      block.appendChild(createElement("h4", "ai-block-title", "Gücləndirməniz lazım olan mövzular"));
-      const list = createElement("ul", "ai-list is-warning");
+      const block = el("div", "ai-block");
+      block.appendChild(el("h4", "ai-block-title", "Zəif mövzular"));
+      const list = el("ul", "ai-list is-warning");
       focusTopics.forEach((item) => {
         const li = document.createElement("li");
-        const head = document.createElement("div");
-        head.className = "ai-list-head";
-        head.appendChild(createElement("span", "ai-list-title", itemTitle(item)));
+        const head = el("div", "ai-list-head");
+        head.appendChild(el("span", "ai-list-title", itemTitle(item)));
 
         const pct = Number(item.accuracy_pct);
         if (Number.isFinite(pct) && pct >= 0) {
-          const badge = createElement("span", "ai-badge " + priorityClass(item.priority), `${Math.round(pct)}%`);
-          head.appendChild(badge);
+          head.appendChild(el("span", "ai-badge " + priorityClass(item.priority), `${Math.round(pct)}%`));
         } else if (item.priority) {
-          const badge = createElement("span", "ai-badge " + priorityClass(item.priority), String(item.priority));
-          head.appendChild(badge);
+          head.appendChild(el("span", "ai-badge " + priorityClass(item.priority), String(item.priority)));
         }
         li.appendChild(head);
 
         const note = itemNote(item);
-        if (note) li.appendChild(createElement("span", "ai-list-note", note));
+        if (note) li.appendChild(el("span", "ai-list-note", note));
         list.appendChild(li);
       });
       block.appendChild(list);
       container.appendChild(block);
     }
 
-    // --- Fənn focus (ümumi analiz) ---
+    // Ən çətin fənnlər (yalnız ümumi analizdə gəlir)
     const focusSubjects = normalizeItems(analysis.focus_subjects);
     if (focusSubjects.length) {
-      const block = createElement("div", "ai-block");
-      block.appendChild(createElement("h4", "ai-block-title", "Ən çətin fənnlər"));
-      const list = createElement("ul", "ai-list");
+      const block = el("div", "ai-block");
+      block.appendChild(el("h4", "ai-block-title", "Fənnlər"));
+      const list = el("ul", "ai-list");
       focusSubjects.forEach((item) => {
         const li = document.createElement("li");
-        li.appendChild(createElement("span", "ai-list-title", itemTitle(item)));
+        li.appendChild(el("span", "ai-list-title", itemTitle(item)));
         const note = itemNote(item);
-        if (note) li.appendChild(createElement("span", "ai-list-note", note));
+        if (note) li.appendChild(el("span", "ai-list-note", note));
         list.appendChild(li);
       });
       block.appendChild(list);
       container.appendChild(block);
     }
 
-    // --- Təkrarlanan səhvlər (per-sınaq analizləri üçün) ---
+    // Təkrarlanan səhvlər (per-cəhd analizlərdə)
     const mistakes = normalizeItems(analysis.mistakes);
     if (mistakes.length) {
-      const block = createElement("div", "ai-block");
-      block.appendChild(createElement("h4", "ai-block-title", "Təkrarlanan səhvlər"));
-      const list = createElement("ul", "ai-list is-danger");
+      const block = el("div", "ai-block");
+      block.appendChild(el("h4", "ai-block-title", "Səhvləriniz"));
+      const list = el("ul", "ai-list is-danger");
       mistakes.forEach((item) => {
         const li = document.createElement("li");
-        li.appendChild(createElement("span", "ai-list-title", itemTitle(item)));
+        li.appendChild(el("span", "ai-list-title", itemTitle(item)));
         const issue = item && item.issue ? item.issue : "";
         const advice = item && item.advice ? item.advice : "";
-        if (issue) li.appendChild(createElement("span", "ai-list-note", issue));
-        if (advice) li.appendChild(createElement("span", "ai-list-advice", advice));
+        if (issue) li.appendChild(el("span", "ai-list-note", issue));
+        if (advice) li.appendChild(el("span", "ai-list-advice", advice));
         list.appendChild(li);
       });
       block.appendChild(list);
       container.appendChild(block);
     }
 
-    // --- Tövsiyələr ---
+    // Tövsiyələr
     const recs = normalizeItems(analysis.recommendations);
     if (recs.length) {
-      const block = createElement("div", "ai-block");
-      block.appendChild(createElement("h4", "ai-block-title", "Tövsiyələr"));
-      const list = createElement("ol", "ai-list ai-list-ordered");
+      const block = el("div", "ai-block");
+      block.appendChild(el("h4", "ai-block-title", "Tövsiyələr"));
+      const list = el("ol", "ai-list ai-list-ordered");
       recs.forEach((item) => {
         const li = document.createElement("li");
-        li.appendChild(createElement("span", "ai-list-note", itemTitle(item) + (itemNote(item) ? ` — ${itemNote(item)}` : "")));
+        const note = itemNote(item);
+        li.appendChild(el("span", "ai-list-note", itemTitle(item) + (note ? ` — ${note}` : "")));
         list.appendChild(li);
       });
       block.appendChild(list);
       container.appendChild(block);
     }
 
-    // --- Öyrənmə planı ---
+    // Öyrənmə planı
     const plan = normalizeItems(analysis.study_plan || analysis.weekly_plan);
     if (plan.length) {
-      const block = createElement("div", "ai-block");
-      block.appendChild(createElement("h4", "ai-block-title", "Öyrənmə planı"));
-      const list = createElement("ol", "ai-list ai-list-ordered");
+      const block = el("div", "ai-block");
+      block.appendChild(el("h4", "ai-block-title", "Plan"));
+      const list = el("ol", "ai-list ai-list-ordered");
       plan.forEach((item) => {
         const li = document.createElement("li");
-        li.appendChild(createElement("span", "ai-list-note", itemTitle(item)));
+        li.appendChild(el("span", "ai-list-note", itemTitle(item)));
         list.appendChild(li);
       });
       block.appendChild(list);
       container.appendChild(block);
     }
 
-    // Heç nə göstərilməyə bilməz — istifadəçi boş panel görməməlidir
+    // Heç nə göstərilə bilməz — istifadəçi boş panel görməməlidir
     if (!container.hasChildNodes()) {
-      container.appendChild(createElement("p", "ai-empty", "Analiz çox qısa oldu. Bir az sonra yenidən cəhd edin."));
+      container.appendChild(el("p", "ai-empty", "Analiz çox qısa oldu. Yenidən cəhd edin."));
     }
   }
 
-  // ---------------------------------------------------------------------
-  // MODAL İDARƏETMƏSİ
-  // ---------------------------------------------------------------------
+  // ==========================================================================
+  // MODALLAR
+  // ==========================================================================
   let lastFocusedEl = null;
+
+  function lockScroll(lock) {
+    document.body.style.overflow = lock ? "hidden" : "";
+  }
 
   function openModal(title, subtitle) {
     if (!modal) return;
@@ -413,6 +452,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     modalLoading.classList.add("hidden");
     modal.classList.remove("hidden");
     modal.setAttribute("aria-hidden", "false");
+    lockScroll(true);
     if (modalCloseBtn) modalCloseBtn.focus();
   }
 
@@ -422,10 +462,33 @@ document.addEventListener("DOMContentLoaded", async () => {
     modal.setAttribute("aria-hidden", "true");
     modalContent.replaceChildren();
     modalModelNote.textContent = "";
+    lockScroll(false);
     // Fokus idarəetməsi (a11y): modal bağlananda fokus əvvəlki düyməyə qayıdır
-    if (lastFocusedEl && typeof lastFocusedEl.focus === "function") {
-      lastFocusedEl.focus();
-    }
+    if (lastFocusedEl && typeof lastFocusedEl.focus === "function") lastFocusedEl.focus();
+  }
+
+  function openDetailModal(title, subtitle) {
+    if (!detailModal) return;
+    lastFocusedEl = document.activeElement;
+    detailTitle.textContent = String(title || "Cəhd");
+    detailSubtitle.textContent = String(subtitle || "");
+    detailStats.replaceChildren();
+    detailQuestions.replaceChildren();
+    detailModelNote.textContent = "";
+    detailLoading.classList.remove("hidden");
+    detailModal.classList.remove("hidden");
+    detailModal.setAttribute("aria-hidden", "false");
+    lockScroll(true);
+    if (detailCloseBtn) detailCloseBtn.focus();
+  }
+
+  function closeDetailModal() {
+    if (!detailModal) return;
+    detailModal.classList.add("hidden");
+    detailModal.setAttribute("aria-hidden", "true");
+    detailQuestions.replaceChildren();
+    lockScroll(false);
+    if (lastFocusedEl && typeof lastFocusedEl.focus === "function") lastFocusedEl.focus();
   }
 
   if (modal) {
@@ -436,34 +499,371 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (modalCloseBtn) modalCloseBtn.addEventListener("click", closeModal);
   if (modalDoneBtn) modalDoneBtn.addEventListener("click", closeModal);
 
+  if (detailModal) {
+    detailModal.addEventListener("click", (e) => {
+      if (e.target && e.target.getAttribute("data-close-detail") === "true") closeDetailModal();
+    });
+  }
+  if (detailCloseBtn) detailCloseBtn.addEventListener("click", closeDetailModal);
+  if (detailDoneBtn) detailDoneBtn.addEventListener("click", closeDetailModal);
+
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && modal && !modal.classList.contains("hidden")) {
-      closeModal();
-    }
+    if (e.key !== "Escape") return;
+    if (modal && !modal.classList.contains("hidden")) closeModal();
+    if (detailModal && !detailModal.classList.contains("hidden")) closeDetailModal();
   });
 
-  // ---------------------------------------------------------------------
-  // HƏR BİR SINAQ ÜÇÜN AI ANALİZ
-  // ---------------------------------------------------------------------
-  async function runExamAnalysis(attemptId, examTitle, buttonEl) {
-    if (!attemptId) {
-      showToast("Analiz üçün cəhd məlumatı tapılmadı.", "warning");
+  // ==========================================================================
+  // TAB İDARƏETMƏSİ
+  // ==========================================================================
+  const tabs = [
+    { btn: document.getElementById("tab-attempts"), panel: document.getElementById("panel-attempts") },
+    { btn: document.getElementById("tab-overview"), panel: document.getElementById("panel-overview") },
+    { btn: document.getElementById("tab-topics"), panel: document.getElementById("panel-topics") },
+    { btn: document.getElementById("tab-ai"), panel: document.getElementById("panel-ai") }
+  ].filter((t) => t.btn && t.panel);
+
+  function activateTab(index) {
+    tabs.forEach((t, i) => {
+      const active = i === index;
+      t.btn.classList.toggle("is-active", active);
+      t.btn.setAttribute("aria-selected", active ? "true" : "false");
+      t.panel.classList.toggle("hidden", !active);
+    });
+    // URL hash ilə paylaşma (təkrar yükləmədə eyni tab açılır)
+    if (window.history && window.history.replaceState) {
+      window.history.replaceState(null, "", `#${tabs[index].btn.id}`);
+    }
+  }
+
+  tabs.forEach((t, i) => {
+    t.btn.addEventListener("click", () => activateTab(i));
+  });
+
+  // ==========================================================================
+  // SINAQ KARTLARININ RENDER EDİLMƏSİ
+  // ==========================================================================
+  let allAttempts = [];
+
+  function visibleAttempts() {
+    const term = (searchInput && searchInput.value ? searchInput.value : "").trim().toLowerCase();
+    const mode = filterSelect ? filterSelect.value : "all";
+
+    return allAttempts.filter((a) => {
+      if (mode === "mistakes" && !a.has_mistakes) return false;
+      if (mode === "analyzed" && !a.has_ai_analysis) return false;
+      if (!term) return true;
+      return (
+        String(a.title || "").toLowerCase().includes(term) ||
+        String(a.subject || "").toLowerCase().includes(term)
+      );
+    });
+  }
+
+  function renderAttempts() {
+    if (!attemptsList) return;
+    attemptsList.replaceChildren();
+
+    const rows = visibleAttempts();
+    if (attemptsNone) attemptsNone.classList.toggle("hidden", rows.length > 0);
+
+    rows.forEach((a) => {
+      const card = el("article", "attempt-card");
+      if (a.is_primary) card.classList.add("is-primary");
+
+      // --- Başlıq sətri: ad + status nişanları ---
+      const head = el("div", "attempt-card-head");
+
+      const titleWrap = el("div", "attempt-card-title-wrap");
+      const titleLink = el("h3", "attempt-card-title", a.title || "Sınaq");
+      /*
+        ƏLÇATANLIQ: `<h3>` semantik başlıq olaraq qalır, lakin düymə kimi işləyir
+        → `role="button"` + `tabindex="0"` və Enter/Saxə dəstəyi (WCAG 2.1:
+        hərəkətə klaviatura ilə də mümkün olmalıdır).
+      */
+      titleLink.setAttribute("role", "button");
+      titleLink.setAttribute("tabindex", "0");
+      const openDetail = () => openAttemptDetail(a.attempt_id, a);
+      titleLink.addEventListener("click", openDetail);
+      titleLink.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          openDetail();
+        }
+      });
+      titleWrap.appendChild(titleLink);
+
+      const chips = el("div", "chips");
+      chips.appendChild(el("span", "chip", a.subject || "Digər"));
+      chips.appendChild(
+        el("span", "chip chip-quiet", a.attempt_no > 1 ? `${a.attempt_no}-cı cəhd` : "1-ci cəhd")
+      );
+      if (a.is_primary) chips.appendChild(el("span", "chip chip-quiet", "Əsas nəticə"));
+      if (a.has_ai_analysis) {
+        // ƏLÇATANLIQ: nişan kliklənə biləndir → `role="button"` + `tabindex` +
+        // Enter/Saxə dəstəyi (yalnız siçanla deyil, klaviatura ilə də).
+        const badge = el("span", "chip chip-ai", "AI analiz var");
+        badge.setAttribute("role", "button");
+        badge.setAttribute("tabindex", "0");
+        const viewAi = () => viewCachedAnalysis(a);
+        badge.addEventListener("click", viewAi);
+        badge.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            viewAi();
+          }
+        });
+        chips.appendChild(badge);
+      }
+      titleWrap.appendChild(chips);
+      head.appendChild(titleWrap);
+
+      const scoreBox = el("div", "attempt-card-score");
+      scoreBox.appendChild(el("div", "score-value " + accuracyClass(a.percentage), `${a.percentage}%`));
+      scoreBox.appendChild(el("div", "score-sub", `${a.score} / ${a.total_questions}`));
+      head.appendChild(scoreBox);
+
+      card.appendChild(head);
+
+      // --- Statistika sətri: səhv / boş / tarix ---
+      const meta = el("div", "attempt-card-meta");
+      const wrong = Number(a.incorrect_count) || 0;
+      const empty = Number(a.empty_count) || 0;
+      if (wrong) meta.appendChild(el("span", "meta-item is-danger", `Səhv: ${wrong}`));
+      if (empty) meta.appendChild(el("span", "meta-item is-warning", `Boş: ${empty}`));
+      if (!wrong && !empty) meta.appendChild(el("span", "meta-item is-success", "Səhvsiz"));
+      meta.appendChild(el("span", "meta-item", formatDate(a.created_at)));
+      card.appendChild(meta);
+
+      // --- Əməliyyatlar ---
+      const actions = el("div", "attempt-card-actions");
+      actions.appendChild(
+        makeButton("Nəticələr", "btn btn-outline btn-sm", () => openAttemptDetail(a.attempt_id, a))
+      );
+      actions.appendChild(
+        makeButton(
+          a.has_ai_analysis ? "AI Analizi oxu" : "AI Analiz yarat",
+          "btn btn-ghost btn-sm",
+          () => (a.has_ai_analysis ? viewCachedAnalysis(a) : createAnalysis(a))
+        )
+      );
+      card.appendChild(actions);
+
+      attemptsList.appendChild(card);
+    });
+  }
+
+  if (searchInput) {
+    let debounceId = null;
+    searchInput.addEventListener("input", () => {
+      clearTimeout(debounceId);
+      debounceId = setTimeout(renderAttempts, 150);
+    });
+  }
+  if (filterSelect) filterSelect.addEventListener("change", renderAttempts);
+
+  // ==========================================================================
+  // CƏHD TƏFSİLATI — SƏHVLƏR
+  // ==========================================================================
+  let detailRows = [];
+  let detailWrongOnly = false;
+
+  function renderDetailQuestions() {
+    if (!detailQuestions) return;
+    detailQuestions.replaceChildren();
+
+    const rows = detailWrongOnly
+      ? detailRows.filter((q) => q.status === "incorrect" || q.status === "empty")
+      : detailRows;
+
+    if (rows.length === 0) {
+      detailQuestions.appendChild(
+        el("p", "ai-empty", detailWrongOnly
+          ? "Bu cəhdə səhv yoxdur."
+          : "Bu cəhd üçün sual təfsilatı yoxdur.")
+      );
       return;
     }
 
-    openModal(examTitle, "Səhv etdiyiniz mövzular süni intellektlə təhlil olunur");
+    rows.forEach((q) => {
+      const item = el("div", "q-item is-" + String(q.status || "unknown"));
+
+      const head = el("div", "q-head");
+      head.appendChild(el("span", "q-number", `${q.number}-ci sual`));
+      head.appendChild(el("span", "q-status", statusLabel(q.status)));
+      item.appendChild(head);
+
+      if (q.text_preview) {
+        item.appendChild(el("p", "q-text", q.text_preview));
+      }
+
+      item.appendChild(el("div", "q-tag", q.q_tag || "—"));
+
+      const answers = el("div", "q-answers");
+      const chosenWrap = el("span", "q-answer " + (q.status === "correct" ? "is-ok" : "is-bad"));
+      chosenWrap.textContent = `Sizin cavabınız: ${q.chosen || "boş"}`;
+      answers.appendChild(chosenWrap);
+
+      if (q.correct) {
+        const correctWrap = el("span", "q-answer is-ok", `Düzgün cavab: ${q.correct}`);
+        answers.appendChild(correctWrap);
+      }
+      item.appendChild(answers);
+
+      detailQuestions.appendChild(item);
+    });
+  }
+
+  function setWrongOnly(value) {
+    detailWrongOnly = Boolean(value);
+    if (segAll) segAll.classList.toggle("is-active", !detailWrongOnly);
+    if (segWrong) segWrong.classList.toggle("is-active", detailWrongOnly);
+    renderDetailQuestions();
+  }
+
+  if (segAll) segAll.addEventListener("click", () => setWrongOnly(false));
+  if (segWrong) segWrong.addEventListener("click", () => setWrongOnly(true));
+
+  async function openAttemptDetail(attemptId, meta) {
+    if (!attemptId) {
+      showToast("Cəhd məlumatı tapılmadı.", "warning");
+      return;
+    }
+
+    openDetailModal(
+      meta ? meta.title : "Cəhd",
+      meta && meta.attempt_no > 1 ? `${meta.attempt_no}-cı cəhd` : "1-ci cəhd"
+    );
+
+    const response = await fetchWithAuth(
+      `/api/v1/analytics/attempts/${encodeURIComponent(attemptId)}`,
+      { method: "GET" }
+    );
+
+    detailLoading.classList.add("hidden");
+
+    if (!response || !response.ok) {
+      detailQuestions.replaceChildren(
+        el("p", "ai-empty", response
+          ? "Cəhd təfsilatı yüklənmədi."
+          : "Serverə qoşulmaq mümkün olmadı.")
+      );
+      return;
+    }
+
+    const data = await response.json().catch(() => null);
+    if (!data) {
+      detailQuestions.replaceChildren(el("p", "ai-empty", "Cavab oxunmadı."));
+      return;
+    }
+
+    // Başlıq metası server məlumatı ilə dəqiqləşdirilir (güvən: mənbə = backend)
+    detailTitle.textContent = data.title || "Cəhd";
+    detailSubtitle.textContent = `${data.subject || "Digər"} • ${formatDateTime(data.created_at)}`;
+
+    // İstatistika zolaqları
+    const stats = [
+      { label: "Dəqiqlik", value: `${data.percentage}%`, cls: accuracyClass(data.percentage) },
+      { label: "Düzgün", value: String(data.score), cls: "is-success" },
+      { label: "Səhv", value: String(data.incorrect_count), cls: "is-danger" },
+      { label: "Boş", value: String(data.empty_count), cls: "is-warning" }
+    ];
+    stats.forEach((s) => {
+      const box = el("div", "detail-stat");
+      box.appendChild(el("span", "detail-stat-value " + s.cls, s.value));
+      box.appendChild(el("span", "detail-stat-label", s.label));
+      detailStats.appendChild(box);
+    });
+
+    detailRows = Array.isArray(data.questions) ? data.questions : [];
+    setWrongOnly(false);
+
+    // AI analiz varsa, sağ altda "bəxş etmək" mümkün olsun (AI xərci etmədən)
+    detailModelNote.textContent = "";
+    if (data.has_ai_analysis !== false && data.ai_analysis) {
+      detailModelNote.appendChild(
+        makeButton("AI analizini bəxş et", "btn btn-ghost btn-sm", () => {
+          closeDetailModal();
+          renderAnalysisInto(modalContent, data.ai_analysis);
+          if (modal) {
+            modalTitle.textContent = data.title || "AI Analiz";
+            modalSubtitle.textContent = `Saxlanmış analiz • ${formatDateTime(data.ai_generated_at)}`;
+            modalLoading.classList.add("hidden");
+            modal.classList.remove("hidden");
+            modal.setAttribute("aria-hidden", "false");
+            lockScroll(true);
+            if (modalCloseBtn) modalCloseBtn.focus();
+          }
+        })
+      );
+    }
+  }
+
+  // ==========================================================================
+  // AI ANALİZ: CACHE-Lİ OXA / YENİDƏN YARAT
+  // ==========================================================================
+  async function viewCachedAnalysis(attempt) {
+    if (!attempt.attempt_id) {
+      showToast("Cəhd məlumatı tapılmadı.", "warning");
+      return;
+    }
+    openModal(attempt.title || "AI Analiz", "Saxlanmış analiz");
+    modalLoading.classList.add("hidden");
+
+    const response = await fetchWithAuth(
+      `/api/v1/analytics/attempts/${encodeURIComponent(attempt.attempt_id)}/ai-analysis`,
+      { method: "GET" }
+    );
+
+    if (!response) {
+      modalContent.replaceChildren(el("p", "ai-empty", "Serverə qoşulmaq mümkün olmadı."));
+      return;
+    }
+
+    if (response.status === 404) {
+      modalContent.replaceChildren(el("p", "ai-empty", "Bu cəhd üçün analiz yoxdur."));
+      modalSubtitle.textContent = "Analiz yaradın";
+      return;
+    }
+
+    if (!response.ok) {
+      modalContent.replaceChildren(el("p", "ai-empty", "Analiz yüklənmədi."));
+      return;
+    }
+
+    const data = await response.json().catch(() => null);
+    if (!data || !data.analysis) {
+      modalContent.replaceChildren(el("p", "ai-empty", "Analiz məlumatı boşdur."));
+      return;
+    }
+
+    renderAnalysisInto(modalContent, data.analysis);
+    modalSubtitle.textContent = `Saxlanmış analiz • ${formatDateTime(data.generated_at)}`;
+    modalModelNote.textContent = data.ai_model ? `Model: ${data.ai_model}` : "";
+  }
+
+  async function createAnalysis(attempt, buttonEl) {
+    if (!attempt.attempt_id) {
+      showToast("Cəhd məlumatı tapılmadı.", "warning");
+      return;
+    }
+    if (!aiAvailable) {
+      showToast("AI xidməti hazırda konfiqurasiya edilməyib.", "warning");
+      return;
+    }
+
+    openModal(attempt.title || "AI Analiz", "Analiz yaradılır");
     modalLoading.classList.remove("hidden");
     modalContent.replaceChildren();
 
     if (buttonEl) {
       buttonEl.disabled = true;
-      buttonEl.dataset.originalText = buttonEl.textContent;
-      buttonEl.textContent = "Analiz olunur…";
+      buttonEl.textContent = "Analiz gedir…";
     }
 
     try {
       const response = await fetchWithAuth(
-        `/api/v1/analytics/attempts/${encodeURIComponent(attemptId)}/ai-analysis`,
+        `/api/v1/analytics/attempts/${encodeURIComponent(attempt.attempt_id)}/ai-analysis`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -471,16 +871,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
       );
 
-      if (!response) {
-        throw new Error("Serverə qoşulmaq mümkün olmadı.");
-      }
-
+      if (!response) throw new Error("Serverə qoşulmaq mümkün olmadı.");
       if (response.status === 429) {
-        throw new Error("Çox sayda analiz sorğusu göndərildi. Bir az gözləyin.");
+        throw new Error("Çox sayda sorğu göndərildi. Bir az gözləyin.");
       }
-
       if (!response.ok) {
-        let message = "AI analiz əldə etmək mümkün olmadı.";
+        let message = "Analiz alına bilmədi.";
         try {
           const errData = await response.json().catch(() => ({}));
           if (errData && typeof errData.detail === "string") message = errData.detail;
@@ -491,163 +887,28 @@ document.addEventListener("DOMContentLoaded", async () => {
       const data = await response.json();
       modalLoading.classList.add("hidden");
       renderAnalysisInto(modalContent, data.analysis);
-      modalModelNote.textContent = data.ai_model
-        ? `Model: ${data.ai_model}${data.cached ? " • əvvəlki analiz yenidən göstərilir" : ""}`
-        : "";
+      modalModelNote.textContent = data.ai_model ? `Model: ${data.ai_model}` : "";
+
+      // Siyahını yenilə: "AI analiz var" nişanı əmələ gəlir
+      attempt.has_ai_analysis = true;
+      renderAttempts();
 
     } catch (err) {
       modalLoading.classList.add("hidden");
-      // Texniki detallar istifadəçiyə SIZDIRILMIR (.clinerules §1)
       console.error("AI analiz xətası:", err);
-      const msg = createElement("p", "ai-empty", err.message || "Analiz zamanı xəta baş verdi.");
-      modalContent.replaceChildren(msg);
-      showToast(err.message || "Analiz zamanı xəta baş verdi.", "error");
+      modalContent.replaceChildren(el("p", "ai-empty", err.message || "Analiz alına bilmədi."));
+      showToast(err.message || "Analiz alına bilmədi.", "error");
     } finally {
       if (buttonEl) {
         buttonEl.disabled = false;
-        buttonEl.textContent = buttonEl.dataset.originalText || "AI Analiz";
+        buttonEl.textContent = "AI Analiz yarat";
       }
     }
   }
 
-  // ---------------------------------------------------------------------
-  // CƏHDLƏR MODALI (təkrar işlətmə nəticələri)
-  // ---------------------------------------------------------------------
-  async function openAttemptsModal(examId, examTitle) {
-    openModal(examTitle, "Bu sınaqın bütün cəhdləri");
-    modalLoading.classList.remove("hidden");
-    modalContent.replaceChildren();
-
-    try {
-      const response = await fetchWithAuth(
-        `/api/v1/exams/${encodeURIComponent(examId)}/attempts`,
-        { method: "GET" }
-      );
-
-      if (!response) throw new Error("Serverə qoşulmaq mümkün olmadı.");
-      if (!response.ok) {
-        let message = "Cəhd məlumatları yüklənmədi.";
-        try {
-          const errData = await response.json().catch(() => ({}));
-          if (errData && typeof errData.detail === "string") message = errData.detail;
-        } catch (_) {}
-        throw new Error(message);
-      }
-
-      const data = await response.json();
-      modalLoading.classList.add("hidden");
-      modalContent.replaceChildren();
-
-      const attempts = Array.isArray(data.attempts) ? data.attempts : [];
-      if (attempts.length === 0) {
-        modalContent.appendChild(createElement("p", "ai-empty", "Bu sınaq üçün cəhd tapılmadı."));
-        return;
-      }
-
-      const notice = createElement(
-        "p",
-        "ai-notice",
-        "İlk cəhd statistikanı qorunur. Təkrar cəhdlər yalnız əlavə öyrənmə üçün saxlanılır."
-      );
-      modalContent.appendChild(notice);
-
-      const list = createElement("ul", "attempt-list");
-      attempts.forEach((a) => {
-        const li = document.createElement("li");
-        li.className = "attempt-item" + (a.is_primary ? " is-primary" : " is-retake");
-
-        const head = document.createElement("div");
-        head.className = "attempt-head";
-
-        const label = createElement(
-          "span",
-          "attempt-label",
-          a.attempt_no === 1 ? "1-ci cəhd (əsas nəticə)" : `${a.attempt_no}-cı cəhd (təkrar)`
-        );
-        head.appendChild(label);
-
-        const scoreEl = createElement("span", "attempt-score", `${a.score} / ${a.total_questions}`);
-        head.appendChild(scoreEl);
-        li.appendChild(head);
-
-        const meta = createElement(
-          "p",
-          "attempt-meta",
-          `Dəqiqlik: ${a.percentage}% • Səhv: ${a.incorrect_count} • Boş: ${a.empty_count}` +
-          (a.created_at ? ` • ${formatDate(a.created_at)}` : "")
-        );
-        li.appendChild(meta);
-
-        // Zəif mövzu teqləri
-        const topics = Array.isArray(a.weak_topics) ? a.weak_topics.slice(0, 6) : [];
-        if (topics.length) {
-          const tagWrap = createElement("div", "attempt-tags");
-          topics.forEach((t) => {
-            if (!t || typeof t !== "object") return;
-            const topicName = String(t.topic || "").slice(0, 60);
-            if (!topicName) return;
-            tagWrap.appendChild(createElement("span", "topic-chip", topicName));
-          });
-          if (tagWrap.hasChildNodes()) li.appendChild(tagWrap);
-        }
-
-        // Bu cəhd üçün ayrıca AI analiz
-        if (a.attempt_id) {
-          const actions = createElement("div", "attempt-actions");
-          actions.appendChild(
-            createButton(
-              a.has_ai_analysis ? "AI Analizi Gör" : "Bu Cəhdi Analiz Et",
-              "btn btn-outline btn-sm",
-              () => runExamAnalysis(a.attempt_id, `${examTitle} — ${a.attempt_no}-cı cəhd`)
-            )
-          );
-          li.appendChild(actions);
-        }
-
-        list.appendChild(li);
-      });
-
-      modalContent.appendChild(list);
-
-      const retakeWrap = createElement("div", "attempt-retake");
-      if (data.can_retake) {
-        retakeWrap.appendChild(createElement(
-          "p",
-          "ai-notice",
-          "Sınağı təkrar işlətmək istəyirsinizsə, sınaqlar zalından “Yenidən işlə” düyməsini istifadə edin."
-        ));
-        const link = document.createElement("a");
-        link.className = "btn btn-primary btn-sm";
-        link.href = `exam-hall.html?id=${encodeURIComponent(examId)}`;
-        link.textContent = "Sınağı Təkrar İşlə";
-        retakeWrap.appendChild(link);
-      } else {
-        retakeWrap.appendChild(createElement(
-          "p",
-          "ai-notice",
-          `Bu sınaq üçün cəhd limitinə (${data.max_attempts}) çatmısınız.`
-        ));
-      }
-      modalContent.appendChild(retakeWrap);
-
-    } catch (err) {
-      modalLoading.classList.add("hidden");
-      console.error("Cəhd yükləmə xətası:", err);
-      modalContent.replaceChildren(
-        createElement("p", "ai-empty", err.message || "Cəhd məlumatları yüklənmədi.")
-      );
-    }
-  }
-
-  function formatDate(value) {
-    const d = new Date(value);
-    if (Number.isNaN(d.getTime())) return "-";
-    return d.toLocaleDateString("az-AZ", { year: "numeric", month: "short", day: "numeric" });
-  }
-
-  // ---------------------------------------------------------------------
+  // ==========================================================================
   // ÜMUMİ AI ANALİZ
-  // ---------------------------------------------------------------------
+  // ==========================================================================
   async function runOverallAnalysis(force) {
     if (!aiAvailable) {
       showToast("AI xidməti hazırda konfiqurasiya edilməyib.", "warning");
@@ -669,13 +930,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
 
       if (!response) throw new Error("Serverə qoşulmaq mümkün olmadı.");
-
-      if (response.status === 429) {
-        throw new Error("Çox sayda analiz sorğusu göndərildi. Bir az gözləyin.");
-      }
-
+      if (response.status === 429) throw new Error("Çox sayda sorğu göndərildi. Bir az gözləyin.");
       if (!response.ok) {
-        let message = "Ümumi analiz əldə etmək mümkün olmadı.";
+        let message = "Ümumi analiz alına bilmədi.";
         try {
           const errData = await response.json().catch(() => ({}));
           if (errData && typeof errData.detail === "string") message = errData.detail;
@@ -690,11 +947,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       renderAnalysisInto(overallResult, data.analysis);
 
       if (overallMeta) {
-        const parts = [];
-        if (data.ai_model) parts.push(`Model: ${data.ai_model}`);
-        if (data.cached) parts.push("saxlanmış analiz göstərilir");
-        parts.push("Yeniləmək üçün \"Yenilə\" düyməsini istifadə edin.");
-        overallMeta.textContent = parts.join(" • ");
+        overallMeta.textContent = data.ai_model
+          ? `Model: ${data.ai_model} • ${formatDateTime(data.updated_at)}`
+          : formatDateTime(data.updated_at);
       }
       if (btnOverallRefresh) btnOverallRefresh.classList.remove("hidden");
 
@@ -702,39 +957,127 @@ document.addEventListener("DOMContentLoaded", async () => {
       overallLoading.classList.add("hidden");
       console.error("Ümumi AI analiz xətası:", err);
       showToast(err.message || "Ümumi analiz alınmadı.", "error");
-      if (overallMeta) {
-        overallMeta.textContent = "Analiz alına bilmədi. Düyməni yenidən sınayın.";
-      }
+      if (overallMeta) overallMeta.textContent = "Analiz alına bilmədi.";
     } finally {
       if (btnOverall) {
         btnOverall.disabled = false;
-        btnOverall.textContent = "AI Analiz Yarat";
+        btnOverall.textContent = "Yarat";
       }
     }
   }
 
-  if (btnOverall) {
-    btnOverall.addEventListener("click", () => runOverallAnalysis(false));
-  }
-  if (btnOverallRefresh) {
-    btnOverallRefresh.addEventListener("click", () => runOverallAnalysis(true));
-  }
+  if (btnOverall) btnOverall.addEventListener("click", () => runOverallAnalysis(false));
+  if (btnOverallRefresh) btnOverallRefresh.addEventListener("click", () => runOverallAnalysis(true));
 
-  // ---------------------------------------------------------------------
-  // ƏSAS YÜKLƏMƏ
-  // ---------------------------------------------------------------------
-  let analyticsData = null;
-
-  async function loadAttemptsForExam(examId) {
+  async function loadCachedOverall() {
     try {
-      const response = await fetchWithAuth(
-        `/api/v1/exams/${encodeURIComponent(examId)}/attempts`,
-        { method: "GET" }
-      );
-      if (!response || !response.ok) return null;
-      return await response.json();
+      const response = await fetchWithAuth("/api/v1/analytics/overall/ai-analysis", { method: "GET" });
+      if (!response || !response.ok) return;
+      const data = await response.json();
+      if (!data || !data.has_analysis) {
+        if (overallMeta) overallMeta.textContent = "Hələ yaradılmayıb.";
+        return;
+      }
+      overallLoading.classList.add("hidden");
+      overallResult.classList.remove("hidden");
+      renderAnalysisInto(overallResult, data.analysis);
+      if (overallMeta && data.ai_model) {
+        overallMeta.textContent = `Model: ${data.ai_model} • ${formatDateTime(data.updated_at)}`;
+      }
+      if (btnOverallRefresh) btnOverallRefresh.classList.remove("hidden");
     } catch (_) {
-      return null;
+      // Cache yoxdursa bu normaldır — heç bir xəta göstərilmir.
+    }
+  }
+
+  // ==========================================================================
+  // STATİSTİKA RENDER
+  // ==========================================================================
+  function renderTopicStats(topics) {
+    if (!topicListContainer) return;
+    topicListContainer.replaceChildren();
+
+    if (!topics.length) {
+      topicListContainer.appendChild(
+        el("p", "ai-empty", "Mövzu statistikası yoxdur.")
+      );
+      return;
+    }
+
+    topics.slice(0, 20).forEach((t) => {
+      const item = el("div", "topic-item");
+
+      const head = el("div", "topic-head");
+      head.appendChild(el("span", "topic-name", t.topic));
+      head.appendChild(el("span", "topic-stats", `${t.accuracy_pct}% • ${t.correct_count}/${t.total_questions}`));
+      item.appendChild(head);
+
+      const track = el("div", "progress-track is-thin");
+      const fill = el("div", "progress-fill");
+      const pct = Number(t.accuracy_pct) || 0;
+      if (pct >= 75) fill.classList.add("high");
+      else if (pct >= 50) fill.classList.add("mid");
+      else fill.classList.add("low");
+      // CSS custom property — dəyər rəqəm formatında təsdiqlənir (XSS yoxdur)
+      fill.style.setProperty("--progress-width", `${Math.min(100, Math.max(0, pct))}%`);
+      track.appendChild(fill);
+      item.appendChild(track);
+
+      topicListContainer.appendChild(item);
+    });
+  }
+
+  function renderSubjectStats(subjects) {
+    if (!subjectListContainer) return;
+    subjectListContainer.replaceChildren();
+
+    if (!subjects.length) {
+      subjectListContainer.appendChild(el("p", "ai-empty", "Fənn statistikası yoxdur."));
+      return;
+    }
+
+    subjects.forEach((s) => {
+      const item = el("div", "subject-item");
+
+      const header = el("div", "subject-header");
+      header.appendChild(el("span", "subject-name", s.subject));
+      header.appendChild(
+        el("span", "subject-meta", `${s.accuracy_pct}% • ${s.correct_count}/${s.total_questions}`)
+      );
+
+      const track = el("div", "progress-track");
+      const fill = el("div", "progress-fill");
+      const pct = Number(s.accuracy_pct) || 0;
+      if (pct >= 75) fill.classList.add("high");
+      else if (pct >= 50) fill.classList.add("mid");
+      else fill.classList.add("low");
+      fill.style.setProperty("--progress-width", `${Math.min(100, Math.max(0, pct))}%`);
+
+      track.appendChild(fill);
+      item.appendChild(header);
+      item.appendChild(track);
+      subjectListContainer.appendChild(item);
+    });
+  }
+
+  // ==========================================================================
+  // ƏSAS YÜKLƏMƏ
+  // ==========================================================================
+
+  /** Bütün cəhdləri çəkir (axtarış + filtr üçün mənbə). */
+  async function loadAttempts() {
+    if (attemptsSkeleton) attemptsSkeleton.classList.remove("hidden");
+    try {
+      const response = await fetchWithAuth("/api/v1/analytics/attempts?limit=100", { method: "GET" });
+      if (!response || !response.ok) {
+        allAttempts = [];
+      } else {
+        const data = await response.json().catch(() => null);
+        allAttempts = data && Array.isArray(data.attempts) ? data.attempts : [];
+      }
+      renderAttempts();
+    } finally {
+      if (attemptsSkeleton) attemptsSkeleton.classList.add("hidden");
     }
   }
 
@@ -751,9 +1094,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
       }
       if (!response.ok) {
-        // TƏHLÜKƏSİZLİK: backend `detail` mesajı xəta şablonu ola bilər —
-        // istifadəçiyə daxili məlumat (DB sütunu, SQL) sızdırılmamalıdır.
-        // Yalnız generic mesaj göstərilir, ətraflı xəta konsola yazılır.
+        // TƏHLÜKƏSİZLİK: backend `detail` mesajı DB/SQL detalları daşıya bilər —
+        // istifadəçiyə YALNIZ generic mesaj göstərilir.
         let serverDetail = "";
         try {
           const errData = await response.json().catch(() => ({}));
@@ -764,7 +1106,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
 
       const data = await response.json();
-      analyticsData = data;
       skeletonEl.classList.add("hidden");
 
       if (!data.has_data || data.total_exams === 0) {
@@ -775,51 +1116,17 @@ document.addEventListener("DOMContentLoaded", async () => {
       contentEl.classList.remove("hidden");
       aiAvailable = data.ai_available !== false;
 
-      const accuracy = Number(data.accuracy_pct) || 0;
-      valAccuracy.textContent = `${Math.round(accuracy)}%`;
-      valTotalExams.textContent = data.total_exams;
+      valAccuracy.textContent = `${Math.round(Number(data.accuracy_pct) || 0)}%`;
+      valTotalExams.textContent = String(data.total_exams);
+      valCorrect.textContent = String(data.correct_count);
+      valWrong.textContent = String((Number(data.incorrect_count) || 0) + (Number(data.empty_count) || 0));
 
-      const retakeNote = Number(data.retake_attempts) > 0
-        ? ` (təkrar cəhd: ${data.retake_attempts})`
-        : "";
-      valQuestions.textContent = `${data.correct_count} / ${data.total_questions}${retakeNote}`;
+      if (diagnosisText) diagnosisText.textContent = data.ai_diagnosis || "";
 
-      diagnosisText.textContent = data.ai_diagnosis
-        || "Sınaq nəticələriniz əsasında fərdi inkişaf trayektoriyanız hazırlanır.";
-
-      // ---- Fənnlər üzrə dəqiqlik ----
-      subjectListContainer.replaceChildren();
-      (data.subject_stats || []).forEach((s) => {
-        const item = createElement("div", "subject-item");
-
-        const header = createElement("div", "subject-header");
-        header.appendChild(createElement("span", null, s.subject));
-        header.appendChild(
-          createElement("span", "subject-meta", `${s.correct_count}/${s.total_questions} düzgün (${s.accuracy_pct}%)`)
-        );
-
-        const track = createElement("div", "progress-track");
-        const fill = createElement("div", "progress-fill");
-        const pct = Number(s.accuracy_pct) || 0;
-        if (pct >= 75) fill.classList.add("high");
-        else if (pct >= 50) fill.classList.add("mid");
-        else fill.classList.add("low");
-        // CSS custom property — dəyər rəqəm formatında təsdiqlənir (XSS yoxdur)
-        fill.style.setProperty("--progress-width", `${Math.min(100, Math.max(0, pct))}%`);
-
-        track.appendChild(fill);
-        item.appendChild(header);
-        item.appendChild(track);
-        subjectListContainer.appendChild(item);
-      });
-
-      // ---- Mövzu (q_tag) statistikası ----
+      renderSubjectStats(data.subject_stats || []);
       renderTopicStats(data.topic_stats || []);
 
-      // ---- Sınaq tarixçəsi + AI düymələri ----
-      await renderHistory(data.history || []);
-
-      // ---- Əvvəl saxlanmış ümumi analiz (AI xərci etmədən) ----
+      await loadAttempts();
       loadCachedOverall();
 
     } catch (err) {
@@ -829,207 +1136,23 @@ document.addEventListener("DOMContentLoaded", async () => {
       emptyEl.classList.add("is-error");
       const title = emptyEl.querySelector(".empty-box-title");
       const desc = emptyEl.querySelector(".empty-box-desc");
-      if (title) title.textContent = "Məlumat yüklənərkən xəta baş verdi";
-      if (desc) desc.textContent = "Zəhmət olmasa internet bağlantınızı yoxlayın və ya səhifəni yeniləyin.";
-    }
-  }
-
-  function renderTopicStats(topics) {
-    if (!topicListContainer) return;
-
-    topicListContainer.replaceChildren();
-
-    if (topics.length === 0) {
-      if (topicCard) topicCard.classList.add("hidden");
-      return;
-    }
-    if (topicCard) topicCard.classList.remove("hidden");
-
-    topics.slice(0, 15).forEach((t) => {
-      const item = createElement("div", "topic-item");
-
-      const head = createElement("div", "topic-head");
-      head.appendChild(createElement("span", "topic-name", t.topic));
-
-      const stats = createElement("span", "topic-stats");
-      stats.textContent =
-        `${t.accuracy_pct}% • səhv ${t.incorrect_count} • boş ${t.empty_count} • cəmi ${t.total_questions}`;
-      head.appendChild(stats);
-      item.appendChild(head);
-
-      const track = createElement("div", "progress-track is-thin");
-      const fill = createElement("div", "progress-fill");
-      const pct = Number(t.accuracy_pct) || 0;
-      if (pct >= 75) fill.classList.add("high");
-      else if (pct >= 50) fill.classList.add("mid");
-      else fill.classList.add("low");
-      fill.style.setProperty("--progress-width", `${Math.min(100, Math.max(0, pct))}%`);
-      track.appendChild(fill);
-      item.appendChild(track);
-
-      topicListContainer.appendChild(item);
-    });
-  }
-
-  async function renderHistory(history) {
-    historyTableBody.replaceChildren();
-
-    // Bütün sınaqların cəhd məlumatları paralel çəkilir (hər sıra üçün 1 sorğu).
-    const attemptsByExam = {};
-    await Promise.all(
-      history.map(async (h) => {
-        if (!h.exam_id) return;
-        const data = await loadAttemptsForExam(h.exam_id);
-        if (data) attemptsByExam[h.exam_id] = data;
-      })
-    );
-
-    history.forEach((h) => {
-      const tr = document.createElement("tr");
-
-      // Başlıq + cəhd badge
-      const tdTitle = document.createElement("td");
-      tdTitle.className = "cell-strong";
-      tdTitle.appendChild(document.createTextNode(h.title || "Sınaq"));
-
-      const attempts = (attemptsByExam[h.exam_id] || {}).attempts || [];
-      // `attempts_known=false` → SQL miqrasiya icra edilməyib, cədvəl yoxdur.
-      // Bu halda cəhd sayını iddiadan göstərmək aldadıcı olardı (badge gizlədilir).
-      const attemptsKnown = h.attempts_known !== false && attempts.length > 0;
-      const totalAttempts = attempts.length || 1;
-
-      const badgeWrap = createElement("div", "cell-badges");
-      const primaryAttempt = attempts.find((a) => a.is_primary);
-
-      // Badge yalnız cəhd məlumatı real olduqda göstərilir — yoxdursa
-      // istifadəçi "1 cəhd" görüb təkrar işlətmək imkanı olmadığını
-      // anlamaz. (SƏHV İSABİ: `badge` dəyişəni yoxdur → ReferenceError →
-      // bütün sətirlər render olunmur.)
-      if (attemptsKnown) {
-        badgeWrap.appendChild(
-          createElement(
-            "span",
-            totalAttempts > 1 ? "badge-attempts is-multi" : "badge-attempts",
-            totalAttempts > 1 ? `${totalAttempts} cəhd` : "1 cəhd"
-          )
-        );
-      }
-
-      // AI düyməsi — hansı cəhd analiz olunacaq?
-      // MƏNBƏ NÖRDƏSİ: əvvəlcə `/exams/{id}/attempts` cavabı, yoxdursa
-      // `/analytics/me` history sətrindəki `attempt_id` (SQL miqrasiya
-      // icra edilməyibsə bu endpoint-lər boş qaytarır).
-      const aiBtn = createButton(
-        "AI Analiz",
-        "btn btn-outline btn-sm",
-        () => {
-          const target = primaryAttempt || attempts[0];
-          const attemptId = (target && target.attempt_id) || h.attempt_id || null;
-          if (attemptId) {
-            runExamAnalysis(
-              attemptId,
-              `${h.title || "Sınaq"} — ${(target && target.attempt_no) || h.attempt_no || 1}-ci cəhd`
-            );
-          } else {
-            showToast("Bu sınaq üçün cəhd məlumatı tapılmadı.", "warning");
-          }
-        }
-      );
-      badgeWrap.appendChild(aiBtn);
-      tdTitle.appendChild(badgeWrap);
-      tr.appendChild(tdTitle);
-
-      // Fənn
-      const tdSubject = document.createElement("td");
-      tdSubject.appendChild(createElement("span", "badge-tag", h.subject || "Ümumi"));
-      tr.appendChild(tdSubject);
-
-      // Bal
-      tr.appendChild(createElement("td", null, `${h.score} / ${h.total_questions}`));
-
-      // Dəqiqlik
-      const percentage = Number(h.percentage) || 0;
-      let pctClass = "cell-danger";
-      if (percentage >= 75) pctClass = "cell-success";
-      else if (percentage >= 50) pctClass = "cell-warning";
-      tr.appendChild(createElement("td", `cell-strong ${pctClass}`, `${percentage}%`));
-
-      // Tarix
-      tr.appendChild(createElement("td", "cell-muted", formatDate(h.created_at)));
-
-      // Əməliyyatlar: cəhdlər + təkrar işlət
-      const tdActions = document.createElement("td");
-      tdActions.className = "col-actions";
-
-      const actions = createElement("div", "row-actions");
-
-      if (attemptsKnown && (totalAttempts > 1 || (attemptsByExam[h.exam_id] || {}).can_retake)) {
-        actions.appendChild(
-          createButton("Cəhdlər", "btn btn-ghost btn-sm", () => openAttemptsModal(h.exam_id, h.title))
-        );
-      }
-
-      if (attemptsKnown && (attemptsByExam[h.exam_id] || {}).can_retake) {
-        const retake = document.createElement("a");
-        retake.className = "btn btn-outline btn-sm";
-        retake.href = `exam-hall.html?id=${encodeURIComponent(h.exam_id)}`;
-        retake.textContent = "Təkrar İşlə";
-        actions.appendChild(retake);
-      }
-
-      tdActions.appendChild(actions);
-      tr.appendChild(tdActions);
-
-      historyTableBody.appendChild(tr);
-    });
-  }
-
-  /**
-   * Səhifə açılışında saxlanmış ümumi analizi göstərir — AI API-yə
-   * müraciət etmədən (qənaət + sürət).
-   */
-  async function loadCachedOverall() {
-    try {
-      const response = await fetchWithAuth("/api/v1/analytics/overall/ai-analysis", { method: "GET" });
-      if (!response || !response.ok) return;
-      const data = await response.json();
-      if (!data || !data.has_analysis) return;
-
-      overallLoading.classList.add("hidden");
-      overallResult.classList.remove("hidden");
-      renderAnalysisInto(overallResult, data.analysis);
-
-      if (overallMeta && data.ai_model) {
-        overallMeta.textContent =
-          `Model: ${data.ai_model} • son yenilənmə: ${data.updated_at ? formatDate(data.updated_at) : "-"}`;
-      }
-      if (btnOverallRefresh) btnOverallRefresh.classList.remove("hidden");
-    } catch (_) {
-      // Cache yoxdursa bu normaldır — heç bir xəta göstərilmir.
+      if (title) title.textContent = "Məlumat yüklənmədi";
+      if (desc) desc.textContent = "İnternet bağlantınızı yoxlayın və səhifəni yeniləyin.";
     }
   }
 
   await loadAnalytics();
 
-  // URL-də `?id=` varsa (sınaq zalından "Analitika" keçidi), həmin sınağın
-  // AI analizi avtomatik açılır — istifadəçi əlavə klik etməyə ehtiyac duymur.
-  // TƏHLÜKƏSİZLİK: `id` yalnız `encodeURIComponent` ilə URL-yə yazılır və
-  // backend `.eq("student_id")` filtri sayəsində başqa şagirdin cəhdi açılmır.
-  if (analyticsData && analyticsData.has_data) {
-    const focusExamId = new URLSearchParams(window.location.search).get("id");
-    if (focusExamId) {
-      const focused = (analyticsData.history || []).find(
-        (h) => String(h.exam_id) === String(focusExamId)
-      );
-      if (focused) {
-        const matches = Array.from(
-          historyTableBody.querySelectorAll("tr")
-        ).filter((row) => row.textContent.includes(focused.title || " "));
-        if (matches.length) {
-          matches[0].classList.add("is-highlighted");
-          matches[0].scrollIntoView({ behavior: "smooth", block: "center" });
-        }
-      }
+  // URL hash ilə tab seçimi (?id= isə sınaq təfsilatına fokus)
+  const hashIndex = tabs.findIndex((t) => `#${t.btn.id}` === window.location.hash);
+  if (hashIndex >= 0) activateTab(hashIndex);
+
+  const focusId = new URLSearchParams(window.location.search).get("id");
+  if (focusId) {
+    const target = allAttempts.find((a) => String(a.exam_id) === String(focusId));
+    if (target) {
+      activateTab(0);
+      openAttemptDetail(target.attempt_id, target);
     }
   }
 });
