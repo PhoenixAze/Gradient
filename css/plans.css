@@ -264,15 +264,105 @@
 }
 
 /* --------------------------------------------------------------------------
-   6. PLAN KARTLARI
+   6. PAKET AVANTAJLARI (niyə abunə olmağa dəyər)
+   -------------------------------------------------------------------------- */
+.benefits-section {
+  margin-bottom: 40px;
+  padding: 28px 24px;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+
+.benefits-title {
+  margin: 0 0 8px;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--text-main);
+  text-align: center;
+}
+
+.benefits-subtitle {
+  max-width: 620px;
+  margin: 0 auto 26px;
+  text-align: center;
+  font-size: 0.95rem;
+  color: var(--text-sub);
+}
+
+.benefits-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 18px;
+}
+
+.benefit-card {
+  padding: 20px 18px;
+  background-color: var(--bg-page, var(--bg-card));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md, var(--radius-lg));
+  transition: transform 0.25s var(--transition, ease), border-color 0.25s ease;
+}
+
+.benefit-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-focus);
+}
+
+.benefit-icon {
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  border-radius: 10px;
+  background-color: var(--accent-soft, rgba(59, 130, 246, 0.12));
+  color: var(--accent);
+}
+
+.benefit-title {
+  margin: 0 0 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.benefit-text {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--text-sub);
+}
+
+.benefit-text strong {
+  color: var(--text-main);
+}
+
+/* Sıfırdan qopmayan cümlələr üçün köməkçi */
+.nowrap {
+  white-space: nowrap;
+}
+
+
+/* --------------------------------------------------------------------------
+   7. PLAN KARTLARI
    -------------------------------------------------------------------------- */
 .plans-grid {
   display: grid;
-  /* 5 plan (Free → Full Pro) sütun sayına görə öz-özünə sığır */
+  /* 3 plan (Free → Pro) sütun sayına görə öz-özünə sığır */
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 24px;
   align-items: stretch;
   margin-bottom: 40px;
+}
+
+/* Yalnız iki pullu plan + Free = 3 sütun; kompakt görünüş üçün daha geniş */
+.plans-grid.is-two {
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  max-width: 980px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .plan-card {
@@ -469,7 +559,7 @@
 }
 
 /* --------------------------------------------------------------------------
-   7. ERROR / EMPTY STATE
+   8. ERROR / EMPTY STATE
    -------------------------------------------------------------------------- */
 .plans-state {
   text-align: center;
@@ -517,7 +607,7 @@
 }
 
 /* --------------------------------------------------------------------------
-   8. ÖDƏNİŞ QAYDASI
+   9. ÖDƏNİŞ QAYDASI
    -------------------------------------------------------------------------- */
 .plans-note {
   background-color: var(--bg-card);
@@ -556,7 +646,7 @@
 
 
 /* --------------------------------------------------------------------------
-   9. FAQ (Tez-tez verilən suallar)
+   10. FAQ (Tez-tez verilən suallar)
    -------------------------------------------------------------------------- */
 .faq-section {
   margin-top: 32px;
@@ -693,7 +783,7 @@
 }
 
 /* --------------------------------------------------------------------------
-   9. FOOTER
+   11. FOOTER
    -------------------------------------------------------------------------- */
 .plans-footer {
   border-top: 1px solid var(--border);
@@ -734,7 +824,7 @@
 }
 
 /* --------------------------------------------------------------------------
-   10. ANİMASİYALAR
+   12. ANİMASİYALAR
    -------------------------------------------------------------------------- */
 @keyframes plans-rise {
   from {
@@ -761,14 +851,18 @@
 }
 
 /* --------------------------------------------------------------------------
-   11. RESPONSİV
+   13. RESPONSİV
    -------------------------------------------------------------------------- */
 @media (max-width: 900px) {
-  .plans-grid {
+  .plans-grid,
+  .plans-grid.is-two {
     grid-template-columns: 1fr;
     max-width: 460px;
     margin-left: auto;
     margin-right: auto;
+  }
+  .benefits-grid {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   }
 }
 
@@ -780,6 +874,15 @@
     grid-template-columns: 1fr;
     gap: 20px;
   }
+  .benefits-section {
+    padding: 22px 16px;
+  }
+  .benefits-title {
+    font-size: 1.15rem;
+  }
+  .benefits-grid {
+    grid-template-columns: 1fr;
+  }
   .plans-header-inner {
     padding: 14px 18px;
   }
@@ -790,7 +893,7 @@
 
 
 /* ==========================================================================
-   12. REPETİTOR PANELİ — PLAN YÜKSƏLTMƏ BANNER-I
+   14. REPETİTOR PANELİ — PLAN YÜKSƏLTMƏ BANNER-I
    Bu blok `tutor-dashboard.html` içində istifadə olunur.
    Yalnız Free planda görünür (JS idarə edir) və `plans.html`-ə yönləndirir.
    Dizayn: təmkinli korporativ görünüş — neon parıltı yoxdur,

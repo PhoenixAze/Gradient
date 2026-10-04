@@ -34,7 +34,7 @@ let lastRequestFailedAtNetworkLevel = false;
 
 /* Plan sırası — yalnız UI məqsədi ilə (hansı kartı "tövsiyə" göstərik).
    Həqiqi qiymət/limit məlumatları serverdən gəlir. */
-const PLAN_ORDER = ["free", "standard", "pro", "pro_plus", "full_pro"];
+const PLAN_ORDER = ["free", "standard", "pro"];
 
 /* "Tövsiyə olunan" plan — hansı kart vurğulansın */
 const FEATURED_PLAN = "pro";
@@ -71,40 +71,16 @@ const FALLBACK_PLANS = [
     original_price: 29.98,
     discount_percent: 50,
     max_students: 20,
-    max_exams_per_month: null,
+    max_exams_per_month: 15,
     unlimited_students: false,
-    unlimited_exams: true,
-    description: "20 şagirdə qədər, limitsiz sınaq"
+    unlimited_exams: false,
+    description: "20 şagirdə qədər, ayda 15 sınaq"
   },
   {
     id: "pro",
     name: "Pro",
     price: 29.99,
     original_price: 59.98,
-    discount_percent: 50,
-    max_students: 60,
-    max_exams_per_month: null,
-    unlimited_students: false,
-    unlimited_exams: true,
-    description: "Böyük qruplar üçün limitsiz sınaq"
-  },
-  {
-    id: "pro_plus",
-    name: "Pro+",
-    price: 34.99,
-    original_price: 69.98,
-    discount_percent: 50,
-    max_students: 100,
-    max_exams_per_month: null,
-    unlimited_students: false,
-    unlimited_exams: true,
-    description: "100 şagirdə qədər, limitsiz sınaq"
-  },
-  {
-    id: "full_pro",
-    name: "Full Pro",
-    price: 49.99,
-    original_price: 99.98,
     discount_percent: 50,
     max_students: null,
     max_exams_per_month: null,
@@ -347,8 +323,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (id === "free") return "Free";
     if (id === "standard") return "Standart";
     if (id === "pro") return "Pro";
-    if (id === "pro_plus") return "Pro+";
-    if (id === "full_pro") return "Full Pro";
     return plan.name || "Plan";
   }
 
@@ -391,6 +365,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const isUnlimitedStudents = plan.unlimited_students;
     const studentsLimit = plan.max_students;
     const isUnlimitedExams = plan.unlimited_exams;
+    const isPro = plan.id === "pro";
 
     const features = [];
 
@@ -401,22 +376,36 @@ document.addEventListener("DOMContentLoaded", () => {
         : createFeatureItem(`${Number(studentsLimit) || 0} şagirdə qədər`, true)
     );
 
-    // Sınaq limiti
+    // Sınaq limiti — əsas fərq
     features.push(
       isUnlimitedExams
-        ? createFeatureItem("Limitsiz sınaq yaratma", true)
-        : createFeatureItem(`Ayda ${plan.max_exams_per_month} sınaq yaratma`, true)
+        ? createFeatureItem("Limitsiz sınaq — heç bir aylıq limit yoxdur", true)
+        : createFeatureItem(`Ayda ${plan.max_exams_per_month} sınaq`, true)
     );
 
-    // Əlavə fərqləndiricilər (yalnız pullu planlarda)
+    // Təkrar istifadə: eyni şagirdə sınırsız sınaq
+    if (isPro) {
+      features.push(createFeatureItem("Eyni şagirdə təkrar-təkrar sınaq", true));
+    } else if (plan.id !== "free") {
+      features.push(createFeatureItem("Eyni şagirdə təkrar sınaq (ay limitinə qədər)", true));
+    }
+
+    // Analitika / AI
     if (plan.id !== "free") {
-      features.push(createFeatureItem("Limitsiz analitika", true));
+      features.push(createFeatureItem("Limitsiz analitika və AI hesabat", true));
+      features.push(createFeatureItem("Bütün şagird nəticələrinin müqayisəsi", true));
       features.push(createFeatureItem("Prioritet dəstək", true));
     }
 
     // Free üçün məhdudiyyət xəbərdarlığı
     if (plan.id === "free") {
       features.push(createFeatureItem("AI analitika məhduddur", false));
+      features.push(createFeatureItem("Sınaq limiti çox tez dolur", false));
+    }
+
+    // Standart üçün Pro-ya keçid məsləhəti
+    if (plan.id === "standard") {
+      features.push(createFeatureItem("Limitsiz sınaq üçün Pro planını seçin", false));
     }
 
     return features;
@@ -571,11 +560,11 @@ document.addEventListener("DOMContentLoaded", () => {
     buildFeatureList(plan).forEach((item) => featuresEl.appendChild(item));
     card.appendChild(featuresEl);
 
-    // --- Full Pro üçün əlavə qeyd: kurslar üçün uyğundur ---
-    if (plan.id === "full_pro") {
+    // --- Pro üçün əlavə qeyd: limitsiz iş axını ---
+    if (plan.id === "pro") {
       const audienceEl = document.createElement("p");
       audienceEl.className = "plan-audience-note";
-      audienceEl.textContent = "Kurslar üçün uygundur";
+      audienceEl.textContent = "Kurslar və böyük qruplar üçün";
       card.appendChild(audienceEl);
     }
 
@@ -699,26 +688,37 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* ------------------------------------------------------------------
-     7. CARİ PLAN BİLYİYİ (yalnız Free / aşağı planda)
+     7. CARİ PLAN BİLYİYİ (Free və ya Standart — Pro-ya keçmək mümkün olan planlar)
      ------------------------------------------------------------------ */
   function renderCurrentPlanNotice(usage) {
     if (!usage || !currentPlanCard) return;
 
     const plan = usage.plan || {};
-    const isFree = plan.id === "free";
+    const planId = plan.id;
 
-    // Yalnız Free planda məlumatlandırıcı blok göstərilir
-    if (!isFree) return;
+    // Yalnız Free və Standart planlarda yüksəltmə məsləhəti göstərilir.
+    // Pro planda artıq ən yüksək səviyyədəyiksə.
+    if (planId !== "free" && planId !== "standard") return;
 
     const nameEl = currentPlanTitle;
     const textEl = currentPlanText;
 
-    if (nameEl) nameEl.textContent = "Hazırda Free plandasınız";
-
-    if (textEl) {
-      textEl.textContent =
-        "Free plan limitsiz başlanğıcdır. Yüksəltmə etsəniz, qrupunuzdakı şagird " +
-        "sayı və aylıq sınaq limiti dərhal artacaq. Aşağıdakı planlardan birini seçin.";
+    if (planId === "standard") {
+      if (nameEl) nameEl.textContent = "Hazırda Standart plandasınız";
+      if (textEl) {
+        textEl.textContent =
+          "Standart plan ayda 15 sınaq yaratmağa və 20 şagirdə qədər işləməyə imkan verir. " +
+          "Pro paketinə keçsəniz, heç bir aylıq sınaq limitiniz qalmayacaq və " +
+          "şagird sayı da limitsiz olacaq.";
+      }
+    } else {
+      if (nameEl) nameEl.textContent = "Hazırda Free plandasınız";
+      if (textEl) {
+        textEl.textContent =
+          "Free plan yalnız başlanğıcdır — sınaq limiti tez dolur. " +
+          "Standart paketi ilə ayda 15 sınaq, Pro paketi ilə isə limitsiz sınaq " +
+          "və limitsiz şagird əldə edə bilərsiniz.";
+      }
     }
 
     currentPlanCard.classList.remove("hidden");
