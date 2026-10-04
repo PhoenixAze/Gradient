@@ -84,6 +84,25 @@
   line-height: 1.6;
 }
 
+/* Səhifənin üstündəki cəlbedici mətn */
+.plans-highlight {
+  max-width: 680px;
+  margin: 20px auto 0;
+  padding: 18px 22px;
+  font-size: 0.98rem;
+  line-height: 1.65;
+  color: var(--text-muted);
+  background-color: var(--accent-soft);
+  border: 1px solid rgba(37, 99, 235, 0.24);
+  border-radius: var(--radius-lg);
+  text-align: left;
+}
+
+.plans-highlight strong {
+  color: var(--accent);
+  font-weight: 700;
+}
+
 /* 50% ENDİRİM BANNER */
 .plans-promo-banner {
   display: inline-block;
@@ -424,6 +443,21 @@
   margin-top: auto;
 }
 
+/* Full Pro — "Kurslar üçün uygundur" qeydi */
+.plan-audience-note {
+  display: inline-block;
+  align-self: flex-start;
+  margin: -8px 0 20px;
+  padding: 6px 12px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--accent);
+  background-color: var(--accent-soft);
+  border: 1px solid rgba(37, 99, 235, 0.24);
+  border-radius: 999px;
+}
+
 /* Skeleton kartları */
 .skeleton-card {
   gap: 14px;
@@ -518,6 +552,144 @@
   color: var(--text-sub);
   padding-top: 16px;
   border-top: 1px solid var(--border);
+}
+
+
+/* --------------------------------------------------------------------------
+   9. FAQ (Tez-tez verilən suallar)
+   -------------------------------------------------------------------------- */
+.faq-section {
+  margin-top: 32px;
+  padding: 32px 28px;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  animation: plans-rise 0.5s 0.1s ease both;
+}
+
+.faq-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-main);
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.faq-subtitle {
+  font-size: 0.9rem;
+  color: var(--text-sub);
+  text-align: center;
+  margin: 0 auto 24px;
+  max-width: 520px;
+  line-height: 1.6;
+}
+
+.faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 780px;
+  margin: 0 auto;
+}
+
+.faq-item {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background-color: var(--bg-body);
+  overflow: hidden;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.faq-item:hover {
+  border-color: var(--border-focus);
+}
+
+.faq-item[open] {
+  border-color: var(--accent);
+  background-color: var(--bg-card);
+}
+
+.faq-question {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px 18px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-main);
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.faq-question::-webkit-details-marker {
+  display: none;
+}
+
+.faq-question-text {
+  min-width: 0;
+}
+
+.faq-chevron {
+  flex-shrink: 0;
+  position: relative;
+  width: 18px;
+  height: 18px;
+}
+
+.faq-chevron::before,
+.faq-chevron::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  background-color: var(--accent);
+  transform: translate(-50%, -50%);
+  transition: transform 0.25s ease, opacity 0.25s ease;
+}
+
+.faq-chevron::before {
+  width: 14px;
+  height: 2px;
+  border-radius: 2px;
+}
+
+.faq-chevron::after {
+  width: 2px;
+  height: 14px;
+  border-radius: 2px;
+}
+
+.faq-item[open] .faq-chevron::after {
+  transform: translate(-50%, -50%) rotate(90deg);
+  opacity: 0;
+}
+
+.faq-answer {
+  margin: 0;
+  padding: 0 18px 18px;
+  font-size: 0.9rem;
+  line-height: 1.7;
+  color: var(--text-muted);
+}
+
+.faq-answer strong {
+  color: var(--text-main);
+  font-weight: 600;
+}
+
+@media (max-width: 640px) {
+  .faq-section {
+    padding: 24px 18px;
+  }
+  .faq-question {
+    padding: 14px 16px;
+    font-size: 0.9rem;
+  }
+  .faq-answer {
+    padding: 0 16px 16px;
+  }
 }
 
 /* --------------------------------------------------------------------------

@@ -21,7 +21,7 @@ const API_BASE_URL = (() => {
 const PLAN_ORDER = ["free", "standard", "pro", "pro_plus", "full_pro"];
 
 /* "Tövsiyə olunan" plan — hansı kart vurğulansın */
-const FEATURED_PLAN = "full_pro";
+const FEATURED_PLAN = "pro";
 
 /* Ehtiyat ölçü — fallback (yalnız server əlçatmaz olduqda istifadə olunur) */
 const FALLBACK_WHATSAPP = "https://wa.me/994505975697";
@@ -537,6 +537,14 @@ document.addEventListener("DOMContentLoaded", () => {
     featuresEl.className = "plan-features";
     buildFeatureList(plan).forEach((item) => featuresEl.appendChild(item));
     card.appendChild(featuresEl);
+
+    // --- Full Pro üçün əlavə qeyd: kurslar üçün uyğundur ---
+    if (plan.id === "full_pro") {
+      const audienceEl = document.createElement("p");
+      audienceEl.className = "plan-audience-note";
+      audienceEl.textContent = "Kurslar üçün uygundur";
+      card.appendChild(audienceEl);
+    }
 
     // --- CTA düyməsi ---
     const btn = document.createElement("button");

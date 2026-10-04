@@ -86,7 +86,7 @@ BEGIN
        AND pg_get_constraintdef(oid) LIKE '%pro_plus%'
   LOOP
     EXECUTE format('ALTER TABLE public.tutor_plans DROP CONSTRAINT %I', r.conname);
-    RAISE NOTICE 'tutor_plans: constraint %I silindi.', r.conname;
+    RAISE NOTICE 'tutor_plans: constraint % silindi.', r.conname;
   END LOOP;
 END $$;
 
@@ -113,7 +113,7 @@ BEGIN
        AND pg_get_constraintdef(oid) LIKE '%pro_plus%'
   LOOP
     EXECUTE format('ALTER TABLE public.tutor_subscriptions DROP CONSTRAINT %I', r.conname);
-    RAISE NOTICE 'tutor_subscriptions: constraint %I silindi.', r.conname;
+    RAISE NOTICE 'tutor_subscriptions: constraint % silindi.', r.conname;
   END LOOP;
 END $$;
 
@@ -137,7 +137,7 @@ BEGIN
        AND pg_get_constraintdef(oid) LIKE '%pro_plus%'
   LOOP
     EXECUTE format('ALTER TABLE public.plan_upgrade_requests DROP CONSTRAINT %I', r.conname);
-    RAISE NOTICE 'plan_upgrade_requests: constraint %I silindi.', r.conname;
+    RAISE NOTICE 'plan_upgrade_requests: constraint % silindi.', r.conname;
   END LOOP;
 END $$;
 
@@ -166,7 +166,7 @@ BEGIN
        AND conname  = 'users_plan_valid_chk'
   LOOP
     EXECUTE format('ALTER TABLE public.users DROP CONSTRAINT %I', r.conname);
-    RAISE NOTICE 'users: constraint %I silindi.', r.conname;
+    RAISE NOTICE 'users: constraint % silindi.', r.conname;
   END LOOP;
 END $$;
 
@@ -254,14 +254,18 @@ BEGIN
   IF NOT FOUND THEN
     RAISE NOTICE 'XƏTA: full_pro planı kataloqda yoxdur!';
   ELSE
-    RAISE NOTICE 'full_pro → % AZN (orijinal % AZN, -%%), şagird limiti: %',
-      v_full.price_azn,
-      COALESCE(v_full.original_price_azn::text, 'yoxdur'),
-      v_full.discount_percent,
-      COALESCE(v_full.max_students::text, 'LIMITSİZ');
+    RAISE NOTICE '%',
+      CONCAT(
+        'full_pro plan tapıldı | qiymət=', v_full.price_azn,
+        ' AZN | orijinal=', COALESCE(v_full.original_price_azn::text, 'yoxdur'),
+        ' AZN | endirim=', v_full.discount_percent::text, ' faiz',
+        ' | şagird limiti=',
+        COALESCE(v_full.max_students::text, 'LIMITSIZ')
+      );
   END IF;
 
   RAISE NOTICE '==================================================';
-  RAISE NOTICE 'Full Pro planı əlavə olundu. 50%% endirim aktivdir.';
+  RAISE NOTICE '%',
+    CONCAT('Full Pro planı əlavə olundu. Endirim: ', 50, ' faiz aktivdir.');
   RAISE NOTICE '==================================================';
 END $$;
