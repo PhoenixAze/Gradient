@@ -26,6 +26,58 @@ const FEATURED_PLAN = "pro";
 /* Ehtiyat ölçü — fallback (yalnız server əlçatmaz olduqda istifadə olunur) */
 const FALLBACK_WHATSAPP = "https://wa.me/994505975697";
 
+/*
+ * EHTİYAT PLAN KATALOQU.
+ *
+ * TƏHLÜKƏSİZLİK QEYDİ: Bu, **display** məqsədli ehtiyat dəyərdir.
+ * Həqiqi qiymət/limit məlumatı serverdən gəlir (`/api/v1/plans`).
+ * Backend əlçatmaz olduqda səhifə boş qalmasın deyə göstərilir.
+ * Limitlərin özü HƏR ZAMAN server tərəfdə yoxlanılır (frontend məlumatı
+ * yalnız vizual təqdim edir, heç bir məhdudiyyət tətbiq etmir).
+ */
+const FALLBACK_PLANS = [
+  {
+    id: "free",
+    name: "Free",
+    price: 0,
+    max_students: 5,
+    max_exams_per_month: 2,
+    unlimited_students: false,
+    unlimited_exams: false,
+    description: "Kiqik qruplar üçün başlanğıc plan"
+  },
+  {
+    id: "standard",
+    name: "Standart",
+    price: 14.99,
+    max_students: 20,
+    max_exams_per_month: null,
+    unlimited_students: false,
+    unlimited_exams: true,
+    description: "20 şagirdə qədər, limitsiz sınaq"
+  },
+  {
+    id: "pro",
+    name: "Pro",
+    price: 29.99,
+    max_students: 60,
+    max_exams_per_month: null,
+    unlimited_students: false,
+    unlimited_exams: true,
+    description: "Böyük qruplar üçün limitsiz sınaq"
+  },
+  {
+    id: "pro_plus",
+    name: "Pro+",
+    price: 49.99,
+    max_students: null,
+    max_exams_per_month: null,
+    unlimited_students: true,
+    unlimited_exams: true,
+    description: "Limitsiz şagird və limitsiz sınaq"
+  }
+];
+
 document.addEventListener("DOMContentLoaded", () => {
   /* ------------------------------------------------------------------
      1. DOM ELEMENTLƏRİ
@@ -569,7 +621,8 @@ document.addEventListener("DOMContentLoaded", () => {
     setLoading(true);
     hideState();
 
-    // Əvvəlcə cari planı (banner mətnində istifadə olunur)
+    // Əvvəlcə cari planı (banner mətnində istifadə olunur).
+    // Yeni hesablar Free planlıdır → endpoint olmasa da Free məlumatı işlət.
     let usage = null;
     try {
       const meResponse = await fetchWithAuth("/api/v1/plans/me", { method: "GET" });
@@ -580,6 +633,14 @@ document.addEventListener("DOMContentLoaded", () => {
       if (meResponse && meResponse.ok) {
         usage = await meResponse.json();
         currentPlanId = (usage.plan && usage.plan.id) || "free";
+      } else if (meResponse && meResponse.status === 403) {
+        setLoading(false);
+        showState(
+          "Giriş tələb olunur",
+          "Bu səhifəni görmək üçün repetitor hesabı ilə daxil olmalısınız.",
+          false
+        );
+        return;
       }
     } catch (err) {
       console.warn("Cari plan yüklənmədi:", err);
@@ -592,9 +653,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (!response) {
         setLoading(false);
+        renderPlans(FALLBACK_PLANS);
         showState(
           "Serverlə əlaqə yaradıla bilmədi",
-          "İnternet bağlantınızı yoxlayın və yenidən cəhd edin."
+          "Plan məlumatları ehtiyat režimdə göstərilir. Tezliklə yoxlayın.",
+          false
         );
         return;
       }
@@ -616,10 +679,13 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       if (!response.ok) {
+        // Backend hələ deploy edilməyib ola bilər (404) → ehtiyat katalog
         setLoading(false);
+        renderPlans(FALLBACK_PLANS);
         showState(
-          "Plan məlumatları yüklənmədi",
-          "Server xətası baş verdi. Bir az sonra yenidən cəhd edin."
+          "Plan məlumatları serverdan yüklənmədi",
+          "Qiymətlər ehtiyat režimdə göstərilir. Tezliklə yenilənəcək.",
+          false
         );
         return;
       }
@@ -629,9 +695,11 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (err) {
       console.error("Plan yükləmə xətası:", err);
       setLoading(false);
+      renderPlans(FALLBACK_PLANS);
       showState(
         "Gözlənilməz xəta",
-        "Plan məlumatlarını yüklərkən xəta baş verdi. Səhifəni yeniləməyi sınayın."
+        "Plan məlumatları ehtiyat režimdə göstərilir. Tezliklə yoxlayın.",
+        false
       );
       return;
     }

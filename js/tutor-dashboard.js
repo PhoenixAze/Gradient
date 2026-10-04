@@ -625,14 +625,48 @@ document.addEventListener("DOMContentLoaded", () => {
     const banner = $("plan-upgrade-banner");
     if (!banner) return;
 
+    // Yeni hesablar DB-də avtomatik "free" planlıdır və `tutor_subscriptions`
+    // cədvəlində sətri olmayan repetitorlar da Free planındadır.
+    // Buna görə endpoint əlçatmaz olduqda da Free məlumatı ilə davam edirik.
+    const FREE_FALLBACK = {
+      plan: { id: "free", name: "Free" },
+      students_used: 0,
+      students_limit: 5,
+      exams_used: 0,
+      exams_limit: 2
+    };
+
     try {
       const response = await fetchWithAuth("/api/v1/plans/me", { method: "GET" });
+
+      // Endpoint yoxdur / server xətası verir → default Free məlumatı işlət
       if (!response || !response.ok) {
-        banner.classList.add("hidden");
+        if (response && (response.status === 401 || response.status === 403)) {
+          banner.classList.add("hidden");
+          return;
+        }
+        renderPlanBanner(FREE_FALLBACK);
         return;
       }
 
       const data = await response.json();
+      renderPlanBanner(data);
+    } catch (err) {
+      // Heç bir istifadəçi mətni göstərilmir; sabit fallback işlədilir
+      console.warn("Plan statusu yüklənmədi, Free fallback işlədilir:", err);
+      renderPlanBanner(FREE_FALLBACK);
+    }
+  }
+
+  /**
+   * Banner-i məlumatlara görə qurur (yalnız Free planda göstərilir).
+   * @param {object} usage — `/api/v1/plans/me` cavabı və ya Free fallback
+   */
+  function renderPlanBanner(data) {
+    const banner = $("plan-upgrade-banner");
+    if (!banner) return;
+
+    try {
       const plan = data.plan || {};
 
       // Yalnız Free planda celb edici gösterilir
@@ -667,8 +701,6 @@ document.addEventListener("DOMContentLoaded", () => {
       // Giriş animasiyası (CSS ilə) — klass sonradan əlavə olunur
       requestAnimationFrame(() => banner.classList.add("is-visible"));
     } catch (err) {
-      // Heç bir istifadəçi mətni göstərilmir; sadəcə gizli qalır
-      console.warn("Plan statusu yüklənmədi:", err);
       banner.classList.add("hidden");
     }
   }
