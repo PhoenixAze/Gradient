@@ -18,10 +18,10 @@ const API_BASE_URL = (() => {
 
 /* Plan sırası — yalnız UI məqsədi ilə (hansı kartı "tövsiyə" göstərik).
    Həqiqi qiymət/limit məlumatları serverdən gəlir. */
-const PLAN_ORDER = ["free", "standard", "pro", "pro_plus"];
+const PLAN_ORDER = ["free", "standard", "pro", "pro_plus", "full_pro"];
 
 /* "Tövsiyə olunan" plan — hansı kart vurğulansın */
-const FEATURED_PLAN = "pro";
+const FEATURED_PLAN = "full_pro";
 
 /* Ehtiyat ölçü — fallback (yalnız server əlçatmaz olduqda istifadə olunur) */
 const FALLBACK_WHATSAPP = "https://wa.me/994505975697";
@@ -40,6 +40,8 @@ const FALLBACK_PLANS = [
     id: "free",
     name: "Free",
     price: 0,
+    original_price: null,
+    discount_percent: 0,
     max_students: 5,
     max_exams_per_month: 2,
     unlimited_students: false,
@@ -50,6 +52,8 @@ const FALLBACK_PLANS = [
     id: "standard",
     name: "Standart",
     price: 14.99,
+    original_price: 29.98,
+    discount_percent: 50,
     max_students: 20,
     max_exams_per_month: null,
     unlimited_students: false,
@@ -60,6 +64,8 @@ const FALLBACK_PLANS = [
     id: "pro",
     name: "Pro",
     price: 29.99,
+    original_price: 59.98,
+    discount_percent: 50,
     max_students: 60,
     max_exams_per_month: null,
     unlimited_students: false,
@@ -69,7 +75,21 @@ const FALLBACK_PLANS = [
   {
     id: "pro_plus",
     name: "Pro+",
+    price: 34.99,
+    original_price: 69.98,
+    discount_percent: 50,
+    max_students: 100,
+    max_exams_per_month: null,
+    unlimited_students: false,
+    unlimited_exams: true,
+    description: "100 şagirdə qədər, limitsiz sınaq"
+  },
+  {
+    id: "full_pro",
+    name: "Full Pro",
     price: 49.99,
+    original_price: 99.98,
+    discount_percent: 50,
     max_students: null,
     max_exams_per_month: null,
     unlimited_students: true,
@@ -295,6 +315,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (id === "standard") return "Standart";
     if (id === "pro") return "Pro";
     if (id === "pro_plus") return "Pro+";
+    if (id === "full_pro") return "Full Pro";
     return plan.name || "Plan";
   }
 
@@ -303,6 +324,33 @@ document.addEventListener("DOMContentLoaded", () => {
     const num = Number(price);
     if (!Number.isFinite(num) || num <= 0) return "0";
     return num.toFixed(2);
+  }
+
+  /**
+   * Planın endirim məlumatını normallaşdırır.
+   * @returns {{original: string|null, percent: number}} — `original` null-dursa
+   *          endirim yoxdur (keçilmiş qiymət göstərilmir).
+   */
+  function getDiscountInfo(plan) {
+    const price = Number(plan.price);
+    let percent = Number(plan.discount_percent) || 0;
+    let original = Number(plan.original_price);
+
+    if (!Number.isFinite(percent) || percent <= 0 || percent > 90) {
+      // DB-də endirim yoxdursa, `original_price`-dan faiz hesablanır.
+      if (Number.isFinite(original) && original > 0 && price > 0 && original > price) {
+        percent = Math.round((1 - price / original) * 100);
+      } else {
+        return { original: null, percent: 0 };
+      }
+    }
+
+    if (!Number.isFinite(original) || original <= 0 || original <= price) {
+      if (percent <= 0 || price <= 0) return { original: null, percent: 0 };
+      original = price / (1 - percent / 100);
+    }
+
+    return { original: formatPrice(original), percent };
   }
 
   /** Bir planın xüsusiyyət siyahısını qurur (mərkəzləşdirilmiş məntiq). */
@@ -317,7 +365,7 @@ document.addEventListener("DOMContentLoaded", () => {
     features.push(
       isUnlimitedStudents
         ? createFeatureItem("Limitsiz şagird", true)
-        : createFeatureItem(`${studentsLimit} şagirdə qədər`, true)
+        : createFeatureItem(`${Number(studentsLimit) || 0} şagirdə qədər`, true)
     );
 
     // Sınaq limiti
@@ -404,6 +452,9 @@ document.addEventListener("DOMContentLoaded", () => {
   function buildPlanCard(plan, index) {
     const card = document.createElement("article");
     card.className = "plan-card";
+    if (typeof index === "number" && index > 0) {
+      card.style.animationDelay = `${(index * 0.07).toFixed(2)}s`;
+    }
 
     const isCurrent = plan.id === currentPlanId;
     const isFeatured = plan.id === FEATURED_PLAN && !isCurrent;
@@ -433,21 +484,53 @@ document.addEventListener("DOMContentLoaded", () => {
     descEl.textContent = plan.description || "";
     card.appendChild(descEl);
 
-    // --- Qiymət ---
+    // --- Qiymət (endirim dəstəklə) ---
+    const priceWrap = document.createElement("div");
+    priceWrap.className = "plan-price-block";
+
+    const discount = getDiscountInfo(plan);
+
+    // Endirim nişanı ("-50%")
+    if (discount.percent > 0 && discount.original) {
+      const badge = document.createElement("span");
+      badge.className = "plan-discount-badge";
+      badge.textContent = `-${discount.percent}%`;
+      priceWrap.appendChild(badge);
+    }
+
     const priceRow = document.createElement("div");
     priceRow.className = "plan-price-row";
+
+    // Orijinal qiymət (keçilmiş)
+    if (discount.original) {
+      const oldPriceEl = document.createElement("span");
+      oldPriceEl.className = "plan-price-original";
+      oldPriceEl.textContent = discount.original;
+      priceRow.appendChild(oldPriceEl);
+    }
 
     const priceEl = document.createElement("span");
     priceEl.className = "plan-price";
     priceEl.textContent = formatPrice(plan.price);
+    if (discount.original) priceEl.classList.add("is-discounted");
+    priceRow.appendChild(priceEl);
 
     const periodEl = document.createElement("span");
     periodEl.className = "plan-price-period";
     periodEl.textContent = "AZN / ay";
 
-    priceRow.appendChild(priceEl);
     priceRow.appendChild(periodEl);
-    card.appendChild(priceRow);
+    priceWrap.appendChild(priceRow);
+
+    // Endirim izahı ("Qiymət 50% endirimlədir")
+    if (discount.original) {
+      const noteEl = document.createElement("p");
+      noteEl.className = "plan-price-note";
+      noteEl.textContent = `Qiymət ${discount.percent}% endirimlədir`;
+      priceWrap.appendChild(noteEl);
+    }
+
+    card.appendChild(priceWrap);
 
     // --- Xüsusiyyətlər ---
     const featuresEl = document.createElement("ul");
@@ -486,8 +569,8 @@ document.addEventListener("DOMContentLoaded", () => {
     // Server sırasına hörmət et, amma bilinməyən planları süz (defensive)
     const safePlans = (plans || []).filter((p) => p && PLAN_ORDER.includes(p.id));
 
-    safePlans.forEach((plan) => {
-      const card = buildPlanCard(plan);
+    safePlans.forEach((plan, index) => {
+      const card = buildPlanCard(plan, index);
       gridEl.appendChild(card);
     });
 

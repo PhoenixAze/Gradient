@@ -1,5 +1,5 @@
- ============================================================================
- --MİQRASİYA: 20261003000000_tutor_subscription_plans.sql
+-- ============================================================================
+ -- MİQRASİYA: 20261003000000_tutor_subscription_plans.sql
 --
 -- MƏQƏD: Repetitor panelinə aylıq abunə plan sistemi (Free / Standart / Pro / Pro+).
 --

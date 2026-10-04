@@ -84,6 +84,32 @@
   line-height: 1.6;
 }
 
+/* 50% ENDİRİM BANNER */
+.plans-promo-banner {
+  display: inline-block;
+  margin-top: 20px;
+  padding: 12px 22px;
+  background-color: var(--success-soft);
+  border: 1px solid var(--success);
+  border-radius: var(--radius-lg);
+  color: var(--text-main);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  max-width: 620px;
+}
+
+.plans-promo-banner strong {
+  color: var(--success);
+  font-weight: 800;
+}
+
+.plans-promo-note {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-sub);
+  font-size: 0.82rem;
+}
+
 /* --------------------------------------------------------------------------
    4. CARİ PLAN MƏLUMATI (yalnız Free planda)
    -------------------------------------------------------------------------- */
@@ -223,7 +249,8 @@
    -------------------------------------------------------------------------- */
 .plans-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  /* 5 plan (Free → Full Pro) sütun sayına görə öz-özünə sığır */
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 24px;
   align-items: stretch;
   margin-bottom: 40px;
@@ -244,6 +271,8 @@
 .plan-card:nth-child(1) { animation-delay: 0.05s; }
 .plan-card:nth-child(2) { animation-delay: 0.12s; }
 .plan-card:nth-child(3) { animation-delay: 0.19s; }
+.plan-card:nth-child(4) { animation-delay: 0.26s; }
+.plan-card:nth-child(5) { animation-delay: 0.33s; }
 
 .plan-card:hover {
   transform: translateY(-3px);
@@ -296,11 +325,42 @@
   min-height: 2.6em;
 }
 
+/* Qiymət bloku — endirim badge + keçilmiş qiymət + cari qiymət */
+.plan-price-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  margin-bottom: 22px;
+}
+
 .plan-price-row {
   display: flex;
   align-items: baseline;
-  gap: 6px;
-  margin-bottom: 22px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Endirim nişanı ("-50%") */
+.plan-discount-badge {
+  display: inline-block;
+  background-color: var(--success);
+  color: var(--on-success);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 3px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+/* Orijinal qiymət — keçilmiş (line-through) */
+.plan-price-original {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text-sub);
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
 }
 
 .plan-price {
@@ -311,10 +371,21 @@
   line-height: 1;
 }
 
+.plan-price.is-discounted {
+  color: var(--success);
+}
+
 .plan-price-period {
   font-size: 0.88rem;
   color: var(--text-sub);
   font-weight: 500;
+}
+
+.plan-price-note {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--success);
+  margin: 0;
 }
 
 .plan-features {
