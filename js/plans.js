@@ -10,11 +10,27 @@
        biznes qaydalarının tək mənbəyi serverdir
    ========================================================================== */
 
+/* Production backend — gönişdə server (npm run dev) işləmədiyi halda
+   və ya fayl vasitəsilə (file://) açılanda ehtiyat ünvan kimi istifadə olunur.
+   CSP `connect-src` bu domeni artıq icazə verir (plans.html §head). */
+const PROD_API_URL = "https://gradient-backend-fam5.onrender.com";
+
+const IS_FILE_PROTOCOL = window.location.protocol === "file:";
+
 const API_BASE_URL = (() => {
   const host = window.location.hostname;
-  const isProd = host.endsWith("github.io") || host === "gradient.az" || host === "www.gradient.az";
-  return isProd ? "https://gradient-backend-fam5.onrender.com" : "";
+  const isProd =
+    host.endsWith("github.io") ||
+    host === "gradient.az" ||
+    host === "www.gradient.az";
+  // file:// — gönişdə yol mövcud deyil, birbaşa production backend
+  if (IS_FILE_PROTOCOL) return PROD_API_URL;
+  return isProd ? PROD_API_URL : "";
 })();
+
+/* Son şəbəkə cəhdinin nəticəsi: null = cəhd uğursuz (ağ/timeout/CORS),
+   false = HTTP cavabı alındı. `loadPlans` bunu mesaj seçimi üçün istifadə edir. */
+let lastRequestFailedAtNetworkLevel = false;
 
 /* Plan sırası — yalnız UI məqsədi ilə (hansı kartı "tövsiyə" göstərik).
    Həqiqi qiymət/limit məlumatları serverdən gəlir. */
@@ -188,8 +204,25 @@ document.addEventListener("DOMContentLoaded", () => {
       response = await fetch(`${API_BASE_URL}${endpoint}`, opts);
     } catch (err) {
       console.error("Şəbəkə xətası:", err);
-      return null;
+
+      // Gönişdəki API əlçatmazdırsa (dev server yoxdur, proksi işləmir,
+      // Live Server və s. — CORS 404/502) bir dəfə production backend-ə cəhd edirik.
+      if (API_BASE_URL !== PROD_API_URL && endpoint.startsWith("/api/")) {
+        try {
+          response = await fetch(`${PROD_API_URL}${endpoint}`, opts);
+          console.info("Gönişdəki API əvəzinə production backend istifadə olundu.");
+        } catch (fallbackErr) {
+          console.error("Ehtiyat backend xətası:", fallbackErr);
+          lastRequestFailedAtNetworkLevel = true;
+          return null;
+        }
+      } else {
+        lastRequestFailedAtNetworkLevel = true;
+        return null;
+      }
     }
+
+    lastRequestFailedAtNetworkLevel = false;
 
     if (response && response.status === 401) {
       const rfToken = getStoredRefreshToken();
@@ -745,9 +778,19 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!response) {
         setLoading(false);
         renderPlans(FALLBACK_PLANS);
+
+        const offlineHint = IS_FILE_PROTOCOL
+          ? "Səhifə birbaşa fayldan açılıb. Terminalda `npm run dev` işə salın və " +
+            "http://localhost:3000/plans.html ünvanından daxil olun."
+          : "İnternet bağlantınızı və lokal serverin işləyib-işləmədiyini yoxlayın.";
+
         showState(
-          "Serverlə əlaqə yaradıla bilmədi",
-          "Plan məlumatları ehtiyat režimdə göstərilir. Tezliklə yoxlayın.",
+          lastRequestFailedAtNetworkLevel
+            ? "Serverlə əlaqə yaradıla bilmədi"
+            : "Plan məlumatları yüklənmədi",
+          lastRequestFailedAtNetworkLevel
+            ? offlineHint + " Aşağıdakı qiymətlər ehtiyat kataloqudur."
+            : "Plan məlumatları ehtiyat režimdə göstərilir. Tezliklə yoxlayın.",
           false
         );
         return;
@@ -788,8 +831,13 @@ document.addEventListener("DOMContentLoaded", () => {
       setLoading(false);
       renderPlans(FALLBACK_PLANS);
       showState(
-        "Gözlənilməz xəta",
-        "Plan məlumatları ehtiyat režimdə göstərilir. Tezliklə yoxlayın.",
+        IS_FILE_PROTOCOL
+          ? "Səhifəni düzgün serverdən açın"
+          : "Gözlənilməz xəta",
+        IS_FILE_PROTOCOL
+          ? "`npm run dev` işə salın və http://localhost:3000/plans.html ünvanından " +
+            "daxil olun. Aşağıdakı qiymətlər ehtiyat kataloqudur."
+          : "Plan məlumatları ehtiyat režimdə göstərilir. Tezliklə yoxlayın.",
         false
       );
       return;
@@ -822,6 +870,12 @@ document.addEventListener("DOMContentLoaded", () => {
   if (retryBtn) {
     retryBtn.addEventListener("click", () => loadPlans());
   }
+
+  // İnternet bərpasında səhifəni özü yeniləyir (state qutusu qalmasın)
+  window.addEventListener("online", () => {
+    console.info("Bağlantı bərpa olundu — planlar yenidən yüklənir.");
+    loadPlans();
+  });
 
   // Əlaqə məlumatları paralel yüklənir (WhatsApp linki üçün)
   loadContactSettings();
