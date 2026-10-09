@@ -31,25 +31,13 @@ const PROD_API_BASE_URL = "https://gradient-backend-fam5.onrender.com";
  * TƏHLÜKƏSİZLİK: burada açar/cədvəl adı YOXDUR — yalnız public API domeni.
  * Həqiqi məlumat sətri həmişə FastAPI tərəfdə `.eq("student_id", ...)` ilə qorunur.
  */
-const host = typeof window !== "undefined" ? window.location.hostname : "";
-const isLocalDev =
-  host === "" ||
-  host === "localhost" ||
-  host === "127.0.0.1" ||
-  host === "::1";
-
-const isProductionFrontend =
-  host === "phoenixaze.github.io" ||
-  host.endsWith("github.io") ||
-  host === "gradient.az" ||
-  host === "www.gradient.az";
-
-const useProxy =
-  typeof window !== "undefined" &&
-  window.location.protocol === "http:" &&
-  !isLocalDev;
-
-const API_BASE_URL = (isProductionFrontend || !useProxy) ? PROD_API_BASE_URL : "";
+const API_BASE_URL = (() => {
+  if (typeof window === "undefined") return "";
+  if (window.location.protocol === "file:") return PROD_API_BASE_URL;
+  const h = window.location.hostname;
+  const isStaticHosting = h.endsWith("github.io") || h === "gradient.az" || h === "www.gradient.az";
+  return isStaticHosting ? PROD_API_BASE_URL : "";
+})();
 
 document.addEventListener("DOMContentLoaded", async () => {
   // ==========================================================================

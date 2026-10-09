@@ -8,32 +8,18 @@ const PROD_API_BASE_URL = "https://gradient-backend-fam5.onrender.com";
  * brauzer "Failed to fetch" atır. Proxy işləmirsə birbaşa production backend.
  * Burada HƏR GÜN açar/CƏDVƏL ADI yoxdur — yalnız public API domeni.
  */
-const host = typeof window !== "undefined" ? window.location.hostname : "";
-const isLocalDev =
-  host === "" || host === "localhost" || host === "127.0.0.1" || host === "::1";
-const isProductionFrontend = typeof window !== "undefined" && (
-  window.location.hostname === "phoenixaze.github.io" ||
-  window.location.hostname.endsWith("github.io") ||
-  window.location.hostname === "gradient.az" ||
-  window.location.hostname === "www.gradient.az"
-);
-const useProxy = typeof window !== "undefined" &&
-  window.location.protocol === "http:" &&
-  !isLocalDev;
-const API_BASE_URL = (isProductionFrontend || !useProxy)
-  ? PROD_API_BASE_URL
-  : "";
+const API_BASE_URL = (() => {
+  if (typeof window === "undefined") return "";
+  if (window.location.protocol === "file:") return PROD_API_BASE_URL;
+  const h = window.location.hostname;
+  const isStaticHosting = h.endsWith("github.io") || h === "gradient.az" || h === "www.gradient.az";
+  return isStaticHosting ? PROD_API_BASE_URL : "";
+})();
 
 // Bildiriş (toast) — bütün stiller .toast klassı ilə CSS-dən gəlir.
-// ƏVVƏL: element JS ilə yaradılırdı və inline style istifadə edirdi
-// (təhlükəsizlik: CSS injection riski) + `var(--surface)` bu səhifədə
-// mövcud DEYİLDİ, ona görə fon rəngi həll olunmurdu.
-// DOMContentLoaded-dan ƏVVƏL icra olunduğu üçün bu element hələ mövcud olmur.
-// Query dəstəklənir: funksiyalar yalnız hadisə baş verdikdən sonra çağırılır.
-const toastRegion = document.getElementById('toast-region');
-
 function showNotification(message, type) {
-    if (!toastRegion) return;
+    const region = document.getElementById('toast-region');
+    if (!region) return;
 
     const variant = ['success', 'error', 'warning'].includes(type) ? type : 'info';
     const toast = document.createElement('div');
@@ -41,7 +27,7 @@ function showNotification(message, type) {
     // XSS müdafiəsi: yalnız textContent (innerHTML qadağandır).
     toast.textContent = String(message || '');
 
-    toastRegion.appendChild(toast);
+    region.appendChild(toast);
     // Reflow — keçid animasiyasının işləməsi üçün
     requestAnimationFrame(() => toast.classList.add('show'));
 

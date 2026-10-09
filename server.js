@@ -98,14 +98,22 @@ const ALLOWED_ORIGINS = new Set(
     .filter(Boolean)
 );
 
+const isAllowedOrigin = (origin) => {
+  if (!origin) return false;
+  if (ALLOWED_ORIGINS.has(origin)) return true;
+  if (/^https:\/\/ais-(dev|pre)-[a-z0-9-]+\.[a-z0-9-]+\.run\.app$/i.test(origin)) return true;
+  if (/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin)) return true;
+  return false;
+};
+
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  if (origin && ALLOWED_ORIGINS.has(origin)) {
+  if (origin && isAllowedOrigin(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Vary', 'Origin');
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Refresh-Token');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Refresh-Token,X-Debug-Key');
   }
   if (req.method === 'OPTIONS') return res.sendStatus(204);
   next();
@@ -661,30 +669,36 @@ app.all('/api/*', async (req, res) => {
   }
 });
 
-// Statik faylların təqdim edilməsi
-// Təhlükəsizlik: .env, server.js, package.json kimi server fayllarının
-// ictimai təqdim edilməsi bloklanır (source/config disclosure qoruması).
-app.use(express.static(__dirname, {
-  index: 'index.html',
-  extensions: ['html'],
-  dotfiles: 'deny',
-  setHeaders: (res, filePath) => {
-    const blocked = ['server.js', 'package.json', 'package-lock.json', 'metadata.json', '.env.example'];
-    if (blocked.includes(path.basename(filePath))) {
-      res.setHeader('Content-Security-Policy', "default-src 'none'");
-    }
-  }
-}));
-
-// Açıq mənbə fayllarına birbaşa girişi rədd et (defense-in-depth)
+// Təhlükəsizlik: Açıq mənbə fayllarına, backend və konfiqurasiyaya birbaşa girişi rədd et (Zero-Trust)
 app.use((req, res, next) => {
-  const denied = ['/server.js', '/package.json', '/package-lock.json', '/metadata.json', '/.env', '/.env.example'];
-  if (denied.includes(req.path)) {
+  const normalizedPath = path.normalize(req.path).replace(/^(\.\.[\/\\])+/, '');
+  const blockedPrefixes = ['/backend', '/supabase', '/docs', '/tools', '/node_modules', '/.git'];
+  const blockedFiles = [
+    '/server.js', '/package.json', '/package-lock.json', '/metadata.json',
+    '/bun.lock', '/.env', '/.env.example'
+  ];
+  const blockedExtensions = ['.py', '.sql', '.sh', '.lock', '.env', '.json'];
+
+  // metadata.json və digər vacib JSON konfiqurasiyalarının birbaşa URL ilə çəkilməsi bloklanır
+  // (lakin digər statik aktivlərə təsir etmir)
+  if (
+    blockedFiles.includes(normalizedPath) ||
+    blockedPrefixes.some(prefix => normalizedPath === prefix || normalizedPath.startsWith(prefix + '/')) ||
+    blockedExtensions.some(ext => normalizedPath.toLowerCase().endsWith(ext) && !normalizedPath.endsWith('.html')) ||
+    normalizedPath.includes('/.')
+  ) {
     diag('static.denied', { rid: req.diagId, path: req.path });
     return res.status(404).json({ detail: 'Tapılmadı' });
   }
   next();
 });
+
+// Statik faylların təqdim edilməsi
+app.use(express.static(__dirname, {
+  index: 'index.html',
+  extensions: ['html'],
+  dotfiles: 'deny'
+}));
 
 // Route fallback
 app.get('*', (req, res) => {

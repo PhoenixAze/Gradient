@@ -8,21 +8,13 @@ const PROD_API_BASE_URL = "https://gradient-backend-fam5.onrender.com";
  * brauzer "Failed to fetch" atır. Proxy işləmirsə birbaşa production backend.
  * Burada HƏR GÜN açar/CƏDVƏL ADI yoxdur — yalnız public API domeni.
  */
-const host = typeof window !== "undefined" ? window.location.hostname : "";
-const isLocalDev =
-  host === "" || host === "localhost" || host === "127.0.0.1" || host === "::1";
-const isProductionFrontend = typeof window !== "undefined" && (
-  window.location.hostname === "phoenixaze.github.io" ||
-  window.location.hostname.endsWith("github.io") ||
-  window.location.hostname === "gradient.az" ||
-  window.location.hostname === "www.gradient.az"
-);
-const useProxy = typeof window !== "undefined" &&
-  window.location.protocol === "http:" &&
-  !isLocalDev;
-const API_BASE_URL = (isProductionFrontend || !useProxy)
-  ? PROD_API_BASE_URL
-  : "";
+const API_BASE_URL = (() => {
+  if (typeof window === "undefined") return "";
+  if (window.location.protocol === "file:") return PROD_API_BASE_URL;
+  const h = window.location.hostname;
+  const isStaticHosting = h.endsWith("github.io") || h === "gradient.az" || h === "www.gradient.az";
+  return isStaticHosting ? PROD_API_BASE_URL : "";
+})();
 
 document.addEventListener("DOMContentLoaded", () => {
     // DOM Elementləri
