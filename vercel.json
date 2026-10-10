@@ -1,8 +1,0 @@
-{
-  "rewrites": [
-    {
-      "source": "/api/:match*",
-      "destination": "https://gradient-backend-fam5.onrender.com/api/:match*"
-    }
-  ]
-}
