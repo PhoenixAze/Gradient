@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#F8FAFC">
   <title>Abunə Planları | Gradient</title>
-  <meta name="description" content="Repetitor paneli üçün aylıq abunə planları: Standart (ayda 15 sınaq) və Pro (limitsiz sınaq). Bütün pullu planlar 50% endirimlidir.">
+  <meta name="description" content="Repetitor paneli üçün aylıq abunə planları: Standart (14.99 AZN), Pro (80 şagird, 29.99 AZN) və Kurslar üçün (limitsiz, 49.99 AZN). Bütün pullu planlar 50% endirimlidir.">
   <meta name="referrer" content="strict-origin-when-cross-origin">
 
   <!-- TƏHLÜKƏSİZLİK: Strict Content Security Policy (.clinerules §1-2) -->
@@ -53,16 +53,16 @@
     <!-- SƏHİFƏ BAŞLIĞI -->
     <div class="plans-intro">
       <p class="plans-eyebrow" id="plans-eyebrow">Repetitor abunə planları</p>
-      <h1 class="plans-title">Qrupunuzu böyütdüncü, planınızı yüksəldin</h1>
+      <h1 class="plans-title">Qrupunuzu böyütdükcə, planınızı yüksəldin</h1>
       <p class="plans-subtitle">
-        Yalnız <strong>iki plan</strong> seçiminiz var — sadə, aydın və ədalətli.
-        Aylıq abunə ilə sınaq limitinizi qaldırın, iş yükünüzü yüngülləşdirin.
+        Aylıq abunə planları — Standart, Pro və Kurslar üçün. Ehtiyacınıza uyğun
+        planı seçin, sınaq limitinizi qaldırın və iş yükünüzü yüngülləşdirin.
       </p>
       <p class="plans-highlight">
         <strong>Gradient</strong> ilə hər sınaq avtomatik yığılır, hər şagirdin nəticəsi
         saniyələr ərzində analiz olunur və sizə növbəti dərs üçün hazır tövsiyə verilir.
         Digər platformalarda hər sınaq üçün pul ödəmək əvəzinə sabit aylıq ödənişlə
-        <strong>bütün şagirdləriniz üçün limitsiz işləyin</strong>.
+        <strong>bütün şagirdləriniz üçün rahat işləyin</strong>.
       </p>
     </div>
 
@@ -142,11 +142,11 @@
               <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"></path>
             </svg>
           </div>
-          <h3 class="benefit-title">Limitsiz şagird <span class="nowrap">(Pro)</span></h3>
+          <h3 class="benefit-title">Limitsiz şagird <span class="nowrap">(Kurslar üçün)</span></h3>
           <p class="benefit-text">
-            <strong>Pro</strong> paketində şagird sayı da limitsizdir — yeni qrup, yeni şagird
-            gələndə heç nə bloklanmır. <strong>Standart</strong> paketi isə 20 şagirdə qədər
-            kiçik və orta qruplar üçün idealdır.
+            <strong>Kurslar üçün</strong> paketində şagird sayı limitsizdir — iri mərkəzlər və
+            böyük qruplar üçün idealdır. <strong>Pro</strong> paketində 80 şagird, <strong>Standart</strong>
+            paketində isə 20 şagird limiti mövcuddur.
           </p>
         </article>
 
@@ -158,9 +158,9 @@
           </div>
           <h3 class="benefit-title">50% endirim</h3>
           <p class="benefit-text">
-            Bütün pullu paketlər endirimlidir: <strong>Standart</strong> 29.99 əvəzinə
-            14.99 AZN, <strong>Pro</strong> isə 59.98 əvəzinə 29.99 AZN.
-            İstədiyiniz anda dayandıra bilərsiniz — uzunmüddətli öhdəlik yoxdur.
+            Bütün pullu paketlər endirimlidir: <strong>Standart</strong> 29.98 əvəzinə
+            14.99 AZN, <strong>Pro</strong> 59.98 əvəzinə 29.99 AZN, <strong>Kurslar üçün</strong> isə
+            99.98 əvəzinə 49.99 AZN. İstədiyiniz anda dayandıra bilərsiniz.
           </p>
         </article>
       </div>
@@ -178,7 +178,7 @@
         <h2 class="current-plan-title" id="current-plan-title">Hazırda Free plandasınız</h2>
         <p class="current-plan-text" id="current-plan-text">
           Free plan yalnız başlanğıcdır — sınaq limiti tez dolur. Standart paketi ilə
-          ayda 15 sınaq, Pro paketi ilə isə limitsiz sınaq və limitsiz şagird.
+          ayda 15 sınaq, Pro paketi ilə 80 şagird və limitsiz sınaq, Kurslar paketi ilə isə limitsiz şagird və limitsiz sınaq.
         </p>
       </div>
     </section>
@@ -224,7 +224,13 @@
       <h2 class="sr-only" id="plans-grid-heading">Abunə planları</h2>
 
       <!-- Yüklənmə zamanı Skeleton Loader (.clinerules §4) -->
-      <div class="plans-grid is-two" id="plans-skeleton" aria-hidden="true">
+      <div class="plans-grid" id="plans-skeleton" aria-hidden="true">
+        <div class="plan-card skeleton-card">
+          <div class="skeleton skeleton-line-sm"></div>
+          <div class="skeleton skeleton-line-lg"></div>
+          <div class="skeleton skeleton-line-md"></div>
+          <div class="skeleton skeleton-box"></div>
+        </div>
         <div class="plan-card skeleton-card">
           <div class="skeleton skeleton-line-sm"></div>
           <div class="skeleton skeleton-line-lg"></div>
@@ -246,7 +252,7 @@
       </div>
 
       <!-- Plan kartları buraya JS ilə qurulur (innerHTML YOXDUR) -->
-      <div class="plans-grid is-two hidden" id="plans-grid"></div>
+      <div class="plans-grid hidden" id="plans-grid"></div>
 
       <!-- Error / Empty State (.clinerules §4) -->
       <div class="plans-state hidden" id="plans-state" role="alert">

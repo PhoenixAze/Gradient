@@ -350,9 +350,9 @@
    -------------------------------------------------------------------------- */
 .plans-grid {
   display: grid;
-  /* 3 plan (Free → Pro) sütun sayına görə öz-özünə sığır */
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 24px;
+  /* 4 plan (Free, Standart, Pro, Kurslar) sütun sayına görə sığır */
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
   align-items: stretch;
   margin-bottom: 40px;
 }

@@ -34,7 +34,7 @@ let lastRequestFailedAtNetworkLevel = false;
 
 /* Plan sırası — yalnız UI məqsədi ilə (hansı kartı "tövsiyə" göstərik).
    Həqiqi qiymət/limit məlumatları serverdən gəlir. */
-const PLAN_ORDER = ["free", "standard", "pro"];
+const PLAN_ORDER = ["free", "standard", "pro", "courses"];
 
 /* "Tövsiyə olunan" plan — hansı kart vurğulansın */
 const FEATURED_PLAN = "pro";
@@ -62,7 +62,7 @@ const FALLBACK_PLANS = [
     max_exams_per_month: 2,
     unlimited_students: false,
     unlimited_exams: false,
-    description: "Kiqik qruplar üçün başlanğıc plan"
+    description: "Kiçik qruplar üçün başlanğıc plan"
   },
   {
     id: "standard",
@@ -82,11 +82,23 @@ const FALLBACK_PLANS = [
     price: 29.99,
     original_price: 59.98,
     discount_percent: 50,
+    max_students: 80,
+    max_exams_per_month: null,
+    unlimited_students: false,
+    unlimited_exams: true,
+    description: "80 şagirdə qədər və limitsiz sınaq"
+  },
+  {
+    id: "courses",
+    name: "Kurslar üçün",
+    price: 49.99,
+    original_price: 99.98,
+    discount_percent: 50,
     max_students: null,
     max_exams_per_month: null,
     unlimited_students: true,
     unlimited_exams: true,
-    description: "Limitsiz şagird və limitsiz sınaq"
+    description: "Tədris mərkəzləri və kurslar üçün limitsiz şagird və limitsiz sınaq"
   }
 ];
 
@@ -323,6 +335,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (id === "free") return "Free";
     if (id === "standard") return "Standart";
     if (id === "pro") return "Pro";
+    if (id === "courses" || id === "kurslar") return "Kurslar üçün";
     return plan.name || "Plan";
   }
 
@@ -366,6 +379,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const studentsLimit = plan.max_students;
     const isUnlimitedExams = plan.unlimited_exams;
     const isPro = plan.id === "pro";
+    const isCourses = plan.id === "courses" || plan.id === "kurslar";
 
     const features = [];
 
@@ -384,7 +398,7 @@ document.addEventListener("DOMContentLoaded", () => {
     );
 
     // Təkrar istifadə: eyni şagirdə sınırsız sınaq
-    if (isPro) {
+    if (isPro || isCourses) {
       features.push(createFeatureItem("Eyni şagirdə təkrar-təkrar sınaq", true));
     } else if (plan.id !== "free") {
       features.push(createFeatureItem("Eyni şagirdə təkrar sınaq (ay limitinə qədər)", true));
@@ -397,6 +411,11 @@ document.addEventListener("DOMContentLoaded", () => {
       features.push(createFeatureItem("Prioritet dəstək", true));
     }
 
+    // Kurslar üçün xüsusi üstünlük
+    if (isCourses) {
+      features.push(createFeatureItem("Tədris mərkəzləri və çoxsaylı qruplar üçün", true));
+    }
+
     // Free üçün məhdudiyyət xəbərdarlığı
     if (plan.id === "free") {
       features.push(createFeatureItem("AI analitika məhduddur", false));
@@ -405,7 +424,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Standart üçün Pro-ya keçid məsləhəti
     if (plan.id === "standard") {
-      features.push(createFeatureItem("Limitsiz sınaq üçün Pro planını seçin", false));
+      features.push(createFeatureItem("80 şagird və limitsiz sınaq üçün Pro-nu seçin", false));
     }
 
     return features;
@@ -560,11 +579,16 @@ document.addEventListener("DOMContentLoaded", () => {
     buildFeatureList(plan).forEach((item) => featuresEl.appendChild(item));
     card.appendChild(featuresEl);
 
-    // --- Pro üçün əlavə qeyd: limitsiz iş axını ---
+    // --- Plan auditoriyası üçün qeyd ---
     if (plan.id === "pro") {
       const audienceEl = document.createElement("p");
       audienceEl.className = "plan-audience-note";
-      audienceEl.textContent = "Kurslar və böyük qruplar üçün";
+      audienceEl.textContent = "Böyük qruplar üçün (80 şagirdə qədər)";
+      card.appendChild(audienceEl);
+    } else if (plan.id === "courses" || plan.id === "kurslar") {
+      const audienceEl = document.createElement("p");
+      audienceEl.className = "plan-audience-note";
+      audienceEl.textContent = "Tədris mərkəzləri və kurslar üçün (limitsiz)";
       card.appendChild(audienceEl);
     }
 
