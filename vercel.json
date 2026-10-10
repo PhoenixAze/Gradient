@@ -1,8 +1,8 @@
 {
   "rewrites": [
     {
-      "source": "/api/:path*",
-      "destination": "https://gradient-backend-fam5.onrender.com/api/:path*"
+      "source": "/api/(.*)",
+      "destination": "https://SENIN-RENDER-LINKIN.onrender.com/api/$1"
     }
   ]
 }
