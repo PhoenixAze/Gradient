@@ -706,34 +706,19 @@ document.addEventListener("DOMContentLoaded", async () => {
             clearPersistedState();
 
             const score = result.score ?? 0;
-            const total = result.total ?? (isAssignment ? assignmentTotalQuestions : questions.length);
-            const pct = result.percentage ?? Math.round((score / total) * 100);
-
             const incorrect = result.incorrect ?? result.incorrect_count ?? 0;
-            const empty = result.empty ?? result.empty_count ?? Math.max(0, total - score);
-
-            // TƏKRAR CƏHD MƏLUMATI: statistikaya təsir edib-etmədiyini
-            // istifadəçiyə AÇIQ bildiririk (mütləq məlumat — .clinerules §4).
-            const attemptNo = Number(result.attempt_no) || 1;
-            const isRetakeResult = Boolean(result.is_retake) || attemptNo > 1;
-
-            let message = `Yekun nəticəniz: ${score} / ${total} (${pct}%). Düzgün: ${score}, səhv: ${incorrect}, boş: ${empty}.`;
-
-            if (isRetakeResult) {
-                message += ` Bu ${attemptNo}-cı cəhddir — əvvəlki nəticəniz qorunur və statistika dəyişməyib.`;
-                const weakTopics = Array.isArray(result.weak_topics) ? result.weak_topics.slice(0, 3) : [];
-                if (weakTopics.length) {
-                    message += " Zəif mövzular: " + weakTopics
-                        .map(t => `${t.topic} (${t.wrong} səhv)`)
-                        .join(", ") + ".";
-                }
-            }
 
             showModal({
-                title: isRetakeResult ? `Təkrar cəhd tamamlandı (${attemptNo}-cı)` : "Sınaq Bitdi!",
-                message: message,
-                closeLabel: "AI Analiz et",
-                onClose: () => { window.location.href = `analytics.html${isAssignment ? '' : '?id=' + encodeURIComponent(examId)}`; }
+                title: "Sınaq Bitdi!",
+                message: `Düzgün: ${score}, Səhv: ${incorrect}`,
+                confirmLabel: "AI Analiz et",
+                onConfirm: () => {
+                    window.location.href = `analytics.html${isAssignment ? '' : '?id=' + encodeURIComponent(examId)}`;
+                },
+                closeLabel: "OK",
+                onClose: () => {
+                    window.location.href = "exam.html";
+                }
             });
 
         } catch (error) {
